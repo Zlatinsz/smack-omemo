@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,12 +49,12 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public final Bundle BUNDLE = new Bundle();
 
     /**
-     * Bundle related methods
+     * Bundle related methods.
      */
     public class Bundle {
 
         /**
-         * Extract an IdentityKey from a OmemoBundleElement
+         * Extract an IdentityKey from a OmemoBundleElement.
          *
          * @param bundle OmemoBundleElement
          * @return identityKey
@@ -64,7 +65,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
         }
 
         /**
-         * Extract a signedPreKey from an OmemoBundleElement
+         * Extract a signedPreKey from an OmemoBundleElement.
          *
          * @param bundle OmemoBundleElement
          * @return singedPreKey
@@ -75,7 +76,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
         }
 
         /**
-         * Extract the id of the transported signedPreKey from the bundle
+         * Extract the id of the transported signedPreKey from the bundle.
          *
          * @param bundle OmemoBundleElement
          * @return signedPreKeyId
@@ -85,7 +86,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
         }
 
         /**
-         * Extract the signature of the signedPreKey in the bundle as a byte array
+         * Extract the signature of the signedPreKey in the bundle as a byte array.
          *
          * @param bundle OmemoBundleElement
          * @return signature
@@ -95,7 +96,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
         }
 
         /**
-         * Extract the preKey with id 'keyId' from the bundle
+         * Extract the preKey with id 'keyId' from the bundle.
          *
          * @param bundle OmemoBundleElement
          * @param keyId  id of the preKey
@@ -109,7 +110,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
         /**
          * Break up the OmemoBundleElement into a list of crypto-lib specific bundles (T_PreKey).
          * In case of the signal library, we break the OmemoBundleElement in ~100 PreKeyBundles (one for every transported
-         * preKey)
+         * preKey).
          *
          * @param bundle  OmemoBundleElement containing multiple PreKeys
          * @param contact Contact that the bundle belongs to
@@ -133,7 +134,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     }
 
     /**
-     * Deserialize an identityKeyPair from a byte array
+     * Deserialize an identityKeyPair from a byte array.
      *
      * @param data byte array
      * @return IdentityKeyPair (T_IdKeyPair)
@@ -142,7 +143,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract T_IdKeyPair identityKeyPairFromBytes(byte[] data) throws InvalidOmemoKeyException;
 
     /**
-     * Deserialize an identityKey from a byte array
+     * Deserialize an identityKey from a byte array.
      *
      * @param data byte array
      * @return identityKey (T_IdKey)
@@ -153,7 +154,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract byte[] identityKeyToBytes(T_IdKey identityKey);
 
     /**
-     * Deserialize an elliptic curve public key from bytes
+     * Deserialize an elliptic curve public key from bytes.
      *
      * @param data bytes
      * @return elliptic curve public key (T_ECPub)
@@ -162,7 +163,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract T_ECPub ellipticCurvePublicKeyFromBytes(byte[] data) throws InvalidOmemoKeyException;
 
     /**
-     * Deserialize a public preKey from bytes
+     * Deserialize a public preKey from bytes.
      *
      * @param data preKey as bytes
      * @return preKey
@@ -173,7 +174,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     }
 
     /**
-     * Serialize a preKey into a byte array
+     * Serialize a preKey into a byte array.
      *
      * @param preKey preKey
      * @return byte[]
@@ -181,7 +182,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract byte[] preKeyToBytes(T_PreKey preKey);
 
     /**
-     * Deserialize a preKey from a byte array
+     * Deserialize a preKey from a byte array.
      *
      * @param bytes byte array
      * @return deserialized preKey
@@ -200,7 +201,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract HashMap<Integer, T_PreKey> generateOmemoPreKeys(int startId, int count);
 
     /**
-     * Generate a new signed preKey
+     * Generate a new signed preKey.
      *
      * @param identityKeyPair identityKeyPair used to sign the preKey
      * @param signedPreKeyId  id that the preKey will have
@@ -211,7 +212,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
 
 
     /**
-     * Deserialize a public signedPreKey from bytes
+     * Deserialize a public signedPreKey from bytes.
      *
      * @param data bytes
      * @return signedPreKey
@@ -222,7 +223,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     }
 
     /**
-     * Deserialize a signedPreKey from a byte array
+     * Deserialize a signedPreKey from a byte array.
      *
      * @param data byte array
      * @return deserialized signed preKey
@@ -231,7 +232,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract T_SigPreKey signedPreKeyFromBytes(byte[] data) throws IOException;
 
     /**
-     * Serialize a signedPreKey into a byte array
+     * Serialize a signedPreKey into a byte array.
      *
      * @param sigPreKey signedPreKey
      * @return byte array
@@ -241,7 +242,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     /**
      * Build a crypto-lib specific PreKeyBundle (T_Bundle) using a PreKey from the OmemoBundleElement 'bundle'.
      * The PreKeyBundle will contain the identityKey, signedPreKey and signature, as well as a preKey
-     * from the OmemoBundleElement
+     * from the OmemoBundleElement.
      *
      * @param bundle  OmemoBundleElement
      * @param contact Contact that the bundle belongs to
@@ -252,7 +253,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract T_Bundle bundleFromOmemoBundle(OmemoBundleElement bundle, OmemoDevice contact, int keyId) throws InvalidOmemoKeyException;
 
     /**
-     * Extract the signature from a signedPreKey
+     * Extract the signature from a signedPreKey.
      *
      * @param signedPreKey signedPreKey
      * @return signature as byte array
@@ -267,7 +268,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract T_IdKeyPair generateOmemoIdentityKeyPair();
 
     /**
-     * return the id of the given signedPreKey
+     * return the id of the given signedPreKey.
      *
      * @param signedPreKey key
      * @return id of the key
@@ -275,7 +276,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract int signedPreKeyIdFromKey(T_SigPreKey signedPreKey);
 
     /**
-     * serialize an identityKeyPair into bytes
+     * serialize an identityKeyPair into bytes.
      *
      * @param identityKeyPair identityKeyPair
      * @return byte array
@@ -283,7 +284,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract byte[] identityKeyPairToBytes(T_IdKeyPair identityKeyPair);
 
     /**
-     * Extract the public identityKey from an identityKeyPair
+     * Extract the public identityKey from an identityKeyPair.
      *
      * @param pair keyPair
      * @return public key of the pair
@@ -291,7 +292,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract T_IdKey identityKeyFromPair(T_IdKeyPair pair);
 
     /**
-     * Prepare an identityKey for transport in an OmemoBundleElement (serialize it)
+     * Prepare an identityKey for transport in an OmemoBundleElement (serialize it).
      *
      * @param identityKey identityKey that will be transported
      * @return key as byte array
@@ -299,7 +300,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract byte[] identityKeyForBundle(T_IdKey identityKey);
 
     /**
-     * Prepare an elliptic curve preKey for transport in an OmemoBundleElement
+     * Prepare an elliptic curve preKey for transport in an OmemoBundleElement.
      *
      * @param preKey key
      * @return key as byte array
@@ -307,7 +308,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract byte[] preKeyPublicKeyForBundle(T_ECPub preKey);
 
     /**
-     * Prepare a preKey for transport in an OmemoBundleElement
+     * Prepare a preKey for transport in an OmemoBundleElement.
      *
      * @param preKey preKey
      * @return key as byte array
@@ -315,7 +316,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract byte[] preKeyForBundle(T_PreKey preKey);
 
     /**
-     * Prepare a whole bunche of preKeys for transport
+     * Prepare a whole bunche of preKeys for transport.
      *
      * @param preKeyHashMap HashMap of preKeys
      * @return HashMap of byte arrays but with the same keyIds as key
@@ -337,7 +338,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract byte[] signedPreKeyPublicForBundle(T_SigPreKey signedPreKey);
 
     /**
-     * Return the fingerprint of an identityKey
+     * Return the fingerprint of an identityKey.
      *
      * @param identityKey identityKey
      * @return fingerprint of the key
@@ -345,7 +346,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract String getFingerprint(T_IdKey identityKey);
 
     /**
-     * Create a new concrete OmemoSession with a contact
+     * Create a new concrete OmemoSession with a contact.
      *
      * @param device      device to establish the session with
      * @param identityKey identityKey of the device
@@ -356,7 +357,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
                        OmemoDevice device, T_IdKey identityKey);
 
     /**
-     * Deserialize a raw OMEMO Session from bytes
+     * Deserialize a raw OMEMO Session from bytes.
      *
      * @param data bytes
      * @return raw OMEMO Session
@@ -365,7 +366,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract T_Sess rawSessionFromBytes(byte[] data) throws IOException;
 
     /**
-     * Serialize a raw OMEMO session into a byte array
+     * Serialize a raw OMEMO session into a byte array.
      *
      * @param session raw session
      * @return byte array
@@ -373,7 +374,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract byte[] rawSessionToBytes(T_Sess session);
 
     /**
-     * Convert an OmemoDevice to a crypto-lib specific contact format
+     * Convert an OmemoDevice to a crypto-lib specific contact format.
      *
      * @param contact omemoContact
      * @return crypto-lib specific contact object
@@ -381,7 +382,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract T_Addr omemoContactAsAddress(OmemoDevice contact);
 
     /**
-     * Convert a crypto-lib specific contact object into an OmemoDevice
+     * Convert a crypto-lib specific contact object into an OmemoDevice.
      *
      * @param address contact
      * @return as OmemoDevice
@@ -390,7 +391,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract OmemoDevice addressAsOmemoContact(T_Addr address) throws XmppStringprepException;
 
     /**
-     * Split the fingerprint in blocks of 8 characters with spaces between
+     * Split the fingerprint in blocks of 8 characters with spaces between.
      *
      * @param ugly fingerprint as continuous string
      * @return fingerprint with spaces for better readability
@@ -406,7 +407,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     }
 
     /**
-     * Add integers modulo MAX_VALUE
+     * Add integers modulo MAX_VALUE.
      *
      * @param value base integer
      * @param added value that is added to the base value

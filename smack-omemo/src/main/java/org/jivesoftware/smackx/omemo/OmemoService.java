@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,13 +54,19 @@ import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.Jid;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.ENCRYPTED;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.*;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST_NOTIFY;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
 
 /**
  * This class contains OMEMO related logic and registers listeners etc.
@@ -115,7 +122,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Get our latest deviceListNode from the server.
-     * This method is used to prevent us from getting our node too often (it may take some time)
+     * This method is used to prevent us from getting our node too often (it may take some time).
      */
     private void fetchLatestDeviceListNode() throws SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException {
@@ -125,7 +132,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Publish our deviceId and a fresh bundle to the server
+     * Publish our deviceId and a fresh bundle to the server.
      *
      * @param regenerate         Do we want to generate a new Identity?
      * @param deleteOtherDevices Do we want to delete other devices from our deviceList?
@@ -205,7 +212,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Subscribe to the device lists of our contacts using PEP
+     * Subscribe to the device lists of our contacts using PEP.
      */
     private void subscribeToDeviceLists() {
         LOGGER.log(Level.INFO, "Subscribe to device Lists.");
@@ -214,7 +221,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Build sessions for all devices of the contact that we do not have a session with yet
+     * Build sessions for all devices of the contact that we do not have a session with yet.
      *
      * @param jid the BareJid of the contact
      */
@@ -224,7 +231,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             try {
                 omemoStore.mergeCachedDeviceList(jid, pubSubHelper.fetchDeviceList(jid));
             } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException | SmackException.NoResponseException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.WARNING, e.getMessage());
             }
         }
         devices = omemoStore.loadCachedDeviceList(jid);
@@ -239,7 +246,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                     LOGGER.log(Level.INFO, "Build session for " + device);
                     buildSessionFromOmemoBundle(device);
                 } catch (CannotEstablishOmemoSessionException | InvalidOmemoKeyException e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.WARNING, e.getMessage());
                     //Skip
                 }
             }
@@ -261,7 +268,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         try {
             bundle = pubSubHelper.fetchBundle(device);
         } catch (SmackException | XMPPException.XMPPErrorException | InterruptedException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, e.getMessage());
         }
         if (bundle == null) {
             LOGGER.log(Level.WARNING, "Couldn't build session for " + device);
@@ -280,7 +287,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Process a received bundle. Typically that includes saving keys and building a session
+     * Process a received bundle. Typically that includes saving keys and building a session.
      *
      * @param bundle T_Bundle (depends on used Signal/Olm library)
      * @param device OmemoDevice
@@ -311,7 +318,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                                             publishDeviceIdIfNeeded(false);
                                         } catch (SmackException | InterruptedException | XMPPException.XMPPErrorException e) {
                                             //TODO: It might be dangerous NOT to retry publishing our deviceId
-                                            e.printStackTrace();
+                                            LOGGER.log(Level.SEVERE, e.getMessage());
                                         }
                                     }
                                 }
@@ -398,7 +405,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Decrypt a incoming OmemoMessageElement that was sent by the OmemoDevice 'from'
+     * Decrypt a incoming OmemoMessageElement that was sent by the OmemoDevice 'from'.
      *
      * @param from    OmemoDevice that sent the message
      * @param message Encrypted OmemoMessageElement
@@ -429,14 +436,14 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             try {
                 publishBundle();
             } catch (InvalidOmemoKeyException | InterruptedException | SmackException.NotConnectedException | SmackException.NoResponseException | XMPPException.XMPPErrorException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, e.getMessage());
             }
         }
         return decrypted;
     }
 
     /**
-     * Encrypt the message and return it as an OmemoMessageElement
+     * Encrypt the message and return it as an OmemoMessageElement.
      *
      * @param receivers List of devices that will be able to decipher the message.
      * @param message   Clear text message
@@ -453,11 +460,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 builder.addRecipient(c);
             } catch (CannotEstablishOmemoSessionException e) {
                 //TODO: How to react?
-                LOGGER.log(Level.WARNING, e.getMessage());
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, e.getMessage());
             } catch (InvalidOmemoKeyException e) {
                 //TODO: Same here
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, e.getMessage());
             } catch (UndecidedOmemoIdentityException e) {
                 //Collect all undecided devices
                 if (undecided == null) {
@@ -475,7 +481,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Create a new crypto-specific Session object
+     * Create a new crypto-specific Session object.
      *
      * @param from the device we want to create the session with.
      * @return a new session
@@ -484,7 +490,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     createSession(OmemoDevice from);
 
     /**
-     * Return our OmemoStore
+     * Return our OmemoStore.
      *
      * @return our store
      */
@@ -494,7 +500,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Return our PubSubHelper
+     * Return our PubSubHelper.
      *
      * @return PubSubHelper
      */
@@ -514,7 +520,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * StanzaFilter that filters messages containing a OMEMO message element
+     * StanzaFilter that filters messages containing a OMEMO message element.
      */
     private final StanzaFilter omemoMessageFilter = new StanzaFilter() {
         @Override
@@ -524,7 +530,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     };
 
     /**
-     * StanzaListener that listens for incoming OMEMO messages
+     * StanzaListener that listens for incoming OMEMO messages.
      */
     private final StanzaListener omemoMessageListener = new StanzaListener() {
         @Override
@@ -545,7 +551,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         notifyOmemoMucMessageReceived(muc, senderContact, decrypted.getBody(), (Message) packet, null, messageInfo);
                     }
                 } catch (CryptoFailedException e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.WARNING, e.getMessage());
                 }
             }
 
@@ -559,7 +565,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         notifyOmemoMessageReceived(decrypted.getBody(), (Message) packet, null, messageInfo);
                     }
                 } catch (CryptoFailedException e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.WARNING, e.getMessage());
                 }
             }
         }
@@ -594,7 +600,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                             notifyOmemoMucMessageReceived(muc, senderContact, decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
                         }
                     } catch (CryptoFailedException e) {
-                        e.printStackTrace();
+                        LOGGER.log(Level.WARNING, e.getMessage());
                     }
                 }
 
@@ -607,7 +613,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                             notifyOmemoMessageReceived(decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
                         }
                     } catch (CryptoFailedException e) {
-                        e.printStackTrace();
+                        LOGGER.log(Level.WARNING, e.getMessage());
                     }
                 }
             }
@@ -637,7 +643,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Remove an OmemoMessageListener
+     * Remove an OmemoMessageListener.
      *
      * @param listener OmemoMessageListener
      */
@@ -647,7 +653,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Remove an OmemoMucMessageListener
+     * Remove an OmemoMucMessageListener.
      *
      * @param listener OmemoMucMessageListener
      */
@@ -657,7 +663,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Notify all registered OmemoMessageListeners about a received OmemoMessage
+     * Notify all registered OmemoMessageListeners about a received OmemoMessage.
      *
      * @param decryptedBody      decrypted Body element of the message
      * @param encryptedMessage   unmodified message as it was received

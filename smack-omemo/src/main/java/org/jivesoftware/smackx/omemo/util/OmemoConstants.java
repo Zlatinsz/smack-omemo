@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +17,7 @@
 package org.jivesoftware.smackx.omemo.util;
 
 /**
+ * Some constants related to OMEMO.
  * @author Paul Schaub
  */
 public class OmemoConstants {
@@ -39,7 +41,7 @@ public class OmemoConstants {
     public static final int TYPE_OMEMO_MESSAGE = 0;
 
     /**
-     * Return the node name of the PEP node containing the device bundle of the device with device id deviceId
+     * Return the node name of the PEP node containing the device bundle of the device with device id deviceId.
      *
      * @param deviceId id of the device
      * @return node name of the devices bundle node
@@ -51,7 +53,7 @@ public class OmemoConstants {
     public static final String BODY_OMEMO_HINT = "I sent you an OMEMO encrypted message but your client doesn’t seem to support that. Find more information on https://conversations.im/omemo";
 
     /**
-     * Element names of a OMEMO deviceList update
+     * Element names of a OMEMO deviceList update.
      */
     public static class List {
         public static final String DEVICE = "device";
@@ -59,7 +61,7 @@ public class OmemoConstants {
     }
 
     /**
-     * Element names of a OMEMO bundle
+     * Element names of a OMEMO bundle.
      */
     public static class Bundle {
         public static final String BUNDLE = "bundle";
@@ -73,7 +75,7 @@ public class OmemoConstants {
     }
 
     /**
-     * Element names of a encrypted OMEMO message
+     * Element names of a encrypted OMEMO message.
      */
     public static class Encrypted {
         public static final String ENCRYPTED = "encrypted";
@@ -87,7 +89,7 @@ public class OmemoConstants {
     }
 
     /**
-     * Information about the keys used for message encryption
+     * Information about the keys used for message encryption.
      */
     public static class Crypto {
         public static final String KEYTYPE = "AES";

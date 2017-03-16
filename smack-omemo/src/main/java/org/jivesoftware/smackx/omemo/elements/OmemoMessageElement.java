@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,12 +39,21 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.*;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.*;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.PROVIDER;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.CIPHERMODE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.KEYTYPE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.ENCRYPTED;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.HEADER;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.PAYLOAD;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.IV;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.RID;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.KEY;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.PREKEY;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.SID;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
 
 /**
- * An OMEMO (PreKey)WhisperMessage element
+ * An OMEMO (PreKey)WhisperMessage element.
  *
  * @author Paul Schaub
  */
@@ -53,7 +63,7 @@ public class OmemoMessageElement implements ExtensionElement {
     private final byte[] payload;
 
     /**
-     * Create a new OmemoMessageElement from a header and a payload
+     * Create a new OmemoMessageElement from a header and a payload.
      *
      * @param header  header of the message
      * @param payload payload
@@ -68,7 +78,7 @@ public class OmemoMessageElement implements ExtensionElement {
     }
 
     /**
-     * Return the payload of the message
+     * Return the payload of the message.
      *
      * @return payload
      */
@@ -78,7 +88,7 @@ public class OmemoMessageElement implements ExtensionElement {
 
     /**
      * Header element of the message. The header contains information about the sender and the encrypted keys for
-     * the recipients, as well as the iv element for AES
+     * the recipients, as well as the iv element for AES.
      */
     public static class OmemoHeader {
         private final int sid;
@@ -92,7 +102,7 @@ public class OmemoMessageElement implements ExtensionElement {
         }
 
         /**
-         * Return the deviceId of the sender of the message
+         * Return the deviceId of the sender of the message.
          *
          * @return senders id
          */
@@ -194,7 +204,7 @@ public class OmemoMessageElement implements ExtensionElement {
             s += "  payload: " + new String(getPayload(), StringUtils.UTF8);
             return s;
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, e.getMessage());
             return null;
         }
     }
@@ -203,7 +213,7 @@ public class OmemoMessageElement implements ExtensionElement {
      * Try to decrypt the message.
      * First decrypt the message key using our session with the sender.
      * Second use the decrypted key to decrypt the message.
-     * The decrypted content of the 'encrypted'-element becomes the body of the clear text message
+     * The decrypted content of the 'encrypted'-element becomes the body of the clear text message.
      *
      * @param session OmemoSession with the sender device
      * @param keyId   the key we want to decrypt (usually our own device id)
@@ -221,7 +231,7 @@ public class OmemoMessageElement implements ExtensionElement {
                     unpackedKey = session.decryptMessageKey(k.getData());
                     break;
                 } catch (CryptoFailedException ignored) {
-                    ignored.printStackTrace();
+                    LOGGER.log(Level.SEVERE, ignored.getMessage());
                     //TODO: Wise to ignore the exception?
                     //The issue is, there might be multiple keys with our id, but we can only decrypt one.
                     //So we can't throw the exception, when decrypting the first duplicate which is not for us.

@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,12 +23,19 @@ import org.jivesoftware.smack.util.stringencoder.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.*;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.BUNDLE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_ID;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_SIG;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_PUB;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.IDENTITY_KEY;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEYS;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEY_ID;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEY_PUB;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
 
 /**
  * OMEMO device bundle as described here:
- * https://xmpp.org/extensions/xep-0384.html#usecases-announcing (Example 3)
+ * https://xmpp.org/extensions/xep-0384.html#usecases-announcing (Example 3).
  *
  * @author Paul Schaub
  */
@@ -48,7 +56,7 @@ public class OmemoBundleElement implements ExtensionElement {
     }
 
     /**
-     * Return the signedPreKey of the OmemoBundleElement
+     * Return the signedPreKey of the OmemoBundleElement.
      *
      * @return signedPreKey as byte array
      */
@@ -57,7 +65,7 @@ public class OmemoBundleElement implements ExtensionElement {
     }
 
     /**
-     * Return the id of the signedPreKey in the bundle
+     * Return the id of the signedPreKey in the bundle.
      *
      * @return id of signedPreKey
      */
@@ -66,7 +74,7 @@ public class OmemoBundleElement implements ExtensionElement {
     }
 
     /**
-     * Get the signature of the signedPreKey
+     * Get the signature of the signedPreKey.
      *
      * @return signature as byte array
      */

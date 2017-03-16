@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +22,15 @@ import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jxmpp.jid.BareJid;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Simple file based OmemoStore that stores values in a folder hierarchy.
@@ -49,11 +56,13 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     public static final String TRUST = "trust";
     public static final String DEVICE_LIST = "deviceList";
 
+    private static final Logger LOGGER = Logger.getLogger(FileBasedOmemoStore.class.getName());
+
     private final File base;
     private final BareJid userJid;
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param manager omemoManager
      * @param base    base path of the store
@@ -175,7 +184,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                 try {
                     fp = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
                 } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE, e.getMessage());
                     return false;
                 }
                 return Arrays.equals(fp, tfp);
@@ -198,7 +207,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                     try {
                         fp = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
                     } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
+                        LOGGER.log(Level.SEVERE, e.getMessage());
                         return false;
                     }
                     return Arrays.equals(fp, tfp);
@@ -218,7 +227,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             try {
                 a = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, e.getMessage());
                 return;
             }
             byte[] b = new byte[a.length + 1];
@@ -237,7 +246,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             try {
                 a = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, e.getMessage());
                 return;
             }
             byte[] b = new byte[a.length + 1];
@@ -260,7 +269,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                             try {
                                 keyUtil().preKeyPublicFromBytes(bytes);
                             } catch (InvalidOmemoKeyException e) {
-                                e.printStackTrace();
+                                LOGGER.log(Level.SEVERE, e.getMessage());
                                 return null;
                             }
                         }
@@ -329,7 +338,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                             preKeys.put(Integer.parseInt(f.getName()), preKey);
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        LOGGER.log(Level.SEVERE, e.getMessage());
                     }
                 }
                 return preKeys;
@@ -348,7 +357,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                 try {
                     return keyUtil().signedPreKeyFromBytes(bytes);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE, e.getMessage());
                 }
             }
         }
@@ -370,7 +379,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                             signedPreKeys.put(Integer.parseInt(f.getName()), s);
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        LOGGER.log(Level.SEVERE, e.getMessage());
                     }
                 }
                 return signedPreKeys;
@@ -407,7 +416,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                 try {
                     return keyUtil().rawSessionFromBytes(bytes);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE, e.getMessage());
                 }
             }
         }
@@ -507,7 +516,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                         return cachedDeviceList;
                     }
                 } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE, e.getMessage());
                     return null;
                 }
             }
@@ -543,7 +552,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             try {
                 writeBytes(s.getBytes(StringUtils.UTF8), f);
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, e.getMessage());
             }
         }
     }
@@ -622,13 +631,13 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             fos = new FileOutputStream(destination);
             fos.write(data);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, e.getMessage());
         } finally {
             try {
                 if (fos != null)
                     fos.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, e.getMessage());
             }
         }
     }
@@ -642,13 +651,13 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                 fis.read(buffer);
                 return buffer;
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, e.getMessage());
             } finally {
                 try {
                     if (fis != null)
                         fis.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE, e.getMessage());
                 }
             }
         }
@@ -659,7 +668,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         try {
             writeBytes(Integer.toString(i).getBytes(StringUtils.UTF8), to);
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, e.getMessage());
         }
     }
 
@@ -669,7 +678,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             try {
                 return Integer.parseInt(new String(bytes, StringUtils.UTF8));
             } catch (NumberFormatException | UnsupportedEncodingException ignored) {
-                ignored.printStackTrace();
+                LOGGER.log(Level.SEVERE, ignored.getMessage());
             }
         }
         return -1;

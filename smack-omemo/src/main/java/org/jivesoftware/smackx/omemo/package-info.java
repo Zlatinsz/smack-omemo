@@ -1,5 +1,6 @@
 /**
- * Copyright 2016 Paul Schaub
+ *
+ * Copyright the original author or authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +18,7 @@
  * Classes and interfaces for OMEMO Encryption. This module consists of the
  * XMPP logic and some abstract crypto classes that have to be implemented
  * using concrete crypto libraries (like signal-protocol-java or olm).
- * See smack-omemo-signal for a concrete implementation (GPL licensed)
+ * See smack-omemo-signal for a concrete implementation (GPL licensed).
  * 
  * @author Paul Schaub
  * @see <a href="https://conversations.im/xeps/multi-end.html">XEP-0384: OMEMO</a>

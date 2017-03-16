@@ -3,8 +3,8 @@ Encrypting messages with OMEMO
 
 [Back](index.md)
 
-OMEMO ([XEP-0384](https://xmpp.org/extensions/xep-0384.html)) is an adaption 
-of the Signal protocol for XMPP. It provides an important set of 
+OMEMO ([XEP-0384](https://xmpp.org/extensions/xep-0384.html)) is an adaption
+of the Signal protocol for XMPP. It provides an important set of
 cryptographic properties including but not restricted to
 
 * Confidentiality
@@ -57,11 +57,11 @@ related actions like sending a message etc.
 OmemoManager omemoManager = OmemoManager.getInstanceFor(connection);
 ```
 
-You also need an OmemoStore implementation that will be responsible for storing 
-and accessing persistent data. You can either use a FileBasedOmemoStore, or 
+You also need an OmemoStore implementation that will be responsible for storing
+and accessing persistent data. You can either use a FileBasedOmemoStore, or
 implement your own (eg. using an SQL database etc). Last but not least, you need
-an implementation of the OmemoService that handles events. Note, that the store 
-and service are dependent on the library used for the double ratchet, so in this 
+an implementation of the OmemoService that handles events. Note, that the store
+and service are dependent on the library used for the double ratchet, so in this
 example, I assume, that you use smack-omemo together with smack-omemo-signal.
 
 ```
@@ -95,7 +95,7 @@ you are using right now.
 omemoManager.purgeDevices();
 ```
 
-If you want to find out, whether a server, MUC or contacts resource supports OMEMO, 
+If you want to find out, whether a server, MUC or contacts resource supports OMEMO,
 you can use the following methods:
 
 ```
@@ -118,7 +118,7 @@ Message encryptedMucMessage = omemoManager.encrypt(mucContacts, message);
 ```
 
 It should be noted, that before you can encrypt a message for a device, you have to trust
-its identity. smack-omemo will throw an UndecidedOmemoIdentityException whenever you try 
+its identity. smack-omemo will throw an UndecidedOmemoIdentityException whenever you try
 to send a message to a device, which the user has not yet decided to trust or untrust.
 To decide about whether a device is trusted or not, you'll have to store some information
 in the OmemoStore.

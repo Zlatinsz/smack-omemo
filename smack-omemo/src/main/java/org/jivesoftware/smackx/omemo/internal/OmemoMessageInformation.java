@@ -1,7 +1,23 @@
+/**
+ *
+ * Copyright the original author or authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.jivesoftware.smackx.omemo.internal;
 
 /**
- * Class that contains information about a decrypted message (eg. which key was used, if it was a carbon...)
+ * Class that contains information about a decrypted message (eg. which key was used, if it was a carbon...).
  *
  * @param <T_IdKey> IdentityKey class
  * @author Paul Schaub
@@ -12,13 +28,13 @@ public class OmemoMessageInformation<T_IdKey> {
     private CARBON carbon = CARBON.NONE;
 
     /**
-     * Empty constructor
+     * Empty constructor.
      */
     public OmemoMessageInformation() {
     }
 
     /**
-     * Creates a new OmemoMessageInformation object
+     * Creates a new OmemoMessageInformation object.
      *
      * @param senderIdentityKey identityKey of the sender device
      * @param senderDevice      device that sent the message
@@ -31,7 +47,7 @@ public class OmemoMessageInformation<T_IdKey> {
     }
 
     /**
-     * Return the sender devices identityKey
+     * Return the sender devices identityKey.
      *
      * @return identityKey
      */
@@ -40,7 +56,7 @@ public class OmemoMessageInformation<T_IdKey> {
     }
 
     /**
-     * Set the sender devices identityKey
+     * Set the sender devices identityKey.
      *
      * @param senderIdentityKey identityKey
      */
@@ -49,7 +65,7 @@ public class OmemoMessageInformation<T_IdKey> {
     }
 
     /**
-     * Return the sender device
+     * Return the sender device.
      *
      * @return sender device
      */
@@ -58,7 +74,7 @@ public class OmemoMessageInformation<T_IdKey> {
     }
 
     /**
-     * Set the sender device
+     * Set the sender device.
      *
      * @param senderDevice sender device
      */
@@ -67,7 +83,7 @@ public class OmemoMessageInformation<T_IdKey> {
     }
 
     /**
-     * Return the carbon type
+     * Return the carbon type.
      *
      * @return carbon type
      */
@@ -76,7 +92,7 @@ public class OmemoMessageInformation<T_IdKey> {
     }
 
     /**
-     * Set the carbon type
+     * Set the carbon type.
      *
      * @param carbon carbon type
      */
@@ -85,7 +101,7 @@ public class OmemoMessageInformation<T_IdKey> {
     }
 
     /**
-     * Types of Carbon Messages
+     * Types of Carbon Messages.
      */
     public enum CARBON {
         NONE,   //No carbon

@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +18,9 @@ package org.jivesoftware.smackx.omemo.internal;
 
 import org.jivesoftware.smackx.omemo.OmemoStore;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
-import org.jivesoftware.smackx.omemo.internal.CiphertextTuple;
-import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 
 /**
- * This class represents a OMEMO session between us and another device
+ * This class represents a OMEMO session between us and another device.
  *
  * @param <T_IdKeyPair> IdentityKeyPair class
  * @param <T_IdKey>     IdentityKey class
@@ -42,7 +41,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     protected int preKeyId = -1;
 
     /**
-     * Constructor used when we establish the session
+     * Constructor used when we establish the session.
      *
      * @param omemoStore   OmemoStore where we want to store the session and get key information from
      * @param remoteDevice the OmemoDevice we want to establish the session with
@@ -55,7 +54,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Another constructor used when they establish the session with us
+     * Another constructor used when they establish the session with us.
      *
      * @param omemoStore   OmemoStore we want to store the session and their key in
      * @param remoteDevice identityKey of the partner
@@ -68,7 +67,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Create a new SessionCipher used to encrypt/decrypt keys. The cipher typically implements the ratchet and KDF-chains
+     * Create a new SessionCipher used to encrypt/decrypt keys. The cipher typically implements the ratchet and KDF-chains.
      *
      * @param omemoStore OmemoStore
      * @param contact    OmemoDevice
@@ -77,7 +76,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     public abstract T_Ciph createCipher(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore, OmemoDevice contact);
 
     /**
-     * Get the id of the preKey used to establish the session
+     * Get the id of the preKey used to establish the session.
      *
      * @return id
      */
@@ -104,7 +103,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     public abstract byte[] decryptMessageKey(byte[] encryptedKey) throws CryptoFailedException;
 
     /**
-     * Return the identityKey of the session
+     * Return the identityKey of the session.
      *
      * @return identityKey
      */

@@ -1,5 +1,6 @@
 /**
- * Copyright 2016 Paul Schaub
+ *
+ * Copyright the original author or authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +15,7 @@
  * limitations under the License.
  */
 /**
- * Provider classes that parse OMEMO related stanzas into objects
+ * Provider classes that parse OMEMO related stanzas into objects.
  *
  * @author Paul Schaub
  * @see <a href="https://conversations.im/xeps/multi-end.html">XEP-0384: OMEMO</a>

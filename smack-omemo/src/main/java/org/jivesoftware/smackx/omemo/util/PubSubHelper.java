@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +22,9 @@ import org.jivesoftware.smackx.omemo.OmemoManager;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
-import org.jivesoftware.smackx.pubsub.*;
+import org.jivesoftware.smackx.pubsub.LeafNode;
+import org.jivesoftware.smackx.pubsub.PubSubManager;
+import org.jivesoftware.smackx.pubsub.PayloadItem;
 import org.jxmpp.jid.BareJid;
 
 import java.lang.reflect.Constructor;
@@ -48,7 +51,7 @@ public class PubSubHelper {
     }
 
     /**
-     * Try to get a LeafNode via PubSub
+     * Try to get a LeafNode via PubSub.
      *
      * @param contact  bareJid of the user that owns the node we want to get
      * @param nodeName the name of the node
@@ -70,8 +73,7 @@ public class PubSubHelper {
                 try {
                     return pm.createNode(nodeName);
                 } catch (XMPPException.XMPPErrorException e1) {
-                    LOGGER.log(Level.INFO, "Could not create node the classic way.");
-                    e1.printStackTrace();
+                    LOGGER.log(Level.INFO, "Could not create node the classic way.\n"+e.getMessage());
                     return null;
                 }
             } else {
@@ -96,7 +98,7 @@ public class PubSubHelper {
      * This is black magic!
      * Get a {@link LeafNode} from a prosody server.
      * Using conventional methods fails on prosody.
-     * See <href>https://prosody.im/issues/issue/805</href> for more information
+     * See <href>https://prosody.im/issues/issue/805</href> for more information.
      *
      * @param pm       PubSubManager
      * @param nodeName name of the node
@@ -112,7 +114,7 @@ public class PubSubHelper {
     }
 
     /**
-     * Directly fetch the device list of a contact
+     * Directly fetch the device list of a contact.
      *
      * @param contact BareJid of the contact
      * @return The OmemoDeviceListElement of the contact
@@ -130,7 +132,7 @@ public class PubSubHelper {
     }
 
     /**
-     * Fetch the OmemoBundleElement of the contact
+     * Fetch the OmemoBundleElement of the contact.
      *
      * @param contact the contacts BareJid
      * @return the OmemoBundleElement of the contact
@@ -152,7 +154,7 @@ public class PubSubHelper {
     }
 
     /**
-     * Extract the OmemoBundleElement of a contact from a LeafNode
+     * Extract the OmemoBundleElement of a contact from a LeafNode.
      *
      * @param node typically a LeafNode containing the OmemoBundles of a contact
      * @return the OmemoBundleElement
@@ -174,7 +176,7 @@ public class PubSubHelper {
     }
 
     /**
-     * Extract the OmemoDeviceListElement of a contact from a node containing his OmemoDeviceListElement
+     * Extract the OmemoDeviceListElement of a contact from a node containing his OmemoDeviceListElement.
      *
      * @param node typically a LeafNode containing the OmemoDeviceListElement of a contact
      * @return the extracted OmemoDeviceListElement.

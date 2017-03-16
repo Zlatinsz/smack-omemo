@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,12 +23,19 @@ import org.xmlpull.v1.XmlPullParser;
 
 import java.util.HashMap;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.*;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_ID;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_PUB;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_SIG;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.IDENTITY_KEY;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEYS;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEY_PUB;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEY_ID;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.BUNDLE;
 import static org.xmlpull.v1.XmlPullParser.END_TAG;
 import static org.xmlpull.v1.XmlPullParser.START_TAG;
 
 /**
- * Smack ExtensionProvider that parses OMEMO bundle elements into OmemoBundleElement objects
+ * Smack ExtensionProvider that parses OMEMO bundle elements into OmemoBundleElement objects.
  *
  * @author Paul Schaub
  */

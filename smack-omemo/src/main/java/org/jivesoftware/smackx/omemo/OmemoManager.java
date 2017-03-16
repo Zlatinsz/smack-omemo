@@ -1,12 +1,13 @@
 /**
+ *
  * Copyright the original author or authors
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,7 +40,10 @@ import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.*;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.BODY_OMEMO_HINT;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST_NOTIFY;
 
 /**
  * Manager that allows sending messages encrypted with OMEMO.
@@ -47,7 +51,7 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.*;
  *
  * @author Paul Schaub
  */
-public class OmemoManager extends Manager {
+public final class OmemoManager extends Manager {
     private static final Logger LOGGER = Logger.getLogger(OmemoManager.class.getName());
 
     private static final WeakHashMap<XMPPConnection, OmemoManager> INSTANCES = new WeakHashMap<>();
@@ -55,7 +59,7 @@ public class OmemoManager extends Manager {
 
 
     /**
-     * Private constructor to prevent multiple instances on a single connection (which probably would be bad!)
+     * Private constructor to prevent multiple instances on a single connection (which probably would be bad!).
      *
      * @param connection connection
      */
@@ -89,7 +93,7 @@ public class OmemoManager extends Manager {
     }
 
     /**
-     * Get our connection
+     * Get our connection.
      *
      * @return the connection of this manager
      */
@@ -99,7 +103,7 @@ public class OmemoManager extends Manager {
 
     /**
      * TODO: Change to package visibility later
-     * Return the OMEMO service object
+     * Return the OMEMO service object.
      *
      * @return omemoService
      */
@@ -192,7 +196,7 @@ public class OmemoManager extends Manager {
 
     /**
      * Returns true, if the MUC with the EntityBareJid multiUserChat is non-anonymous and members only (prerequisite
-     * for OMEMO encryption in MUC)
+     * for OMEMO encryption in MUC).
      *
      * @param multiUserChat EntityBareJid of the MUC
      * @return true if chat supports OMEMO
@@ -207,7 +211,7 @@ public class OmemoManager extends Manager {
     }
 
     /**
-     * Returns true, if the Server supports PEP
+     * Returns true, if the Server supports PEP.
      *
      * @param server domainBareJid of the server to test
      * @return true if server supports pep
