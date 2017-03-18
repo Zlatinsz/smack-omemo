@@ -115,9 +115,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             publishInformationIfNeeded(true, false);
         }
         subscribeToDeviceLists();
-        registerOmemoMessageStanzaListeners();   //Wait for new OMEMO messages
+        registerOmemoMessageStanzaListeners();  //Wait for new OMEMO messages
         omemoStore.initializeOmemoSessions();   //Preload existing OMEMO sessions
-        omemoManager.setOmemoService(this);          //Let the manager know we are ready
+        omemoManager.setOmemoService(this);     //Let the manager know we are ready
     }
 
     /**

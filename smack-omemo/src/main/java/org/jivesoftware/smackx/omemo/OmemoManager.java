@@ -68,7 +68,7 @@ public final class OmemoManager extends Manager {
     }
 
     /**
-     * Return a new Instance.
+     * Get an instance of the OmemoManager for the given connection.
      *
      * @param connection Connection
      * @return an OmemoManager
@@ -88,8 +88,12 @@ public final class OmemoManager extends Manager {
      * @param service OmemoService object
      */
     void setOmemoService(OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> service) {
-        this.service = service;
-        LOGGER.log(Level.INFO, "OmemoService set.");
+        if(this.service == null) {
+            this.service = service;
+            LOGGER.log(Level.INFO, "OmemoService set.");
+        } else {
+            LOGGER.log(Level.WARNING, "Setting the OmemoService multiple times is not allowed.");
+        }
     }
 
     /**
@@ -229,5 +233,24 @@ public final class OmemoManager extends Manager {
      */
     public String getOurFingerprint() {
         return getOmemoService().getOmemoStore().getFingerprint();
+    }
+
+    /**
+     * Rotate the signedPreKey published in our OmemoBundle. This should be done every now and then (7-14 days).
+     * The old signedPreKey should be kept for some more time (a month or so) to enable decryption of messages
+     * that have been sent since the key was changed.
+     *
+     * @throws InvalidOmemoKeyException When the IdentityKeyPair is damaged.
+     * @throws InterruptedException XMPP error
+     * @throws XMPPException.XMPPErrorException XMPP error
+     * @throws SmackException.NotConnectedException XMPP error
+     * @throws SmackException.NoResponseException XMPP error
+     */
+    public void rotateSignedPreKey() throws InvalidOmemoKeyException, InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
+        //generate key
+        getOmemoService().getOmemoStore().changeSignedPreKey();
+        //publish
+        getOmemoService().publishInformationIfNeeded(false, false);
+        //TODO: delete old keys
     }
 }

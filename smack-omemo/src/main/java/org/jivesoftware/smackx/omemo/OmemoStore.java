@@ -214,7 +214,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     }
 
     /**
-     * Renew our singed preKey. This should be done once every 7-14 days. TODO: JUST DO IT!
+     * Renew our singed preKey. This should be done once every 7-14 days.
      * The old signed PreKey should be kept for around a month or so (look it up in the XEP).
      *
      * @throws InvalidOmemoKeyException when our identityKey is invalid

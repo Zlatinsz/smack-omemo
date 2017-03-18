@@ -114,7 +114,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Return the fingerprint of the contacts identityKey.
      *
-     * @return fingerprint or null (TODO: When is this null and how long?)
+     * @return fingerprint or null
      */
     public String getFingerprint() {
         return (this.identityKey != null ? omemoStore.keyUtil().getFingerprint(this.identityKey) : null);

@@ -22,8 +22,7 @@ package org.jivesoftware.smackx.omemo.util;
  */
 public class OmemoConstants {
     /**
-     * Omemo related namespace. TODO: Change to "urn:xmpp:omemo:0" once OMEMO implementations changes
-     * TODO: Also think about the resources/omemo.providers file
+     * Omemo related namespace.
      */
 
     public static final String OMEMO = "OMEMO";
