@@ -124,11 +124,8 @@ public class PubSubHelper {
      * @throws SmackException.NoResponseException   wrong
      */
     public OmemoDeviceListElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
-        LOGGER.log(Level.INFO, "Fetching device list of " + contact + "...");
         LeafNode node = getNode(contact, PEP_NODE_DEVICE_LIST);
-        OmemoDeviceListElement list = extractDeviceListFrom(node);
-        LOGGER.log(Level.INFO, "Device list of " + contact + " fetched: " + list);
-        return list;
+        return extractDeviceListFrom(node);
     }
 
     /**
@@ -142,12 +139,9 @@ public class PubSubHelper {
      * @throws SmackException.NoResponseException   wrong
      */
     public OmemoBundleElement fetchBundle(OmemoDevice contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
-        LOGGER.log(Level.INFO, "Fetching bundle of " + contact + "...");
         LeafNode node = getNode(contact.getJid(), PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
         if (node != null) {
-            OmemoBundleElement bundle = extractBundleFrom(node);
-            LOGGER.log(Level.INFO, "Bundle of " + contact + " fetched.");
-            return bundle;
+            return extractBundleFrom(node);
         } else {
             return null;
         }
@@ -165,7 +159,6 @@ public class PubSubHelper {
      */
     public OmemoBundleElement extractBundleFrom(LeafNode node) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         if (node == null) {
-            LOGGER.log(Level.INFO, "Node is null!");
             return null;
         }
         try {
@@ -187,13 +180,11 @@ public class PubSubHelper {
      */
     public OmemoDeviceListElement extractDeviceListFrom(LeafNode node) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         if (node == null) {
-            LOGGER.log(Level.INFO, "Node is null!");
             return null;
         }
         if (node.getItems().size() != 0) {
             return (OmemoDeviceListElement) ((PayloadItem<?>) node.getItems().get(0)).getPayload();
         } else {
-            LOGGER.log(Level.INFO, "Node has no items.");
             return new OmemoDeviceListElement();
         }
     }

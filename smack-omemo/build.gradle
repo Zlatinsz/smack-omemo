@@ -12,6 +12,7 @@ dependencies {
 	compile "org.jxmpp:jxmpp-core:$jxmppVersion"
 	compile "org.jxmpp:jxmpp-jid:$jxmppVersion"
 	compile "org.jxmpp:jxmpp-util-cache:$jxmppVersion"
+	compile "org.bouncycastle:bcprov-jdk15on:1.56"
 }
 
 javadoc {

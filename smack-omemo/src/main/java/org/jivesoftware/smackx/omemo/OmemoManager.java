@@ -35,6 +35,7 @@ import org.jxmpp.jid.DomainBareJid;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.Jid;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
@@ -90,7 +91,6 @@ public final class OmemoManager extends Manager {
     void setOmemoService(OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> service) {
         if(this.service == null) {
             this.service = service;
-            LOGGER.log(Level.INFO, "OmemoService set.");
         } else {
             LOGGER.log(Level.WARNING, "Setting the OmemoService multiple times is not allowed.");
         }
@@ -106,7 +106,6 @@ public final class OmemoManager extends Manager {
     }
 
     /**
-     * TODO: Change to package visibility later
      * Return the OMEMO service object.
      *
      * @return omemoService
@@ -128,18 +127,19 @@ public final class OmemoManager extends Manager {
      * Generate fresh identity keys and bundle and publish it to the server.
      */
     public void regenerate() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+        //create a new identity and publish new keys to the server
         getOmemoService().publishInformationIfNeeded(true, false);
     }
 
     /**
      * OMEMO encrypt a cleartext message for a single recipient.
      *
-     * @param to      Receipients BareJid
+     * @param to      Recipients BareJid
      * @param message Message that will be encrypted. The body of the message will be encrypted.
      * @return new a new Message with the encrypted message in the 'encrypted' element and a hint for
      * OMEMO-uncapable clients in the body
      */
-    public Message encrypt(BareJid to, Message message) throws CryptoFailedException, UndecidedOmemoIdentityException {
+    public Message encrypt(BareJid to, Message message) throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         OmemoMessageElement encrypted = service.processSendingMessage(to, message);
         return finishMessage(encrypted);
     }
@@ -152,7 +152,7 @@ public final class OmemoManager extends Manager {
      * @return new a new Message with the encrypted message in the 'encrypted' element and a hint for
      * OMEMO-incapable clients in the body
      */
-    public Message encrypt(List<BareJid> recipients, Message message) throws CryptoFailedException, UndecidedOmemoIdentityException {
+    public Message encrypt(List<BareJid> recipients, Message message) throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         OmemoMessageElement encrypted = getOmemoService().processSendingMessage(recipients, message);
         return finishMessage(encrypted);
     }

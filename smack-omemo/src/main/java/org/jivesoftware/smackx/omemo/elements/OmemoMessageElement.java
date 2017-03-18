@@ -241,14 +241,12 @@ public class OmemoMessageElement implements ExtensionElement {
         }
 
         if (unpackedKey == null) {
-            LOGGER.log(Level.WARNING, "Could not find a key that could be decrypted.");
             throw new CryptoFailedException("OmemoMessageElement could not be decrypted, since the message key could not be unpacked.");
         }
 
         // Check, if key includes the auth-tag
         // See https://github.com/ChatSecure/ChatSecure-iOS/issues/647
         if (unpackedKey.length == 32) {
-            LOGGER.log(Level.INFO, "Combined Key/Auth Tag");
             System.arraycopy(unpackedKey, 0, messageKey, 0, 16);
             byte[] newCiphertext = new byte[cipherText.length + 16];
             System.arraycopy(cipherText, 0, newCiphertext, 0, cipherText.length);
@@ -275,7 +273,6 @@ public class OmemoMessageElement implements ExtensionElement {
                 InvalidAlgorithmParameterException | BadPaddingException |
                 NoSuchPaddingException | NoSuchProviderException |
                 IllegalBlockSizeException | UnsupportedEncodingException e) {
-            LOGGER.log(Level.WARNING, "Decryption failed: " + e.getMessage());
             throw new CryptoFailedException(e);
         }
     }

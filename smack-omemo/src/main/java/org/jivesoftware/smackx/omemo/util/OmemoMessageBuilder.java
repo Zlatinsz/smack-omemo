@@ -42,8 +42,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.KEYTYPE;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.CIPHERMODE;
@@ -64,7 +62,6 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.PROVIDER;
  * @author Paul Schaub
  */
 public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
-    private static final Logger LOGGER = Logger.getLogger(OmemoMessageBuilder.class.getName());
     private final OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore;
 
     private byte[] messageKey = generateKey();
@@ -74,7 +71,8 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     private final ArrayList<OmemoMessageElement.OmemoHeader.Key> keys = new ArrayList<>();
 
     public OmemoMessageBuilder(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore, String message)
-            throws CryptoFailedException {
+            throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+            UnsupportedEncodingException, NoSuchProviderException, InvalidAlgorithmParameterException {
         this.omemoStore = omemoStore;
         this.setMessage(message);
     }
@@ -83,41 +81,38 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Create an AES messageKey and use it to encrypt the message.
      * Optionally append the Auth Tag of the encrypted message to the messageKey afterwards.
      *
-     * @param message content of the body
-     * @throws CryptoFailedException if something goes wrong
+     * @param message content of the message
+     * @throws NoSuchPaddingException               When no Cipher could be instantiated.
+     * @throws NoSuchAlgorithmException             when no Cipher could be instantiated.
+     * @throws NoSuchProviderException              when BouncyCastle could not be found.
+     * @throws InvalidAlgorithmParameterException   when the Cipher could not be initialized
+     * @throws InvalidKeyException                  when the generated key is invalid
+     * @throws UnsupportedEncodingException         when UTF8 is unavailable
+     * @throws BadPaddingException                  when cipher.doFinal gets wrong padding
+     * @throws IllegalBlockSizeException            when cipher.doFinal gets wrong Block size.
      */
-    private void setMessage(String message) throws CryptoFailedException {
+    private void setMessage(String message) throws NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException, InvalidKeyException, UnsupportedEncodingException, BadPaddingException, IllegalBlockSizeException {
         //Encrypt message body
-        try {
-            SecretKey secretKey = new SecretKeySpec(messageKey, KEYTYPE);
-            IvParameterSpec ivSpec = new IvParameterSpec(initializationVector);
-            Cipher cipher = Cipher.getInstance(CIPHERMODE, PROVIDER);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
+        SecretKey secretKey = new SecretKeySpec(messageKey, KEYTYPE);
+        IvParameterSpec ivSpec = new IvParameterSpec(initializationVector);
+        Cipher cipher = Cipher.getInstance(CIPHERMODE, PROVIDER);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
 
-            byte[] body = (message.getBytes(StringUtils.UTF8));
-            byte[] ciphertext = cipher.doFinal(body);
+        byte[] body = (message.getBytes(StringUtils.UTF8));
+        byte[] ciphertext = cipher.doFinal(body);
 
-            if (ciphertext == null) {
-                throw new CryptoFailedException("Could not encrypt message body.");
-            }
+        if (OmemoConstants.APPEND_AUTH_TAG_TO_MESSAGE_KEY) {
+            byte[] clearKeyWithAuthTag = new byte[messageKey.length + 16];
+            byte[] cipherTextWithoutAuthTag = new byte[ciphertext.length - 16];
 
-            if (OmemoConstants.APPEND_AUTH_TAG_TO_MESSAGE_KEY) {
-                byte[] clearKeyWithAuthTag = new byte[messageKey.length + 16];
-                byte[] cipherTextWithoutAuthTag = new byte[ciphertext.length - 16];
+            System.arraycopy(messageKey, 0, clearKeyWithAuthTag, 0, 16);
+            System.arraycopy(ciphertext, 0, cipherTextWithoutAuthTag, 0, cipherTextWithoutAuthTag.length);
+            System.arraycopy(ciphertext, ciphertext.length - 16, clearKeyWithAuthTag, 16, 16);
 
-                System.arraycopy(messageKey, 0, clearKeyWithAuthTag, 0, 16);
-                System.arraycopy(ciphertext, 0, cipherTextWithoutAuthTag, 0, cipherTextWithoutAuthTag.length);
-                System.arraycopy(ciphertext, ciphertext.length - 16, clearKeyWithAuthTag, 16, 16);
-
-                ciphertextMessage = cipherTextWithoutAuthTag;
-                messageKey = clearKeyWithAuthTag;
-            } else {
-                ciphertextMessage = ciphertext;
-            }
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException
-                | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException
-                | InvalidAlgorithmParameterException | UnsupportedEncodingException e) {
-            throw new CryptoFailedException(e);
+            ciphertextMessage = cipherTextWithoutAuthTag;
+            messageKey = clearKeyWithAuthTag;
+        } else {
+            ciphertextMessage = ciphertext;
         }
     }
 
@@ -173,15 +168,10 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      *
      * @return new AES key
      */
-    private static byte[] generateKey() {
-        try {
-            KeyGenerator generator = KeyGenerator.getInstance(KEYTYPE);
-            generator.init(128);
-            return generator.generateKey().getEncoded();
-        } catch (NoSuchAlgorithmException e) {
-            LOGGER.log(Level.INFO, "Error generating key: " + e.getClass() + " " + e.getMessage());
-            return null;
-        }
+    private static byte[] generateKey() throws NoSuchAlgorithmException {
+        KeyGenerator generator = KeyGenerator.getInstance(KEYTYPE);
+        generator.init(128);
+        return generator.generateKey().getEncoded();
     }
 
     /**
