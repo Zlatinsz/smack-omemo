@@ -44,6 +44,8 @@ import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.listener.OmemoMessageListener;
 import org.jivesoftware.smackx.omemo.listener.OmemoMucMessageListener;
+import org.jivesoftware.smackx.omemo.util.DecryptedMessage;
+import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.omemo.util.OmemoMessageBuilder;
 import org.jivesoftware.smackx.omemo.util.PubSubHelper;
 import org.jivesoftware.smackx.pep.PEPListener;
@@ -365,11 +367,36 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         ArrayList<OmemoMessageElement.OmemoHeader.Key> messageRecipientKeys = message.getHeader().getKeys();
         for (OmemoMessageElement.OmemoHeader.Key k : messageRecipientKeys) {
             if (k.getId() == omemoStore.loadOmemoDeviceId()) {
-                return decryptOmemoMessage(new OmemoDevice(sender, message.getHeader().getSid()), message, information);
+                return decryptOmemoMessageElement(new OmemoDevice(sender, message.getHeader().getSid()), message, information);
             }
         }
         LOGGER.log(Level.INFO, "There is no key with our deviceId. Silently discard the message.");
         return null;
+    }
+
+    /**
+     * Decrypt a given OMEMO encrypted message. Return null, if there is no OMEMO element in the message,
+     * otherwise try to decrypt the message and return a DecryptedMessage object.
+     * @param sender barejid of the sender
+     * @param message encrypted message
+     * @return decrypted message or null
+     * @throws InterruptedException                 Exception
+     * @throws SmackException.NoResponseException   Exception
+     * @throws SmackException.NotConnectedException Exception
+     * @throws CryptoFailedException                When the message could not be decrypted.
+     * @throws XMPPException.XMPPErrorException     Exception
+     * @throws InvalidOmemoKeyException             When the used OMEMO keys are invalid.
+     */
+    DecryptedMessage<T_IdKey> decryptMessage(BareJid sender, Message message) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+        if(OmemoManager.stanzaContainsOmemoMessage(message)) {
+            OmemoMessageElement omemoMessageElement = message.getExtension(OmemoConstants.Encrypted.ENCRYPTED, OMEMO_NAMESPACE);
+            OmemoMessageInformation<T_IdKey> info = new OmemoMessageInformation<>();
+            Message decrypted = processReceivingMessage(sender, omemoMessageElement, info);
+            return new DecryptedMessage<>(decrypted != null ? decrypted.getBody() : null, message, info);
+        } else {
+            LOGGER.log(Level.WARNING, "Stanza does not contain an OMEMO message.");
+            return null;
+        }
     }
 
     /**
@@ -436,7 +463,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @return Decrypted message
      * @throws CryptoFailedException when decrypting message fails for some reason
      */
-    private Message decryptOmemoMessage(OmemoDevice from, OmemoMessageElement message, final OmemoMessageInformation<T_IdKey> information)
+    private Message decryptOmemoMessageElement(OmemoDevice from, OmemoMessageElement message, final OmemoMessageInformation<T_IdKey> information)
             throws CryptoFailedException, InterruptedException, InvalidOmemoKeyException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException {
         int preKeyCountBefore = getOmemoStore().loadOmemoPreKeys().size();
@@ -555,7 +582,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private final StanzaFilter omemoMessageFilter = new StanzaFilter() {
         @Override
         public boolean accept(Stanza stanza) {
-            return stanza instanceof Message && stanza.hasExtension(ENCRYPTED, OMEMO_NAMESPACE);
+            return stanza instanceof Message && OmemoManager.stanzaContainsOmemoMessage(stanza);
         }
     };
 

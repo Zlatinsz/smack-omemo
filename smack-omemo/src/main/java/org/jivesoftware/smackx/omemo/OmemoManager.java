@@ -22,13 +22,18 @@ import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.StandardExtensionElement;
+import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.forward.packet.Forwarded;
+import org.jivesoftware.smackx.mam.MamManager;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.muc.RoomInfo;
 import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.InvalidOmemoKeyException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
+import org.jivesoftware.smackx.omemo.util.DecryptedMessage;
+import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.pubsub.packet.PubSub;
 import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.DomainBareJid;
@@ -36,6 +41,7 @@ import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.Jid;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
@@ -158,6 +164,48 @@ public final class OmemoManager extends Manager {
     }
 
     /**
+     * Decrypt an OMEMO message. This method comes handy when dealing with messages that were not automatically
+     * decrypted by smack-omemo, eg. MAM query messages.
+     * TODO: Make sure, this always works (eg. test MUC messages)
+     * @param sender sender of the message
+     * @param omemoMessage message
+     * @return decrypted message
+     * @throws InterruptedException                 Exception
+     * @throws SmackException.NoResponseException   Exception
+     * @throws SmackException.NotConnectedException Exception
+     * @throws CryptoFailedException                When decryption fails
+     * @throws XMPPException.XMPPErrorException     Exception
+     * @throws InvalidOmemoKeyException             When the used keys are invalid
+     */
+    public DecryptedMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+        return getOmemoService().decryptMessage(sender, omemoMessage);
+    }
+
+    /**
+     * Return a list of all OMEMO messages that were found in the MAM query result, that could be successfully decrypted.
+     *
+     * @param mamQueryResult mamQueryResult
+     * @return list of decrypted OmemoMessages
+     * @throws InterruptedException                 Exception
+     * @throws XMPPException.XMPPErrorException     Exception
+     * @throws SmackException.NotConnectedException Exception
+     * @throws SmackException.NoResponseException   Exception
+     */
+    public List<DecryptedMessage<?>> decryptMamQueryResult(MamManager.MamQueryResult mamQueryResult) throws InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
+        List<DecryptedMessage<?>> result = new ArrayList<>();
+        for(Forwarded f : mamQueryResult.forwardedMessages) {
+            if(OmemoManager.stanzaContainsOmemoMessage(f.getForwardedStanza())) {
+                try {
+                    result.add(decrypt(f.getForwardedStanza().getFrom().asBareJid(), (Message) f.getForwardedStanza()));
+                } catch (InvalidOmemoKeyException | CryptoFailedException e) {
+                    LOGGER.log(Level.WARNING, e.getMessage());
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
      * Create a new Message from a encrypted OmemoMessageElement.
      * Add ourselves as the sender and the encrypted element.
      * Also tell the server to store the message despite a possible missing body.
@@ -253,4 +301,15 @@ public final class OmemoManager extends Manager {
         getOmemoService().publishInformationIfNeeded(false, false);
         //TODO: delete old keys
     }
+
+    /**
+     * Return true, if the given Stanza contains an OMEMO element 'encrypted'.
+     * @param stanza stanza
+     * @return true if stanza has extension 'encrypted'
+     */
+    public static boolean stanzaContainsOmemoMessage(Stanza stanza) {
+        return stanza.hasExtension(OmemoConstants.Encrypted.ENCRYPTED, OMEMO_NAMESPACE);
+    }
+
+
 }
