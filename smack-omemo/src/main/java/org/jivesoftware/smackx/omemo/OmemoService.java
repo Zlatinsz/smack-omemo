@@ -54,6 +54,7 @@ import org.jivesoftware.smackx.pubsub.EventElement;
 import org.jivesoftware.smackx.pubsub.ItemsExtension;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.PayloadItem;
+import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.Jid;
@@ -169,8 +170,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * This method is used to prevent us from getting our node too often (it may take some time).
      */
     private void fetchLatestDeviceListNode() throws SmackException.NotConnectedException, InterruptedException,
-            SmackException.NoResponseException {
-        this.ownDeviceListNode = getPubSubHelper().getNode(null, PEP_NODE_DEVICE_LIST);
+            SmackException.NoResponseException, XMPPException.XMPPErrorException {
+        this.ownDeviceListNode = PubSubManager.getInstance(omemoManager.getConnection()).getOrCreateLeafNode(PEP_NODE_DEVICE_LIST);
     }
 
     /**
@@ -202,8 +203,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private void publishBundle()
             throws SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException, InvalidOmemoKeyException, XMPPException.XMPPErrorException {
-        LeafNode bundleNode = getPubSubHelper()
-                .getNode(ownJid, PEP_NODE_BUNDLE_FROM_DEVICE_ID(omemoStore.loadOmemoDeviceId()));
+        LeafNode bundleNode = PubSubManager.getInstance(omemoManager.getConnection())
+                .getOrCreateLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(omemoStore.loadOmemoDeviceId()));
         bundleNode.send(new PayloadItem<>(omemoStore.packOmemoBundle()));
     }
 

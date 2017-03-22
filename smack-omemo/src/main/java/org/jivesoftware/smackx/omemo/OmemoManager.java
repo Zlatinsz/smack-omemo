@@ -271,7 +271,6 @@ public final class OmemoManager extends Manager {
     public boolean serverSupportsOmemo(DomainBareJid server) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         //TODO: Which is better?
         return ServiceDiscoveryManager.getInstanceFor(connection()).discoverInfo(server).containsFeature(PubSub.NAMESPACE);
-        //return ServiceDiscoveryManager.getInstanceFor(connection()).discoverInfo(server).hasIdentity("pubsub", "pep");
     }
 
     /**
