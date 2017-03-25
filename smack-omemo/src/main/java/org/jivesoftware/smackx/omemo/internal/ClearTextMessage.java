@@ -23,12 +23,12 @@ import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
  * Class that bundles a decrypted message together with the original message and some information about the encryption.
  * @author Paul Schaub
  */
-public class DecryptedMessage<T_IdKey> {
+public class ClearTextMessage<T_IdKey> {
     private String body;
     private Message encryptedMessage;
     private OmemoMessageInformation<T_IdKey> messageInformation;
 
-    public DecryptedMessage(String message, Message original, OmemoMessageInformation<T_IdKey> messageInfo) {
+    public ClearTextMessage(String message, Message original, OmemoMessageInformation<T_IdKey> messageInfo) {
         this.body = message;
         this.encryptedMessage = original;
         this.messageInformation = messageInfo;
@@ -38,7 +38,7 @@ public class DecryptedMessage<T_IdKey> {
         return body;
     }
 
-    public Message getEncryptedMessage() {
+    public Message getOriginalMessage() {
         return encryptedMessage;
     }
 

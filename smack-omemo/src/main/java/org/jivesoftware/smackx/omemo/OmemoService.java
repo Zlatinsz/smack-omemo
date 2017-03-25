@@ -44,7 +44,7 @@ import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.listener.OmemoMessageListener;
 import org.jivesoftware.smackx.omemo.listener.OmemoMucMessageListener;
-import org.jivesoftware.smackx.omemo.util.DecryptedMessage;
+import org.jivesoftware.smackx.omemo.internal.ClearTextMessage;
 import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.omemo.util.OmemoMessageBuilder;
 import org.jivesoftware.smackx.omemo.util.PubSubHelper;
@@ -377,7 +377,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Decrypt a given OMEMO encrypted message. Return null, if there is no OMEMO element in the message,
-     * otherwise try to decrypt the message and return a DecryptedMessage object.
+     * otherwise try to decrypt the message and return a ClearTextMessage object.
      * @param sender barejid of the sender
      * @param message encrypted message
      * @return decrypted message or null
@@ -388,12 +388,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws XMPPException.XMPPErrorException     Exception
      * @throws InvalidOmemoKeyException             When the used OMEMO keys are invalid.
      */
-    DecryptedMessage<T_IdKey> decryptMessage(BareJid sender, Message message) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+    ClearTextMessage<T_IdKey> processLocalMessage(BareJid sender, Message message) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
         if(OmemoManager.stanzaContainsOmemoMessage(message)) {
             OmemoMessageElement omemoMessageElement = message.getExtension(OmemoConstants.Encrypted.ENCRYPTED, OMEMO_NAMESPACE);
             OmemoMessageInformation<T_IdKey> info = new OmemoMessageInformation<>();
             Message decrypted = processReceivingMessage(sender, omemoMessageElement, info);
-            return new DecryptedMessage<>(decrypted != null ? decrypted.getBody() : null, message, info);
+            return new ClearTextMessage<>(decrypted != null ? decrypted.getBody() : null, message, info);
         } else {
             LOGGER.log(Level.WARNING, "Stanza does not contain an OMEMO message.");
             return null;
@@ -636,7 +636,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         public void onCarbonCopyReceived(CarbonExtension.Direction direction, Message carbonCopy, Message wrappingMessage) {
             if (omemoMessageFilter.accept(carbonCopy)) {
                 Message decrypted;
-                Jid sender = carbonCopy.getFrom();
                 MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
                 OmemoMessageInformation<T_IdKey> messageInfo = new OmemoMessageInformation<>();
                 if (CarbonExtension.Direction.received.equals(direction)) {
@@ -645,14 +644,14 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                     messageInfo.setCarbon(OmemoMessageInformation.CARBON.SENT);
                 }
 
+                BareJid sender = getSenderBareJidFromMucMessage(carbonCopy);
                 //Is it a MUC message...
-                if (mucm.getJoinedRooms().contains(sender.asBareJid().asEntityBareJidIfPossible())) {
-                    MultiUserChat muc = mucm.getMultiUserChat(sender.asEntityBareJidIfPossible());
-                    BareJid senderContact = muc.getOccupant(sender.asEntityFullJidIfPossible()).getJid().asBareJid();
+                if (sender != null) {
+                    MultiUserChat muc = mucm.getMultiUserChat(carbonCopy.getFrom().asEntityBareJidIfPossible());
                     try {
-                        decrypted = processReceivingMessage(senderContact, (OmemoMessageElement) carbonCopy.getExtension(ENCRYPTED, OMEMO_NAMESPACE), messageInfo);
+                        decrypted = processReceivingMessage(sender, (OmemoMessageElement) carbonCopy.getExtension(ENCRYPTED, OMEMO_NAMESPACE), messageInfo);
                         if (decrypted != null) {
-                            notifyOmemoMucMessageReceived(muc, senderContact, decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
+                            notifyOmemoMucMessageReceived(muc, sender, decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
                         }
                     } catch (CryptoFailedException | InvalidOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
                         LOGGER.log(Level.WARNING, e.getMessage());
@@ -661,9 +660,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
                 //... or a normal chat message...
                 else {
+                    sender = carbonCopy.getFrom().asBareJid();
                     try {
-                        decrypted = processReceivingMessage(carbonCopy.getFrom().asBareJid(),
-                                (OmemoMessageElement) carbonCopy.getExtension(ENCRYPTED, OMEMO_NAMESPACE), messageInfo);
+                        decrypted = processReceivingMessage(sender, (OmemoMessageElement) carbonCopy.getExtension(ENCRYPTED, OMEMO_NAMESPACE), messageInfo);
                         if (decrypted != null) {
                             notifyOmemoMessageReceived(decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
                         }
@@ -746,5 +745,22 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             l.onOmemoMucMessageReceived(muc, from, decryptedBody, message,
                     wrappingMessage, omemoInformation);
         }
+    }
+
+    /**
+     * Return the barejid of the user that sent the message inside the MUC. If the message wasn't sent in a MUC,
+     * return null;
+     * @param stanza message
+     * @return BareJid of the sender.
+     */
+    public BareJid getSenderBareJidFromMucMessage(Stanza stanza) {
+        BareJid sender = stanza.getFrom().asBareJid();
+        MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
+        //MultiUserChat
+        if(mucm.getJoinedRooms().contains(sender.asEntityBareJidIfPossible())) {
+            MultiUserChat muc = mucm.getMultiUserChat(sender.asEntityBareJidIfPossible());
+            return muc.getOccupant(sender.asEntityFullJidIfPossible()).getJid().asBareJid();
+        }
+        return null;
     }
 }
