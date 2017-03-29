@@ -108,7 +108,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private final HashSet<OmemoMucMessageListener<T_IdKey>> omemoMucMessageListeners = new HashSet<>();
 
     protected final BareJid ownJid;
-    protected boolean pendingDeviceListFetch = false;
 
     /**
      * Create a new OmemoService object. This should only happen once.
@@ -187,17 +186,27 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException,
             InvalidOmemoKeyException {
         if (regenerate) {
-            //Generate unique ID that is not already taken
-            int deviceIdCandidate;
-            do {
-                deviceIdCandidate = omemoStore.generateOmemoDeviceId();
-            } while (!omemoStore.isAvailableDeviceId(deviceIdCandidate));
-            omemoStore.storeOmemoDeviceId(deviceIdCandidate);
-            omemoStore.regenerate();
+            regenerate();
         }
-
         publishDeviceIdIfNeeded(deleteOtherDevices);
         publishBundle();
+    }
+
+    /**
+     * Generate a new unique deviceId and regenerate new keys.
+     *
+     * @throws InvalidOmemoKeyException when freshly generated identityKey is invalid
+     *                                  (should never ever happen *crosses fingers*)
+     */
+    private void regenerate() throws InvalidOmemoKeyException {
+        //Generate unique ID that is not already taken
+        int deviceIdCandidate;
+        do {
+            deviceIdCandidate = omemoStore.generateOmemoDeviceId();
+        } while (!omemoStore.isAvailableDeviceId(deviceIdCandidate));
+
+        omemoStore.storeOmemoDeviceId(deviceIdCandidate);
+        omemoStore.regenerate();
     }
 
     /**
@@ -221,7 +230,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private void publishDeviceIdIfNeeded(boolean deleteOtherDevices)
             throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException,
             XMPPException.XMPPErrorException {
-        pendingDeviceListFetch = true;
         this.ownDeviceListNode = fetchDeviceListNode();
         OmemoDeviceListElement deviceList = getPubSubHelper().extractDeviceListFrom(ownDeviceListNode);
 
@@ -238,7 +246,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             deviceList.add(ourDeviceId);
             publishDeviceIds(deviceList);
         }
-        pendingDeviceListFetch = false;
     }
 
     protected void publishDeviceIds(OmemoDeviceListElement deviceList)
@@ -340,7 +347,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                                     OmemoDeviceListElement omemoDeviceListElement = (OmemoDeviceListElement) payloadItem.getPayload();
                                     int ourDeviceId = omemoStore.loadOmemoDeviceId();
                                     omemoStore.mergeCachedDeviceList(from, omemoDeviceListElement);
-                                    if (!pendingDeviceListFetch && from != null && from.equals(ownJid) && !omemoDeviceListElement.contains(ourDeviceId)) {
+                                    if (from != null && from.equals(ownJid) && !omemoDeviceListElement.contains(ourDeviceId)) {
                                         //Our deviceId was not in our list!
                                         LOGGER.log(Level.INFO, "Device Id was not on the list!");
                                         omemoDeviceListElement.add(ourDeviceId);
