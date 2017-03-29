@@ -24,7 +24,7 @@ import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
-import org.jivesoftware.smackx.omemo.exceptions.InvalidOmemoKeyException;
+import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.util.KeyUtil;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.pubsub.LeafNode;
@@ -84,9 +84,9 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Generate a new Identity (deviceId, identityKeys, preKeys...).
      *
-     * @throws InvalidOmemoKeyException in case something goes wrong
+     * @throws CorruptedOmemoKeyException in case something goes wrong
      */
-    void regenerate() throws InvalidOmemoKeyException {
+    void regenerate() throws CorruptedOmemoKeyException {
         LOGGER.log(Level.INFO, "Regenerating...");
         //TODO: Flush complete store
 
@@ -165,7 +165,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             OmemoDevice omemoDevice = new OmemoDevice(contact, e.getKey());
             try {
                 sessions.put(omemoDevice, createOmemoSession(omemoDevice, loadOmemoIdentityKey(omemoDevice)));
-            } catch (InvalidOmemoKeyException e1) {
+            } catch (CorruptedOmemoKeyException e1) {
                 LOGGER.log(Level.WARNING, e1.getMessage());
             }
         }
@@ -186,7 +186,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             T_IdKey identityKey = null;
             try {
                 identityKey = loadOmemoIdentityKey(device);
-            } catch (InvalidOmemoKeyException e) {
+            } catch (CorruptedOmemoKeyException e) {
                 LOGGER.log(Level.WARNING, e.getMessage());
             }
             if (identityKey != null) {
@@ -217,15 +217,15 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Renew our singed preKey. This should be done once every 7-14 days.
      * The old signed PreKey should be kept for around a month or so (look it up in the XEP).
      *
-     * @throws InvalidOmemoKeyException when our identityKey is invalid
+     * @throws CorruptedOmemoKeyException when our identityKey is invalid
      */
-    void changeSignedPreKey() throws InvalidOmemoKeyException {
+    void changeSignedPreKey() throws CorruptedOmemoKeyException {
         int lastSignedPreKeyId = loadCurrentSignedPreKeyId();
         try {
             T_SigPreKey newSignedPreKey = generateOmemoSignedPreKey(loadOmemoIdentityKeyPair(), lastSignedPreKeyId + 1);
             storeOmemoSignedPreKey(lastSignedPreKeyId + 1, newSignedPreKey);
             storeCurrentSignedPreKeyId(lastSignedPreKeyId + 1);
-        } catch (InvalidOmemoKeyException e) {
+        } catch (CorruptedOmemoKeyException e) {
             LOGGER.log(Level.INFO, "Couldn't generate SignedPreKey: " + e.getMessage());
             throw e;
         }
@@ -237,9 +237,9 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * We should always publish TARGET_PRE_KEY_COUNT keys.
      *
      * @return OmemoBundleElement
-     * @throws InvalidOmemoKeyException when a key could not be loaded
+     * @throws CorruptedOmemoKeyException when a key could not be loaded
      */
-    public OmemoBundleElement packOmemoBundle() throws InvalidOmemoKeyException {
+    public OmemoBundleElement packOmemoBundle() throws CorruptedOmemoKeyException {
 
         int currentSignedPreKeyId = loadCurrentSignedPreKeyId();
         T_SigPreKey currentSignedPreKey = loadOmemoSignedPreKey(currentSignedPreKeyId);
@@ -325,9 +325,9 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Load our identityKeyPair from storage.
      *
      * @return identityKeyPair
-     * @throws InvalidOmemoKeyException Thrown, if the stored key is damaged (*hands up* not my fault!)
+     * @throws CorruptedOmemoKeyException Thrown, if the stored key is damaged (*hands up* not my fault!)
      */
-    public abstract T_IdKeyPair loadOmemoIdentityKeyPair() throws InvalidOmemoKeyException;
+    public abstract T_IdKeyPair loadOmemoIdentityKeyPair() throws CorruptedOmemoKeyException;
 
     /**
      * Store our identityKeyPair in storage. It would be a cool feature, if the key could be stored in a encrypted
@@ -343,7 +343,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param device device
      * @return identityKey
      */
-    public abstract T_IdKey loadOmemoIdentityKey(OmemoDevice device) throws InvalidOmemoKeyException;
+    public abstract T_IdKey loadOmemoIdentityKey(OmemoDevice device) throws CorruptedOmemoKeyException;
 
     /**
      * Store the public identityKey of the device.
@@ -481,9 +481,9 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param identityKeyPair identityKeyPair used to sign the preKey
      * @param signedPreKeyId  id that the preKey will have
      * @return signedPreKey
-     * @throws InvalidOmemoKeyException when something goes wrong
+     * @throws CorruptedOmemoKeyException when something goes wrong
      */
-    public T_SigPreKey generateOmemoSignedPreKey(T_IdKeyPair identityKeyPair, int signedPreKeyId) throws InvalidOmemoKeyException {
+    public T_SigPreKey generateOmemoSignedPreKey(T_IdKeyPair identityKeyPair, int signedPreKeyId) throws CorruptedOmemoKeyException {
         return keyUtil().generateOmemoSignedPreKey(identityKeyPair, signedPreKeyId);
     }
 
@@ -611,7 +611,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     public String getFingerprint() {
         try {
             return keyUtil().getFingerprint(keyUtil().identityKeyFromPair(loadOmemoIdentityKeyPair()));
-        } catch (InvalidOmemoKeyException e) {
+        } catch (CorruptedOmemoKeyException e) {
             LOGGER.log(Level.WARNING, e.getMessage());
             return null;
         }
@@ -626,7 +626,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     public String getFingerprint(OmemoDevice device) {
         try {
             return keyUtil().getFingerprint(loadOmemoIdentityKey(device));
-        } catch (InvalidOmemoKeyException e) {
+        } catch (CorruptedOmemoKeyException e) {
             LOGGER.log(Level.WARNING, e.getMessage());
             return null;
         }

@@ -19,7 +19,7 @@ package org.jivesoftware.smackx.omemo.util;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.OmemoStore;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
-import org.jivesoftware.smackx.omemo.exceptions.InvalidOmemoKeyException;
+import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jxmpp.stringprep.XmppStringprepException;
 
@@ -58,9 +58,9 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          *
          * @param bundle OmemoBundleElement
          * @return identityKey
-         * @throws InvalidOmemoKeyException if the key is damaged/malformed
+         * @throws CorruptedOmemoKeyException if the key is damaged/malformed
          */
-        public T_IdKey identityKey(OmemoBundleElement bundle) throws InvalidOmemoKeyException {
+        public T_IdKey identityKey(OmemoBundleElement bundle) throws CorruptedOmemoKeyException {
             return identityKeyFromBytes(bundle.getIdentityKey());
         }
 
@@ -69,9 +69,9 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          *
          * @param bundle OmemoBundleElement
          * @return singedPreKey
-         * @throws InvalidOmemoKeyException if the key is damaged/malformed
+         * @throws CorruptedOmemoKeyException if the key is damaged/malformed
          */
-        public T_ECPub signedPreKeyPublic(OmemoBundleElement bundle) throws InvalidOmemoKeyException {
+        public T_ECPub signedPreKeyPublic(OmemoBundleElement bundle) throws CorruptedOmemoKeyException {
             return signedPreKeyPublicFromBytes(bundle.getSignedPreKey());
         }
 
@@ -101,9 +101,9 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          * @param bundle OmemoBundleElement
          * @param keyId  id of the preKey
          * @return the preKey
-         * @throws InvalidOmemoKeyException when the key cannot be parsed from bytes
+         * @throws CorruptedOmemoKeyException when the key cannot be parsed from bytes
          */
-        public T_ECPub preKeyPublic(OmemoBundleElement bundle, int keyId) throws InvalidOmemoKeyException {
+        public T_ECPub preKeyPublic(OmemoBundleElement bundle, int keyId) throws CorruptedOmemoKeyException {
             return preKeyPublicFromBytes(bundle.getPreKey(keyId));
         }
 
@@ -115,19 +115,19 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          * @param bundle  OmemoBundleElement containing multiple PreKeys
          * @param contact Contact that the bundle belongs to
          * @return a HashMap with one T_Bundle per preKey and the preKeyId as key
-         * @throws InvalidOmemoKeyException when one of the keys cannot be parsed
+         * @throws CorruptedOmemoKeyException when one of the keys cannot be parsed
          */
-        public HashMap<Integer, T_Bundle> bundles(OmemoBundleElement bundle, OmemoDevice contact) throws InvalidOmemoKeyException {
+        public HashMap<Integer, T_Bundle> bundles(OmemoBundleElement bundle, OmemoDevice contact) throws CorruptedOmemoKeyException {
             HashMap<Integer, T_Bundle> bundles = new HashMap<>();
             for (int deviceId : bundle.getPreKeys().keySet()) {
                 try {
                     bundles.put(deviceId, bundleFromOmemoBundle(bundle, contact, deviceId));
-                } catch (InvalidOmemoKeyException e) {
+                } catch (CorruptedOmemoKeyException e) {
                     LOGGER.log(Level.INFO, "Cannot parse PreKeyBundle: " + e.getMessage());
                 }
             }
             if (bundles.size() == 0) {
-                throw new InvalidOmemoKeyException("Bundle contained no valid preKeys.");
+                throw new CorruptedOmemoKeyException("Bundle contained no valid preKeys.");
             }
             return bundles;
         }
@@ -138,18 +138,18 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
      *
      * @param data byte array
      * @return IdentityKeyPair (T_IdKeyPair)
-     * @throws InvalidOmemoKeyException if the key is damaged of malformed
+     * @throws CorruptedOmemoKeyException if the key is damaged of malformed
      */
-    public abstract T_IdKeyPair identityKeyPairFromBytes(byte[] data) throws InvalidOmemoKeyException;
+    public abstract T_IdKeyPair identityKeyPairFromBytes(byte[] data) throws CorruptedOmemoKeyException;
 
     /**
      * Deserialize an identityKey from a byte array.
      *
      * @param data byte array
      * @return identityKey (T_IdKey)
-     * @throws InvalidOmemoKeyException if the key is damaged or malformed
+     * @throws CorruptedOmemoKeyException if the key is damaged or malformed
      */
-    public abstract T_IdKey identityKeyFromBytes(byte[] data) throws InvalidOmemoKeyException;
+    public abstract T_IdKey identityKeyFromBytes(byte[] data) throws CorruptedOmemoKeyException;
 
     public abstract byte[] identityKeyToBytes(T_IdKey identityKey);
 
@@ -158,18 +158,18 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
      *
      * @param data bytes
      * @return elliptic curve public key (T_ECPub)
-     * @throws InvalidOmemoKeyException if the key is damaged or malformed
+     * @throws CorruptedOmemoKeyException if the key is damaged or malformed
      */
-    public abstract T_ECPub ellipticCurvePublicKeyFromBytes(byte[] data) throws InvalidOmemoKeyException;
+    public abstract T_ECPub ellipticCurvePublicKeyFromBytes(byte[] data) throws CorruptedOmemoKeyException;
 
     /**
      * Deserialize a public preKey from bytes.
      *
      * @param data preKey as bytes
      * @return preKey
-     * @throws InvalidOmemoKeyException if the key is damaged or malformed
+     * @throws CorruptedOmemoKeyException if the key is damaged or malformed
      */
-    public T_ECPub preKeyPublicFromBytes(byte[] data) throws InvalidOmemoKeyException {
+    public T_ECPub preKeyPublicFromBytes(byte[] data) throws CorruptedOmemoKeyException {
         return ellipticCurvePublicKeyFromBytes(data);
     }
 
@@ -206,9 +206,9 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
      * @param identityKeyPair identityKeyPair used to sign the preKey
      * @param signedPreKeyId  id that the preKey will have
      * @return signedPreKey
-     * @throws InvalidOmemoKeyException when the identityKeyPair is invalid
+     * @throws CorruptedOmemoKeyException when the identityKeyPair is invalid
      */
-    public abstract T_SigPreKey generateOmemoSignedPreKey(T_IdKeyPair identityKeyPair, int signedPreKeyId) throws InvalidOmemoKeyException;
+    public abstract T_SigPreKey generateOmemoSignedPreKey(T_IdKeyPair identityKeyPair, int signedPreKeyId) throws CorruptedOmemoKeyException;
 
 
     /**
@@ -216,9 +216,9 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
      *
      * @param data bytes
      * @return signedPreKey
-     * @throws InvalidOmemoKeyException if the key is damaged or malformed
+     * @throws CorruptedOmemoKeyException if the key is damaged or malformed
      */
-    public T_ECPub signedPreKeyPublicFromBytes(byte[] data) throws InvalidOmemoKeyException {
+    public T_ECPub signedPreKeyPublicFromBytes(byte[] data) throws CorruptedOmemoKeyException {
         return ellipticCurvePublicKeyFromBytes(data);
     }
 
@@ -248,9 +248,9 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
      * @param contact Contact that the bundle belongs to
      * @param keyId   id of the preKey that will be selected from the OmemoBundleElement and that the PreKeyBundle will contain
      * @return PreKeyBundle (T_PreKey)
-     * @throws InvalidOmemoKeyException if some key is damaged or malformed
+     * @throws CorruptedOmemoKeyException if some key is damaged or malformed
      */
-    public abstract T_Bundle bundleFromOmemoBundle(OmemoBundleElement bundle, OmemoDevice contact, int keyId) throws InvalidOmemoKeyException;
+    public abstract T_Bundle bundleFromOmemoBundle(OmemoBundleElement bundle, OmemoDevice contact, int keyId) throws CorruptedOmemoKeyException;
 
     /**
      * Extract the signature from a signedPreKey.

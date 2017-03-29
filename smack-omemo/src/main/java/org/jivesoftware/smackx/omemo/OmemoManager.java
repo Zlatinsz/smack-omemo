@@ -30,7 +30,7 @@ import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.muc.RoomInfo;
 import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
-import org.jivesoftware.smackx.omemo.exceptions.InvalidOmemoKeyException;
+import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
 import org.jivesoftware.smackx.omemo.internal.ClearTextMessage;
 import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
@@ -126,14 +126,14 @@ public final class OmemoManager extends Manager {
      *
      * @throws SmackException if something goes wrong TODO: Is this still necessary?
      */
-    public void purgeDevices() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+    public void purgeDevices() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
         service.publishInformationIfNeeded(false, true);
     }
 
     /**
      * Generate fresh identity keys and bundle and publish it to the server.
      */
-    public void regenerate() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+    public void regenerate() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
         //create a new identity and publish new keys to the server
         getOmemoService().publishInformationIfNeeded(true, false);
     }
@@ -175,9 +175,9 @@ public final class OmemoManager extends Manager {
      * @throws SmackException.NotConnectedException Exception
      * @throws CryptoFailedException                When decryption fails
      * @throws XMPPException.XMPPErrorException     Exception
-     * @throws InvalidOmemoKeyException             When the used keys are invalid
+     * @throws CorruptedOmemoKeyException             When the used keys are invalid
      */
-    public ClearTextMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+    public ClearTextMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
         return getOmemoService().processLocalMessage(sender, omemoMessage);
     }
 
@@ -199,7 +199,7 @@ public final class OmemoManager extends Manager {
                 //Decrypt OMEMO messages
                 try {
                     result.add(decrypt(f.getForwardedStanza().getFrom().asBareJid(), (Message) f.getForwardedStanza()));
-                } catch (InvalidOmemoKeyException | CryptoFailedException e) {
+                } catch (CorruptedOmemoKeyException | CryptoFailedException e) {
                     LOGGER.log(Level.WARNING, e.getMessage());
                 }
             } else {
@@ -294,13 +294,13 @@ public final class OmemoManager extends Manager {
      * The old signedPreKey should be kept for some more time (a month or so) to enable decryption of messages
      * that have been sent since the key was changed.
      *
-     * @throws InvalidOmemoKeyException When the IdentityKeyPair is damaged.
+     * @throws CorruptedOmemoKeyException When the IdentityKeyPair is damaged.
      * @throws InterruptedException XMPP error
      * @throws XMPPException.XMPPErrorException XMPP error
      * @throws SmackException.NotConnectedException XMPP error
      * @throws SmackException.NoResponseException XMPP error
      */
-    public void rotateSignedPreKey() throws InvalidOmemoKeyException, InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
+    public void rotateSignedPreKey() throws CorruptedOmemoKeyException, InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
         //generate key
         getOmemoService().getOmemoStore().changeSignedPreKey();
         //publish

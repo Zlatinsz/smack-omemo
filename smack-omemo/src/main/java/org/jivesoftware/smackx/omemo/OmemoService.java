@@ -36,7 +36,7 @@ import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
 import org.jivesoftware.smackx.omemo.exceptions.CannotEstablishOmemoSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
-import org.jivesoftware.smackx.omemo.exceptions.InvalidOmemoKeyException;
+import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
 import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
@@ -125,7 +125,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws BadPaddingException                  when cipher.doFinal gets wrong padding
      * @throws IllegalBlockSizeException            when cipher.doFinal gets wrong Block size.
      * @throws InterruptedException                 when we get interrupted
-     * @throws InvalidOmemoKeyException             when an OMEMO key is invalid
+     * @throws CorruptedOmemoKeyException             when an OMEMO key is invalid
      * @throws XMPPException.XMPPErrorException     when an XMPP error occurs
      * @throws SmackException.NotConnectedException when we are/get disconnected
      * @throws SmackException.NoResponseException   when we get no response
@@ -134,7 +134,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> store)
             throws NoSuchPaddingException, InvalidKeyException, UnsupportedEncodingException, IllegalBlockSizeException,
             BadPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException,
-            InterruptedException, InvalidOmemoKeyException, XMPPException.XMPPErrorException,
+            InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException {
         Security.addProvider(new BouncyCastleProvider());
         //Check availability of algorithms and encodings needed for crypto
@@ -184,7 +184,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     void publishInformationIfNeeded(boolean regenerate, boolean deleteOtherDevices) throws InterruptedException,
             XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException,
-            InvalidOmemoKeyException {
+            CorruptedOmemoKeyException {
         if (regenerate) {
             regenerate();
         }
@@ -195,10 +195,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Generate a new unique deviceId and regenerate new keys.
      *
-     * @throws InvalidOmemoKeyException when freshly generated identityKey is invalid
+     * @throws CorruptedOmemoKeyException when freshly generated identityKey is invalid
      *                                  (should never ever happen *crosses fingers*)
      */
-    private void regenerate() throws InvalidOmemoKeyException {
+    private void regenerate() throws CorruptedOmemoKeyException {
         //Generate unique ID that is not already taken
         int deviceIdCandidate;
         do {
@@ -214,7 +214,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     private void publishBundle()
             throws SmackException.NotConnectedException, InterruptedException,
-            SmackException.NoResponseException, InvalidOmemoKeyException, XMPPException.XMPPErrorException {
+            SmackException.NoResponseException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException {
         LeafNode bundleNode = PubSubManager.getInstance(omemoManager.getConnection())
                 .getOrCreateLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(omemoStore.loadOmemoDeviceId()));
         bundleNode.send(new PayloadItem<>(omemoStore.packOmemoBundle()));
@@ -288,7 +288,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 //Build missing session
                 try {
                     buildSessionFromOmemoBundle(device);
-                } catch (CannotEstablishOmemoSessionException | InvalidOmemoKeyException e) {
+                } catch (CannotEstablishOmemoSessionException | CorruptedOmemoKeyException e) {
                     LOGGER.log(Level.WARNING, e.getMessage());
                     //Skip
                 }
@@ -301,9 +301,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      *
      * @param device OmemoDevice
      * @throws CannotEstablishOmemoSessionException when no session could be established
-     * @throws InvalidOmemoKeyException when the bundle contained an invalid OMEMO identityKey
+     * @throws CorruptedOmemoKeyException when the bundle contained an invalid OMEMO identityKey
      */
-    public void buildSessionFromOmemoBundle(OmemoDevice device) throws CannotEstablishOmemoSessionException, InvalidOmemoKeyException {
+    public void buildSessionFromOmemoBundle(OmemoDevice device) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
         if (device.equals(new OmemoDevice(ownJid, omemoStore.loadOmemoDeviceId()))) {
             LOGGER.log(Level.WARNING, "Do not build a session with yourself!");
             return;
@@ -328,7 +328,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @param bundle T_Bundle (depends on used Signal/Olm library)
      * @param device OmemoDevice
      */
-    protected abstract void processBundle(T_Bundle bundle, OmemoDevice device) throws InvalidOmemoKeyException;
+    protected abstract void processBundle(T_Bundle bundle, OmemoDevice device) throws CorruptedOmemoKeyException;
 
     /**
      * Register a PEPListener that listens for deviceList updates.
@@ -377,7 +377,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     private Message processReceivingMessage(BareJid sender, OmemoMessageElement message, final OmemoMessageInformation<T_IdKey> information)
             throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException,
-            CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+            CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
         ArrayList<OmemoMessageElement.OmemoHeader.Key> messageRecipientKeys = message.getHeader().getKeys();
         //Do we have a key with our ID in the message?
         for (OmemoMessageElement.OmemoHeader.Key k : messageRecipientKeys) {
@@ -400,9 +400,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NotConnectedException Exception
      * @throws CryptoFailedException                When the message could not be decrypted.
      * @throws XMPPException.XMPPErrorException     Exception
-     * @throws InvalidOmemoKeyException             When the used OMEMO keys are invalid.
+     * @throws CorruptedOmemoKeyException             When the used OMEMO keys are invalid.
      */
-    ClearTextMessage<T_IdKey> processLocalMessage(BareJid sender, Message message) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+    ClearTextMessage<T_IdKey> processLocalMessage(BareJid sender, Message message) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
         if(OmemoManager.stanzaContainsOmemoMessage(message)) {
             OmemoMessageElement omemoMessageElement = message.getExtension(OmemoConstants.Encrypted.ENCRYPTED, OMEMO_NAMESPACE);
             OmemoMessageInformation<T_IdKey> info = new OmemoMessageInformation<>();
@@ -479,7 +479,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CryptoFailedException when decrypting message fails for some reason
      */
     private Message decryptOmemoMessageElement(OmemoDevice from, OmemoMessageElement message, final OmemoMessageInformation<T_IdKey> information)
-            throws CryptoFailedException, InterruptedException, InvalidOmemoKeyException, XMPPException.XMPPErrorException,
+            throws CryptoFailedException, InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException {
         int preKeyCountBefore = getOmemoStore().loadOmemoPreKeys().size();
         Message decrypted;
@@ -533,7 +533,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         for (OmemoDevice c : recipients) {
             try {
                 builder.addRecipient(c);
-            } catch (CannotEstablishOmemoSessionException | InvalidOmemoKeyException e) {
+            } catch (CannotEstablishOmemoSessionException | CorruptedOmemoKeyException e) {
                 //TODO: How to react?
                 LOGGER.log(Level.SEVERE, e.getMessage());
             } catch (UndecidedOmemoIdentityException e) {
@@ -620,7 +620,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                     if (decrypted != null) {
                         notifyOmemoMucMessageReceived(muc, senderContact, decrypted.getBody(), (Message) packet, null, messageInfo);
                     }
-                } catch (SmackException.NoResponseException | InvalidOmemoKeyException | XMPPException.XMPPErrorException | CryptoFailedException e) {
+                } catch (SmackException.NoResponseException | CorruptedOmemoKeyException | XMPPException.XMPPErrorException | CryptoFailedException e) {
                     LOGGER.log(Level.WARNING, e.getMessage());
                 }
             }
@@ -634,7 +634,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                     if (decrypted != null) {
                         notifyOmemoMessageReceived(decrypted.getBody(), (Message) packet, null, messageInfo);
                     }
-                } catch (SmackException.NoResponseException | InvalidOmemoKeyException | XMPPException.XMPPErrorException | CryptoFailedException e) {
+                } catch (SmackException.NoResponseException | CorruptedOmemoKeyException | XMPPException.XMPPErrorException | CryptoFailedException e) {
                     LOGGER.log(Level.WARNING, e.getMessage());
                 }
             }
@@ -666,7 +666,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         if (decrypted != null) {
                             notifyOmemoMucMessageReceived(muc, sender, decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
                         }
-                    } catch (CryptoFailedException | InvalidOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
+                    } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
                         LOGGER.log(Level.WARNING, e.getMessage());
                     }
                 }
@@ -679,7 +679,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         if (decrypted != null) {
                             notifyOmemoMessageReceived(decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
                         }
-                    } catch (CryptoFailedException | InvalidOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
+                    } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
                         LOGGER.log(Level.WARNING, e.getMessage());
                     }
                 }

@@ -22,7 +22,7 @@ import org.jivesoftware.smackx.omemo.OmemoStore;
 import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
 import org.jivesoftware.smackx.omemo.exceptions.CannotEstablishOmemoSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
-import org.jivesoftware.smackx.omemo.exceptions.InvalidOmemoKeyException;
+import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
 import org.jivesoftware.smackx.omemo.internal.CiphertextTuple;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
@@ -124,7 +124,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws CryptoFailedException                when encrypting the messageKey fails
      */
     public void addRecipient(OmemoDevice device) throws CannotEstablishOmemoSessionException,
-            CryptoFailedException, UndecidedOmemoIdentityException, InvalidOmemoKeyException {
+            CryptoFailedException, UndecidedOmemoIdentityException, CorruptedOmemoKeyException {
         //For each recipient device: Encrypt message key with session key
         if (!omemoStore.containsRawSession(device)) {
             omemoStore.getOmemoService().buildSessionFromOmemoBundle(device);

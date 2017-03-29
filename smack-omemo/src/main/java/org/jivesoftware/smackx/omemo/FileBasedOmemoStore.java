@@ -17,7 +17,7 @@
 package org.jivesoftware.smackx.omemo;
 
 import org.jivesoftware.smack.util.StringUtils;
-import org.jivesoftware.smackx.omemo.exceptions.InvalidOmemoKeyException;
+import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jxmpp.jid.BareJid;
@@ -129,7 +129,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public T_IdKeyPair loadOmemoIdentityKeyPair() throws InvalidOmemoKeyException {
+    public T_IdKeyPair loadOmemoIdentityKeyPair() throws CorruptedOmemoKeyException {
         File dir = getDevicePath();
         if (dir != null) {
             byte[] bytes = readBytes(new File(dir.getAbsolutePath() + "/" + IDENTITY_KEY_PAIR));
@@ -149,7 +149,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public T_IdKey loadOmemoIdentityKey(OmemoDevice device) throws InvalidOmemoKeyException {
+    public T_IdKey loadOmemoIdentityKey(OmemoDevice device) throws CorruptedOmemoKeyException {
         File dir = getContactDevicePath(device);
         if (dir != null) {
             byte[] bytes = readBytes(new File(dir.getAbsolutePath() + "/" + IDENTITY_KEY));
@@ -268,7 +268,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                         if (bytes != null) {
                             try {
                                 keyUtil().preKeyPublicFromBytes(bytes);
-                            } catch (InvalidOmemoKeyException e) {
+                            } catch (CorruptedOmemoKeyException e) {
                                 LOGGER.log(Level.SEVERE, e.getMessage());
                                 return null;
                             }

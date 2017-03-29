@@ -21,10 +21,10 @@ package org.jivesoftware.smackx.omemo.exceptions;
  *
  * @author Paul Schaub
  */
-public class InvalidOmemoKeyException extends Exception {
+public class CorruptedOmemoKeyException extends Exception {
     private static final long serialVersionUID = -965658520562690429L;
 
-    public InvalidOmemoKeyException(String message) {
+    public CorruptedOmemoKeyException(String message) {
         super(message);
     }
 }
