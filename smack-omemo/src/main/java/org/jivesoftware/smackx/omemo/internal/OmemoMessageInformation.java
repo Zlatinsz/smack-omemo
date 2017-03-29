@@ -23,6 +23,7 @@ package org.jivesoftware.smackx.omemo.internal;
  * @author Paul Schaub
  */
 public class OmemoMessageInformation<T_IdKey> {
+    private boolean isOmemoMessage;
     private T_IdKey senderIdentityKey;
     private OmemoDevice senderDevice;
     private CARBON carbon = CARBON.NONE;
@@ -44,6 +45,12 @@ public class OmemoMessageInformation<T_IdKey> {
         this.senderIdentityKey = senderIdentityKey;
         this.senderDevice = senderDevice;
         this.carbon = carbon;
+        this.isOmemoMessage = true;
+    }
+
+    public OmemoMessageInformation(T_IdKey senderIdentityKey, OmemoDevice senderDevice, CARBON carbon, boolean omemo) {
+        this(senderIdentityKey, senderDevice, carbon);
+        this.isOmemoMessage = omemo;
     }
 
     /**
@@ -71,6 +78,14 @@ public class OmemoMessageInformation<T_IdKey> {
      */
     public OmemoDevice getSenderDevice() {
         return senderDevice;
+    }
+
+    /**
+     * Return true, if this is (was) an OMEMO message.
+     * @return true if omemo
+     */
+    public boolean isOmemoMessage() {
+        return this.isOmemoMessage;
     }
 
     /**
@@ -111,7 +126,7 @@ public class OmemoMessageInformation<T_IdKey> {
 
     @Override
     public String toString() {
-        return senderDevice.toString() + " " + carbon;
+        return (senderDevice != null ? senderDevice.toString() : "") + " " + carbon;
     }
 }
 

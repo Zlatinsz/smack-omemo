@@ -108,6 +108,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private final HashSet<OmemoMucMessageListener<T_IdKey>> omemoMucMessageListeners = new HashSet<>();
 
     protected final BareJid ownJid;
+    protected boolean pendingDeviceListFetch = false;
 
     /**
      * Create a new OmemoService object. This should only happen once.
@@ -149,6 +150,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             LOGGER.log(Level.INFO, "No key material found. Looks like we have a fresh installation.");
             //Create new key material and publish it to the server
             publishInformationIfNeeded(true, false);
+        } else {
+            publishDeviceIdIfNeeded(false);
         }
         subscribeToDeviceLists();
         registerOmemoMessageStanzaListeners();  //Wait for new OMEMO messages
@@ -169,9 +172,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * Get our latest deviceListNode from the server.
      * This method is used to prevent us from getting our node too often (it may take some time).
      */
-    private void fetchLatestDeviceListNode() throws SmackException.NotConnectedException, InterruptedException,
+    private LeafNode fetchDeviceListNode() throws SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException, XMPPException.XMPPErrorException {
-        this.ownDeviceListNode = PubSubManager.getInstance(omemoManager.getConnection()).getOrCreateLeafNode(PEP_NODE_DEVICE_LIST);
+        return PubSubManager.getInstance(omemoManager.getConnection()).getOrCreateLeafNode(PEP_NODE_DEVICE_LIST);
     }
 
     /**
@@ -218,31 +221,31 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private void publishDeviceIdIfNeeded(boolean deleteOtherDevices)
             throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException,
             XMPPException.XMPPErrorException {
+        pendingDeviceListFetch = true;
+        this.ownDeviceListNode = fetchDeviceListNode();
+        OmemoDeviceListElement deviceList = getPubSubHelper().extractDeviceListFrom(ownDeviceListNode);
 
-        fetchLatestDeviceListNode();
-        OmemoDeviceListElement lastKnown;
-
-        lastKnown = getPubSubHelper().extractDeviceListFrom(ownDeviceListNode);
-
-        if (lastKnown == null) {
-            lastKnown = new OmemoDeviceListElement();
+        if (deviceList == null) {
+            deviceList = new OmemoDeviceListElement();
         }
 
         if (deleteOtherDevices) {
-            lastKnown.clear();
+            deviceList.clear();
         }
 
         int ourDeviceId = omemoStore.loadOmemoDeviceId();
-        if (!lastKnown.contains(ourDeviceId)) {
-            lastKnown.add(ourDeviceId);
-            if (ownDeviceListNode == null) {
-                fetchLatestDeviceListNode();
-            }
-
-            if (ownDeviceListNode != null) {
-                ownDeviceListNode.send(new PayloadItem<>(lastKnown));
-            }
+        if (!deviceList.contains(ourDeviceId)) {
+            deviceList.add(ourDeviceId);
+            publishDeviceIds(deviceList);
         }
+        pendingDeviceListFetch = false;
+    }
+
+    protected void publishDeviceIds(OmemoDeviceListElement deviceList)
+            throws InterruptedException, XMPPException.XMPPErrorException,
+            SmackException.NotConnectedException, SmackException.NoResponseException {
+        PubSubManager.getInstance(omemoManager.getConnection(),ownJid).getOrCreateLeafNode(OmemoConstants.PEP_NODE_DEVICE_LIST)
+                .send(new PayloadItem<>(deviceList));
     }
 
     /**
@@ -335,11 +338,14 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                                 //Device List <list>
                                 if (payloadItem.getPayload() instanceof OmemoDeviceListElement) {
                                     OmemoDeviceListElement omemoDeviceListElement = (OmemoDeviceListElement) payloadItem.getPayload();
+                                    int ourDeviceId = omemoStore.loadOmemoDeviceId();
                                     omemoStore.mergeCachedDeviceList(from, omemoDeviceListElement);
-                                    if (from != null && from.equals(ownJid) && !omemoDeviceListElement.contains(omemoStore.loadOmemoDeviceId())) {
+                                    if (!pendingDeviceListFetch && from != null && from.equals(ownJid) && !omemoDeviceListElement.contains(ourDeviceId)) {
                                         //Our deviceId was not in our list!
+                                        LOGGER.log(Level.INFO, "Device Id was not on the list!");
+                                        omemoDeviceListElement.add(ourDeviceId);
                                         try {
-                                            publishDeviceIdIfNeeded(false);
+                                            publishDeviceIds(omemoDeviceListElement);
                                         } catch (SmackException | InterruptedException | XMPPException.XMPPErrorException e) {
                                             //TODO: It might be dangerous NOT to retry publishing our deviceId
                                             LOGGER.log(Level.SEVERE, e.getMessage());
@@ -356,7 +362,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Process a received message. Try to decrypt it in case we are a recipient device. If we are not a recipient
-     * device, or decryption fails, return null.
+     * device, return null.
      *
      * @param sender  the BareJid of the sender of the message
      * @param message the encrypted message
@@ -366,6 +372,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException,
             CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
         ArrayList<OmemoMessageElement.OmemoHeader.Key> messageRecipientKeys = message.getHeader().getKeys();
+        //Do we have a key with our ID in the message?
         for (OmemoMessageElement.OmemoHeader.Key k : messageRecipientKeys) {
             if (k.getId() == omemoStore.loadOmemoDeviceId()) {
                 return decryptOmemoMessageElement(new OmemoDevice(sender, message.getHeader().getSid()), message, information);
@@ -594,10 +601,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         @Override
         public void processStanza(Stanza packet) throws SmackException.NotConnectedException, InterruptedException {
             Message decrypted;
+            OmemoMessageInformation<T_IdKey> messageInfo = new OmemoMessageInformation<>();
             Jid sender = packet.getFrom();
             MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
-            OmemoMessageInformation<T_IdKey> messageInfo = new OmemoMessageInformation<>();
-
             //Is it a MUC message...
             if (mucm.getJoinedRooms().contains(sender.asBareJid().asEntityBareJidIfPossible())) {
                 MultiUserChat muc = mucm.getMultiUserChat(sender.asEntityBareJidIfPossible());

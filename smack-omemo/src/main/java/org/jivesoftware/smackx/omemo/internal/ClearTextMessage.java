@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jivesoftware.smackx.omemo.util;
+package org.jivesoftware.smackx.omemo.internal;
 
 import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
 
 /**
  * Class that bundles a decrypted message together with the original message and some information about the encryption.
+ *
  * @author Paul Schaub
  */
 public class ClearTextMessage<T_IdKey> {

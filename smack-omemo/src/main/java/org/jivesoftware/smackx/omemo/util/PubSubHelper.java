@@ -112,10 +112,14 @@ public class PubSubHelper {
         if (node == null) {
             return null;
         }
-        if (node.getItems().size() != 0) {
-            return (OmemoDeviceListElement) ((PayloadItem<?>) node.getItems().get(0)).getPayload();
-        } else {
-            return new OmemoDeviceListElement();
+        if(node.getItems().size() > 0) {
+            OmemoDeviceListElement listElement = (OmemoDeviceListElement) ((PayloadItem<?>) node.getItems().get(node.getItems().size() - 1)).getPayload();
+            if(node.getItems().size() > 1) {
+                node.deleteAllItems();
+                node.send(new PayloadItem<>(listElement));
+            }
+            return listElement;
         }
+        return new OmemoDeviceListElement();
     }
 }

@@ -32,7 +32,8 @@ import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.InvalidOmemoKeyException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
-import org.jivesoftware.smackx.omemo.util.DecryptedMessage;
+import org.jivesoftware.smackx.omemo.internal.ClearTextMessage;
+import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
 import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.pubsub.packet.PubSub;
 import org.jxmpp.jid.BareJid;
@@ -166,7 +167,6 @@ public final class OmemoManager extends Manager {
     /**
      * Decrypt an OMEMO message. This method comes handy when dealing with messages that were not automatically
      * decrypted by smack-omemo, eg. MAM query messages.
-     * TODO: Make sure, this always works (eg. test MUC messages)
      * @param sender sender of the message
      * @param omemoMessage message
      * @return decrypted message
@@ -177,12 +177,13 @@ public final class OmemoManager extends Manager {
      * @throws XMPPException.XMPPErrorException     Exception
      * @throws InvalidOmemoKeyException             When the used keys are invalid
      */
-    public DecryptedMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
-        return getOmemoService().decryptMessage(sender, omemoMessage);
+    public ClearTextMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, InvalidOmemoKeyException {
+        return getOmemoService().processLocalMessage(sender, omemoMessage);
     }
 
     /**
      * Return a list of all OMEMO messages that were found in the MAM query result, that could be successfully decrypted.
+     * Normal cleartext messages are also added to this list.
      *
      * @param mamQueryResult mamQueryResult
      * @return list of decrypted OmemoMessages
@@ -191,15 +192,21 @@ public final class OmemoManager extends Manager {
      * @throws SmackException.NotConnectedException Exception
      * @throws SmackException.NoResponseException   Exception
      */
-    public List<DecryptedMessage<?>> decryptMamQueryResult(MamManager.MamQueryResult mamQueryResult) throws InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
-        List<DecryptedMessage<?>> result = new ArrayList<>();
+    public List<ClearTextMessage<?>> decryptMamQueryResult(MamManager.MamQueryResult mamQueryResult) throws InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
+        List<ClearTextMessage<?>> result = new ArrayList<>();
         for(Forwarded f : mamQueryResult.forwardedMessages) {
             if(OmemoManager.stanzaContainsOmemoMessage(f.getForwardedStanza())) {
+                //Decrypt OMEMO messages
                 try {
                     result.add(decrypt(f.getForwardedStanza().getFrom().asBareJid(), (Message) f.getForwardedStanza()));
                 } catch (InvalidOmemoKeyException | CryptoFailedException e) {
                     LOGGER.log(Level.WARNING, e.getMessage());
                 }
+            } else {
+                //Wrap cleartext messages
+                Message m = (Message) f.getForwardedStanza();
+                result.add(new ClearTextMessage<>(m.getBody(), m,
+                        new OmemoMessageInformation<>(null, null, OmemoMessageInformation.CARBON.NONE, false)));
             }
         }
         return result;
