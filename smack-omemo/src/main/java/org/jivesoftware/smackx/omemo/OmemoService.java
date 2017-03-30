@@ -173,7 +173,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     private LeafNode fetchDeviceListNode() throws SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException, XMPPException.XMPPErrorException {
-        return PubSubManager.getInstance(omemoManager.getConnection()).getOrCreateLeafNode(PEP_NODE_DEVICE_LIST);
+        return PubSubManager.getInstance(omemoManager.getConnection(), ownJid).getOrCreateLeafNode(PEP_NODE_DEVICE_LIST);
     }
 
     /**
@@ -215,7 +215,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private void publishBundle()
             throws SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException {
-        LeafNode bundleNode = PubSubManager.getInstance(omemoManager.getConnection())
+        LeafNode bundleNode = PubSubManager.getInstance(omemoManager.getConnection(), ownJid)
                 .getOrCreateLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(omemoStore.loadOmemoDeviceId()));
         bundleNode.send(new PayloadItem<>(omemoStore.packOmemoBundle()));
     }

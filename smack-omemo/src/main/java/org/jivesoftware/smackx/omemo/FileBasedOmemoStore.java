@@ -521,7 +521,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                 }
             }
         }
-        return null;
+        return new CachedDeviceList();
     }
 
     @Override
