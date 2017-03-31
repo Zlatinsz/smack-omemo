@@ -29,6 +29,8 @@ import org.jivesoftware.smackx.carbons.CarbonCopyReceivedListener;
 import org.jivesoftware.smackx.carbons.CarbonManager;
 import org.jivesoftware.smackx.carbons.packet.CarbonExtension;
 import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.forward.packet.Forwarded;
+import org.jivesoftware.smackx.mam.MamManager;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
@@ -506,6 +508,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return decrypted;
     }
 
+    protected void markLastMessageDateFromOwnOtherSession() {
+
+    }
+
     /**
      * Encrypt the message and return it as an OmemoMessageElement.
      *
@@ -686,6 +692,27 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             }
         }
     };
+
+    public List<ClearTextMessage<T_IdKey>> decryptMamQueryResult(MamManager.MamQueryResult mamQueryResult)
+            throws InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
+        List<ClearTextMessage<T_IdKey>> result = new ArrayList<>();
+        for(Forwarded f : mamQueryResult.forwardedMessages) {
+            if(OmemoManager.stanzaContainsOmemoMessage(f.getForwardedStanza())) {
+                //Decrypt OMEMO messages
+                try {
+                    result.add(processLocalMessage(f.getForwardedStanza().getFrom().asBareJid(), (Message) f.getForwardedStanza()));
+                } catch (CorruptedOmemoKeyException | CryptoFailedException e) {
+                    LOGGER.log(Level.WARNING, e.getMessage());
+                }
+            } else {
+                //Wrap cleartext messages
+                Message m = (Message) f.getForwardedStanza();
+                result.add(new ClearTextMessage<>(m.getBody(), m,
+                        new OmemoMessageInformation<T_IdKey>(null, null, OmemoMessageInformation.CARBON.NONE, false)));
+            }
+        }
+        return result;
+    }
 
     /**
      * Add an OmemoMessageListener, which the client can use to get updated when OmemoMessages are received in normal chat

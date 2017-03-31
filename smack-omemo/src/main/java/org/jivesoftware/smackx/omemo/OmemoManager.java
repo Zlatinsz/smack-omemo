@@ -24,16 +24,14 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.StandardExtensionElement;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
-import org.jivesoftware.smackx.forward.packet.Forwarded;
 import org.jivesoftware.smackx.mam.MamManager;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.muc.RoomInfo;
 import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
-import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
+import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
 import org.jivesoftware.smackx.omemo.internal.ClearTextMessage;
-import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
 import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.pubsub.packet.PubSub;
 import org.jxmpp.jid.BareJid;
@@ -193,23 +191,9 @@ public final class OmemoManager extends Manager {
      * @throws SmackException.NoResponseException   Exception
      */
     public List<ClearTextMessage<?>> decryptMamQueryResult(MamManager.MamQueryResult mamQueryResult) throws InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
-        List<ClearTextMessage<?>> result = new ArrayList<>();
-        for(Forwarded f : mamQueryResult.forwardedMessages) {
-            if(OmemoManager.stanzaContainsOmemoMessage(f.getForwardedStanza())) {
-                //Decrypt OMEMO messages
-                try {
-                    result.add(decrypt(f.getForwardedStanza().getFrom().asBareJid(), (Message) f.getForwardedStanza()));
-                } catch (CorruptedOmemoKeyException | CryptoFailedException e) {
-                    LOGGER.log(Level.WARNING, e.getMessage());
-                }
-            } else {
-                //Wrap cleartext messages
-                Message m = (Message) f.getForwardedStanza();
-                result.add(new ClearTextMessage<>(m.getBody(), m,
-                        new OmemoMessageInformation<>(null, null, OmemoMessageInformation.CARBON.NONE, false)));
-            }
-        }
-        return result;
+        List<ClearTextMessage<?>> l = new ArrayList<>();
+        l.addAll(getOmemoService().decryptMamQueryResult(mamQueryResult));
+        return l;
     }
 
     /**
@@ -228,15 +212,34 @@ public final class OmemoManager extends Manager {
             chatMessage.addExtension(encrypted);
             chatMessage.setBody(BODY_OMEMO_HINT);
 
-            //Tell server to store message despite possibly empty body
-            chatMessage.addExtension(new StandardExtensionElement("store", "urn:xmpp:hints"));
-            //Explicit Message Encryption
-            StandardExtensionElement.Builder b = StandardExtensionElement.builder("encryption", "urn:xmpp:eme:0");
-            b.addAttribute("name", OMEMO).addAttribute("namespace", OMEMO_NAMESPACE);
-            chatMessage.addExtension(b.build());
+            OmemoManager.addMamStorageHint(chatMessage);
+            OmemoManager.addExplicitMessageEncryptionHint(chatMessage);
+
             return chatMessage;
         }
         return null;
+    }
+
+    /**
+     * Add a storage hint for MAM.
+     * 
+     * @param omemoMessage message
+     */
+    public static void addMamStorageHint(Message omemoMessage) {
+        //Tell server to store message despite possibly empty body
+        omemoMessage.addExtension(new StandardExtensionElement("store", "urn:xmpp:hints"));
+    }
+
+    /**
+     * Add an EME hint about OMEMO encryption.
+     *
+     * @param omemoMessage message
+     */
+    public static void addExplicitMessageEncryptionHint(Message omemoMessage) {
+        //Explicit Message Encryption
+        StandardExtensionElement.Builder b = StandardExtensionElement.builder("encryption", "urn:xmpp:eme:0");
+        b.addAttribute("name", OMEMO).addAttribute("namespace", OMEMO_NAMESPACE);
+        omemoMessage.addExtension(b.build());
     }
 
     /**
