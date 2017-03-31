@@ -13,6 +13,8 @@ dependencies {
 	compile "org.jxmpp:jxmpp-jid:$jxmppVersion"
 	compile "org.jxmpp:jxmpp-util-cache:$jxmppVersion"
 	compile "org.bouncycastle:bcprov-jdk15on:1.56"
+
+	testCompile project(path: ":smack-core", configuration: "testRuntime")
 }
 
 javadoc {

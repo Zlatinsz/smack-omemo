@@ -222,7 +222,7 @@ public final class OmemoManager extends Manager {
 
     /**
      * Add a storage hint for MAM.
-     * 
+     *
      * @param omemoMessage message
      */
     public static void addMamStorageHint(Message omemoMessage) {
