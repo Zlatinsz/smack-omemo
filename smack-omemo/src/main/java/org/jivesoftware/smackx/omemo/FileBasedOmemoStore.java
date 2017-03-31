@@ -57,6 +57,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     public static final String TRUST = "trust";
     public static final String DEVICE_LIST = "deviceList";
     public static final String LAST_MESSAGE_RECEIVED = "lastMessageReceived";
+    public static final String LAST_SIGNED_PREKEY_RENEWAL = "lastSignedPreKeyRenewal";
 
     private static final Logger LOGGER = Logger.getLogger(FileBasedOmemoStore.class.getName());
 
@@ -503,6 +504,35 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         File dir = getContactDevicePath(from);
         if(dir != null) {
             File f = new File(dir.getAbsolutePath() + "/" + LAST_MESSAGE_RECEIVED);
+            if(f.exists() && f.isFile()) {
+                try {
+                    return new Date(Long.valueOf(new String(readBytes(f), StringUtils.UTF8).trim().replace("\n","")));
+                } catch (UnsupportedEncodingException e) {
+                    LOGGER.log(Level.SEVERE, e.getMessage());
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void setDateOfLastSignedPreKeyRenewal(Date date) {
+        File dir = getDevicePath();
+        if(dir != null) {
+            File f = new File(dir.getAbsolutePath() + "/" + LAST_SIGNED_PREKEY_RENEWAL);
+            try {
+                writeBytes(Long.toString(date.getTime()).getBytes(StringUtils.UTF8), f);
+            } catch (UnsupportedEncodingException e) {
+                LOGGER.log(Level.SEVERE, e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public Date getDateOfLastSignedPreKeyRenewal() {
+        File dir = getDevicePath();
+        if(dir != null) {
+            File f = new File(dir.getAbsolutePath() + "/" + LAST_SIGNED_PREKEY_RENEWAL);
             if(f.exists() && f.isFile()) {
                 try {
                     return new Date(Long.valueOf(new String(readBytes(f), StringUtils.UTF8).trim().replace("\n","")));

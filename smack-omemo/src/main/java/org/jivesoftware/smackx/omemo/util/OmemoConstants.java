@@ -45,12 +45,16 @@ public class OmemoConstants {
      * Activate when all clients support it.
      */
     public static final boolean APPEND_AUTH_TAG_TO_MESSAGE_KEY = false;
+    public static final boolean IGNORE_STALE_DEVICES = true;
+    public static final boolean DELETE_STALE_DEVICES = true;
+    public static final boolean RENEW_OLD_SIGNED_PREKEYS = false;
 
     public static final int TYPE_OMEMO_PREKEY_MESSAGE = 1;
     public static final int TYPE_OMEMO_MESSAGE = 0;
 
     public static final int STOP_ENCRYPTING_FOR_STALE_DEVICE_AFTER_HOURS = 24 * 7; //One week
     public static final int REMOVE_STALE_DEVICE_AFTER_HOURS = 24 * 7 * 4; //A month
+    public static final int MAX_AGE_OF_SIGNED_PREKEY_HOURS = 24 * 7;
 
     /**
      * Return the node name of the PEP node containing the device bundle of the device with device id deviceId.

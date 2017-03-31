@@ -20,14 +20,13 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
-import org.jivesoftware.smack.util.SystemUtil;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
-import org.jivesoftware.smackx.omemo.internal.OmemoSession;
-import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
-import org.jivesoftware.smackx.omemo.util.KeyUtil;
+import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
+import org.jivesoftware.smackx.omemo.internal.OmemoSession;
+import org.jivesoftware.smackx.omemo.util.KeyUtil;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jxmpp.jid.BareJid;
 
@@ -224,6 +223,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             T_SigPreKey newSignedPreKey = generateOmemoSignedPreKey(loadOmemoIdentityKeyPair(), lastSignedPreKeyId + 1);
             storeOmemoSignedPreKey(lastSignedPreKeyId + 1, newSignedPreKey);
             storeCurrentSignedPreKeyId(lastSignedPreKeyId + 1);
+            setDateOfLastSignedPreKeyRenewal(new Date());
         } catch (CorruptedOmemoKeyException e) {
             LOGGER.log(Level.INFO, "Couldn't generate SignedPreKey: " + e.getMessage());
             throw e;
@@ -414,6 +414,18 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @return date if existent, otherwise null
      */
     public abstract Date getDateOfLastReceivedMessage(OmemoDevice from);
+
+    /**
+     * Set the date of the last time the signed preKey was renewed.
+     *
+     * @param date date
+     */
+    public abstract void setDateOfLastSignedPreKeyRenewal(Date date);
+
+    /**
+     * Get the date of the last time the signed preKey was renewed.
+     */
+    public abstract Date getDateOfLastSignedPreKeyRenewal();
 
     /**
      * Generate 'count' new PreKeys beginning with id 'startId'.
