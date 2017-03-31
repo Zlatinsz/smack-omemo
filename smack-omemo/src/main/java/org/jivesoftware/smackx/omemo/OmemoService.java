@@ -81,7 +81,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.ENCRYPTED;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.MAX_INACTIVE_DEVICE_AGE_HOURS;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.REMOVE_STALE_DEVICE_AFTER_HOURS;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.STOP_ENCRYPTING_FOR_STALE_DEVICE_AFTER_HOURS;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST_NOTIFY;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID;
@@ -267,9 +268,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 date = new Date();
                 omemoStore.setDateOfLastReceivedMessage(d, date);
             }
-            if(new Date().getTime() - date.getTime() > 1000 * 60 * 60 * MAX_INACTIVE_DEVICE_AGE_HOURS) {
+            if(new Date().getTime() - date.getTime() > 1000L * 60 * 60 * REMOVE_STALE_DEVICE_AFTER_HOURS) {
                 LOGGER.log(Level.INFO, "Remove device "+id+" because of more than " +
-                        MAX_INACTIVE_DEVICE_AGE_HOURS+ " hours of inactivity.");
+                        REMOVE_STALE_DEVICE_AFTER_HOURS + " hours of inactivity.");
                 it.remove();
                 publish = true;
             }
@@ -508,8 +509,15 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             ourDevices = new CachedDeviceList();
         }
         for (int id : ourDevices.getActiveDevices()) {
+            OmemoDevice d = new OmemoDevice(ownJid, id);
             if (id != omemoStore.loadOmemoDeviceId()) {
-                receivers.add(new OmemoDevice(ownJid, id));
+                if (new Date().getTime() - omemoStore.getDateOfLastReceivedMessage(d).getTime()
+                        < 1000L * 60 * 60 * STOP_ENCRYPTING_FOR_STALE_DEVICE_AFTER_HOURS) {
+                    receivers.add(new OmemoDevice(ownJid, id));
+                } else {
+                    LOGGER.log(Level.WARNING, "Refusing to encrypt message for stale device " + d +
+                            " which was inactive for at least " + STOP_ENCRYPTING_FOR_STALE_DEVICE_AFTER_HOURS+" hours.");
+                }
             }
         }
 
