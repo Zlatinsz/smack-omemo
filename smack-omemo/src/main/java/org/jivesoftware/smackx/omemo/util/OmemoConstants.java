@@ -49,6 +49,8 @@ public class OmemoConstants {
     public static final int TYPE_OMEMO_PREKEY_MESSAGE = 1;
     public static final int TYPE_OMEMO_MESSAGE = 0;
 
+    public static final int MAX_INACTIVE_DEVICE_AGE_HOURS = 24 * 7; //One week
+
     /**
      * Return the node name of the PEP node containing the device bundle of the device with device id deviceId.
      *

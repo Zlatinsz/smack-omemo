@@ -20,6 +20,7 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
+import org.jivesoftware.smack.util.SystemUtil;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
@@ -30,6 +31,7 @@ import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jxmpp.jid.BareJid;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -387,6 +389,31 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param identityKey identityKey
      */
     public abstract void distrustOmemoIdentity(OmemoDevice device, T_IdKey identityKey);
+
+    /**
+     * Set the date of the last message that was received from device 'from' to 'date'.
+     *
+     * @param from device in question
+     * @param date date of the last received message
+     */
+    public abstract void setDateOfLastReceivedMessage(OmemoDevice from, Date date);
+
+    /**
+     * Set the date of the last message that was received from device 'from' to now.
+     *
+     * @param from device in question
+     */
+    public void setDateOfLastReceivedMessage(OmemoDevice from) {
+        this.setDateOfLastReceivedMessage(from, new Date());
+    }
+
+    /**
+     * Return the date of the last message that was received from device 'from'.
+     *
+     * @param from device in question
+     * @return date if existent, otherwise null
+     */
+    public abstract Date getDateOfLastReceivedMessage(OmemoDevice from);
 
     /**
      * Generate 'count' new PreKeys beginning with id 'startId'.

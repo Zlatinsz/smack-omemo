@@ -28,6 +28,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,6 +56,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     public static final String SESSION = "session";
     public static final String TRUST = "trust";
     public static final String DEVICE_LIST = "deviceList";
+    public static final String LAST_MESSAGE_RECEIVED = "lastMessageReceived";
 
     private static final Logger LOGGER = Logger.getLogger(FileBasedOmemoStore.class.getName());
 
@@ -481,6 +483,35 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     public boolean containsRawSession(OmemoDevice device) {
         File dir = getContactDevicePath(device);
         return dir != null && new File(dir.getAbsolutePath() + "/" + SESSION).exists();
+    }
+
+    @Override
+    public void setDateOfLastReceivedMessage(OmemoDevice from, Date date) {
+        File dir = getContactDevicePath(from);
+        if(dir != null) {
+            File f = new File(dir.getAbsolutePath() + "/" + LAST_MESSAGE_RECEIVED);
+            try {
+                writeBytes(Long.toString(date.getTime()).getBytes(StringUtils.UTF8), f);
+            } catch (UnsupportedEncodingException e) {
+                LOGGER.log(Level.SEVERE, e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public Date getDateOfLastReceivedMessage(OmemoDevice from) {
+        File dir = getContactDevicePath(from);
+        if(dir != null) {
+            File f = new File(dir.getAbsolutePath() + "/" + LAST_MESSAGE_RECEIVED);
+            if(f.exists() && f.isFile()) {
+                try {
+                    return new Date(Long.valueOf(new String(readBytes(f), StringUtils.UTF8).trim().replace("\n","")));
+                } catch (UnsupportedEncodingException e) {
+                    LOGGER.log(Level.SEVERE, e.getMessage());
+                }
+            }
+        }
+        return null;
     }
 
     @Override

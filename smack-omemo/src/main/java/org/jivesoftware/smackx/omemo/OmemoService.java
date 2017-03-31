@@ -71,14 +71,17 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.ENCRYPTED;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.MAX_INACTIVE_DEVICE_AGE_HOURS;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST_NOTIFY;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID;
@@ -232,6 +235,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private void publishDeviceIdIfNeeded(boolean deleteOtherDevices)
             throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException,
             XMPPException.XMPPErrorException {
+        boolean publish = false;
         this.ownDeviceListNode = fetchDeviceListNode();
         OmemoDeviceListElement deviceList = getPubSubHelper().extractDeviceListFrom(ownDeviceListNode);
 
@@ -246,10 +250,45 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         int ourDeviceId = omemoStore.loadOmemoDeviceId();
         if (!deviceList.contains(ourDeviceId)) {
             deviceList.add(ourDeviceId);
+            publish = true;
+        }
+
+        //Clear devices that we didn't receive a message from for a while
+        Iterator<Integer> it = deviceList.iterator();
+        while(it.hasNext()) {
+            int id = it.next();
+            if(id == ourDeviceId) {
+                //Skip own id
+                continue;
+            }
+            OmemoDevice d = new OmemoDevice(ownJid, id);
+            Date date = omemoStore.getDateOfLastReceivedMessage(d);
+            if(date == null) {
+                date = new Date();
+                omemoStore.setDateOfLastReceivedMessage(d, date);
+            }
+            if(new Date().getTime() - date.getTime() > 1000 * 60 * 60 * MAX_INACTIVE_DEVICE_AGE_HOURS) {
+                LOGGER.log(Level.INFO, "Remove device "+id+" because of more than " +
+                        MAX_INACTIVE_DEVICE_AGE_HOURS+ " hours of inactivity.");
+                it.remove();
+                publish = true;
+            }
+        }
+
+        if(publish) {
             publishDeviceIds(deviceList);
         }
     }
 
+    /**
+     * Publish the given deviceList to the server.
+     *
+     * @param deviceList list of deviceIDs
+     * @throws InterruptedException                 Exception
+     * @throws XMPPException.XMPPErrorException     Exception
+     * @throws SmackException.NotConnectedException Exception
+     * @throws SmackException.NoResponseException   Exception
+     */
     protected void publishDeviceIds(OmemoDeviceListElement deviceList)
             throws InterruptedException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException {
@@ -384,7 +423,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         //Do we have a key with our ID in the message?
         for (OmemoMessageElement.OmemoHeader.Key k : messageRecipientKeys) {
             if (k.getId() == omemoStore.loadOmemoDeviceId()) {
-                return decryptOmemoMessageElement(new OmemoDevice(sender, message.getHeader().getSid()), message, information);
+                OmemoDevice d = new OmemoDevice(sender, message.getHeader().getSid());
+                Message decrypted = decryptOmemoMessageElement(d, message, information);
+                if(sender.equals(ownJid) && decrypted != null) {
+                    omemoStore.setDateOfLastReceivedMessage(d);
+                }
+                return decrypted;
             }
         }
         LOGGER.log(Level.INFO, "There is no key with our deviceId. Silently discard the message.");
@@ -506,10 +550,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             publishBundle();
         }
         return decrypted;
-    }
-
-    protected void markLastMessageDateFromOwnOtherSession() {
-
     }
 
     /**
