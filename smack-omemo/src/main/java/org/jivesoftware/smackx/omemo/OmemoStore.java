@@ -36,6 +36,8 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.TARGET_PRE_KEY_COUNT;
+
 /**
  * Class that presents some methods that are used to load/generate/store keys and session data needed for OMEMO.
  *
@@ -52,11 +54,6 @@ import java.util.logging.Logger;
  */
 public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
     private static final Logger LOGGER = Logger.getLogger(OmemoStore.class.getName());
-
-    /**
-     * How many preKeys do we want to publish?
-     */
-    public static final int TARGET_PRE_KEY_COUNT = 100;
 
     protected final OmemoManager omemoManager;
     protected OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoService;

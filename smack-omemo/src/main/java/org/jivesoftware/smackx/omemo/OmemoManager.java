@@ -226,6 +226,9 @@ public final class OmemoManager extends Manager {
      * @param omemoMessage message
      */
     public static void addMamStorageHint(Message omemoMessage) {
+        if(omemoMessage == null) {
+            return;
+        }
         //Tell server to store message despite possibly empty body
         omemoMessage.addExtension(new StandardExtensionElement("store", "urn:xmpp:hints"));
     }
@@ -236,6 +239,9 @@ public final class OmemoManager extends Manager {
      * @param omemoMessage message
      */
     public static void addExplicitMessageEncryptionHint(Message omemoMessage) {
+        if(omemoMessage == null) {
+            return;
+        }
         //Explicit Message Encryption
         StandardExtensionElement.Builder b = StandardExtensionElement.builder("encryption", "urn:xmpp:eme:0");
         b.addAttribute("name", OMEMO).addAttribute("namespace", OMEMO_NAMESPACE);

@@ -24,16 +24,26 @@ public class OmemoConstants {
     /**
      * Omemo related namespace.
      */
-
-    public static final String OMEMO = "OMEMO";
     public static final String OMEMO_NAMESPACE = "eu.siacs.conversations.axolotl";
+    public static final String OMEMO = "OMEMO";
 
+    //PubSub Node names
     public static final String PEP_NODE_DEVICE_LIST = OMEMO_NAMESPACE + ".devicelist";
     public static final String PEP_NODE_DEVICE_LIST_NOTIFY = PEP_NODE_DEVICE_LIST + "+notify";
     public static final String PEP_NODE_BUNDLES = OMEMO_NAMESPACE + ".bundles";
 
+    //DeviceId
     public static final String ID = "id";
 
+    /**
+     * How many preKeys do we want to publish?
+     */
+    public static final int TARGET_PRE_KEY_COUNT = 100;
+
+    /**
+     * Mitigate vulnerability found in the OMEMO audit.
+     * Activate when all clients support it.
+     */
     public static final boolean APPEND_AUTH_TAG_TO_MESSAGE_KEY = false;
 
     public static final int TYPE_OMEMO_PREKEY_MESSAGE = 1;
