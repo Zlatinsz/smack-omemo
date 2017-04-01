@@ -83,10 +83,10 @@ import java.util.logging.Logger;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.DELETE_STALE_DEVICES;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.ENCRYPTED;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.IGNORE_STALE_DEVICES;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.MAX_AGE_OF_SIGNED_PREKEY_HOURS;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.REMOVE_STALE_DEVICE_AFTER_HOURS;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.DELETE_STALE_DEVICE_AFTER_HOURS;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.RENEW_OLD_SIGNED_PREKEYS;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.STOP_ENCRYPTING_FOR_STALE_DEVICE_AFTER_HOURS;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.IGNORE_STALE_DEVICE_AFTER_HOURS;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST_NOTIFY;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID;
@@ -228,7 +228,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         Date lastSignedPreKeyRenewal = omemoStore.getDateOfLastSignedPreKeyRenewal();
         if(RENEW_OLD_SIGNED_PREKEYS && lastSignedPreKeyRenewal != null) {
             if(new Date().getTime() - lastSignedPreKeyRenewal.getTime()
-                    > 1000L * 60 * 60 * MAX_AGE_OF_SIGNED_PREKEY_HOURS) {
+                    > 1000L * 60 * 60 * RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS) {
                 LOGGER.log(Level.INFO, "Renewing signedPreKey");
                 omemoStore.changeSignedPreKey();
             }
@@ -283,9 +283,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 date = new Date();
                 omemoStore.setDateOfLastReceivedMessage(d, date);
             }
-            if(new Date().getTime() - date.getTime() > 1000L * 60 * 60 * REMOVE_STALE_DEVICE_AFTER_HOURS) {
+            if(new Date().getTime() - date.getTime() > 1000L * 60 * 60 * DELETE_STALE_DEVICE_AFTER_HOURS) {
                 LOGGER.log(Level.INFO, "Remove device "+id+" because of more than " +
-                        REMOVE_STALE_DEVICE_AFTER_HOURS + " hours of inactivity.");
+                        DELETE_STALE_DEVICE_AFTER_HOURS + " hours of inactivity.");
                 it.remove();
                 publish = true;
             }
@@ -527,9 +527,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             OmemoDevice d = new OmemoDevice(ownJid, id);
             if (id != omemoStore.loadOmemoDeviceId()) {
                 if (IGNORE_STALE_DEVICES && new Date().getTime() - omemoStore.getDateOfLastReceivedMessage(d).getTime()
-                        > 1000L * 60 * 60 * STOP_ENCRYPTING_FOR_STALE_DEVICE_AFTER_HOURS) {
+                        > 1000L * 60 * 60 * IGNORE_STALE_DEVICE_AFTER_HOURS) {
                     LOGGER.log(Level.WARNING, "Refusing to encrypt message for stale device " + d +
-                            " which was inactive for at least " + STOP_ENCRYPTING_FOR_STALE_DEVICE_AFTER_HOURS+" hours.");
+                            " which was inactive for at least " + IGNORE_STALE_DEVICE_AFTER_HOURS +" hours.");
                 } else {
                     receivers.add(new OmemoDevice(ownJid, id));
                 }
