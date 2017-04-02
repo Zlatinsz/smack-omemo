@@ -535,7 +535,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             File f = new File(dir.getAbsolutePath() + "/" + LAST_SIGNED_PREKEY_RENEWAL);
             if(f.exists() && f.isFile()) {
                 try {
-                    return new Date(Long.valueOf(new String(readBytes(f), StringUtils.UTF8).trim().replace("\n","")));
+                    return new Date(Long.valueOf(new String(readBytes(f), StringUtils.UTF8).trim()));
                 } catch (UnsupportedEncodingException e) {
                     LOGGER.log(Level.SEVERE, e.getMessage());
                 }
