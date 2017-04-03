@@ -139,4 +139,12 @@ String otherFingerprint = omemoStore.getFingerprint(otherDevice);
 String prettyFingerprint = omemoStore.keyUtil().prettyFingerprint(myFingerprint);
 ```
 
+If you want to decrypt a MamQueryResult, you can do so using the following method:
+````
+List<ClearTextMessage<?>> decryptedMamQuery = omemoManager.decryptMamQueryResult(mamQueryResult);
+````
+Note, that you cannot decrypt an OMEMO encrypted message twice for reasons of forward secrecy.
+A ClearTextMessage contains the decrypted body of the message, as well as additional information like if/how the message was encrypted in the first place.
+Unfortunately due to the fact that you cannot decrypt messages twice, you have to keep track of the message history locally on the device and ideally also keep track of the last received message, so you can query the server only for messages newer than that.
+
 Copyright (C) Jive Software 2002-2008
