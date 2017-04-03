@@ -346,6 +346,16 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     public abstract String getFingerprint(T_IdKey identityKey);
 
     /**
+     * Create a new crypto-specific Session object.
+     *
+     * @param from the device we want to create the session with.
+     * @return a new session
+     */
+    public abstract OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
+    createOmemoSession(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> store,
+                       OmemoDevice from);
+
+    /**
      * Create a new concrete OmemoSession with a contact.
      *
      * @param device      device to establish the session with

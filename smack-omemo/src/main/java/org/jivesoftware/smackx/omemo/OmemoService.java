@@ -60,7 +60,6 @@ import org.jivesoftware.smackx.pubsub.PayloadItem;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.Jid;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -562,7 +561,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         if (session != null) {
             decrypted = message.decrypt(session, omemoStore.loadOmemoDeviceId());
         } else {
-            session = createSession(from);
+            session = omemoStore.keyUtil().createOmemoSession(omemoStore, from);
             decrypted = message.decrypt(session, omemoStore.loadOmemoDeviceId());
         }
 
@@ -640,9 +639,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     protected void sendOmemoRatchetUpdateMessage(OmemoDevice recipient) throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException, CannotEstablishOmemoSessionException {
+        buildSessionFromOmemoBundle(recipient);
         OmemoMessageElement keyTransportElement = prepareOmemoKeyTransportElement(recipient);
         Message ratchetUpdateMessage = new Message();
         ratchetUpdateMessage.setFrom(ownJid);
+        ratchetUpdateMessage.setTo(recipient.getJid());
         ratchetUpdateMessage.addExtension(keyTransportElement);
         OmemoManager.addMamStorageHint(ratchetUpdateMessage);
         OmemoManager.addExplicitMessageEncryptionHint(ratchetUpdateMessage);
@@ -652,15 +653,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             LOGGER.log(Level.WARNING, e.getMessage());
         }
     }
-
-    /**
-     * Create a new crypto-specific Session object.
-     *
-     * @param from the device we want to create the session with.
-     * @return a new session
-     */
-    protected abstract OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
-    createSession(OmemoDevice from);
 
     /**
      * Return our OmemoStore.
@@ -709,49 +701,37 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         @Override
         public void processStanza(Stanza packet) throws SmackException.NotConnectedException, InterruptedException {
             Message decrypted;
+            BareJid sender = getSenderBareJidFromMucMessage(packet);
+            OmemoMessageElement omemoMessage = packet.getExtension(ENCRYPTED, OMEMO_NAMESPACE);
             OmemoMessageInformation<T_IdKey> messageInfo = new OmemoMessageInformation<>();
-            Jid sender = packet.getFrom();
             MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
-            //Is it a MUC message...
-            if (mucm.getJoinedRooms().contains(sender.asBareJid().asEntityBareJidIfPossible())) {
-                MultiUserChat muc = mucm.getMultiUserChat(sender.asEntityBareJidIfPossible());
-                BareJid senderContact = muc.getOccupant(sender.asEntityFullJidIfPossible()).getJid().asBareJid();
-                OmemoMessageElement omemoMessage = packet.getExtension(ENCRYPTED, OMEMO_NAMESPACE);
-                try {
-                    decrypted = processReceivingMessage(senderContact, omemoMessage, messageInfo);
-                    if (decrypted != null) {
-                        notifyOmemoMucMessageReceived(muc, senderContact, decrypted.getBody(), (Message) packet, null, messageInfo);
-                    }
-                } catch (NoRawSessionException e) {
-                    try {
-                        LOGGER.log(Level.INFO, "Received message with invalid session. Send RatchetUpdateMessage.");
-                        sendOmemoRatchetUpdateMessage(new OmemoDevice(senderContact, omemoMessage.getHeader().getSid()));
-                    } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
-                        LOGGER.log(Level.WARNING, e.getMessage());
-                    }
-                }
-                catch (CryptoFailedException | CorruptedOmemoKeyException | SmackException.NoResponseException | XMPPException.XMPPErrorException e) {
-                    LOGGER.log(Level.WARNING, e.getMessage());
-                }
-            }
 
-            //... or a normal chat message...
-            else {
-                BareJid senderContact = packet.getFrom().asBareJid();
-                OmemoMessageElement omemoMessageElement = packet.getExtension(ENCRYPTED, OMEMO_NAMESPACE);
-                try {
-                    decrypted = processReceivingMessage(senderContact, omemoMessageElement, messageInfo);
+            try {
+                //Is it a MUC message...
+                if (sender != null) {
+                    MultiUserChat muc = mucm.getMultiUserChat(packet.getFrom().asEntityBareJidIfPossible());
+                    decrypted = processReceivingMessage(sender, omemoMessage, messageInfo);
+                    if (decrypted != null) {
+                        notifyOmemoMucMessageReceived(muc, sender, decrypted.getBody(), (Message) packet, null, messageInfo);
+                    }
+                }
+                //... or a normal chat message...
+                else {
+                    sender = packet.getFrom().asBareJid();
+                    decrypted = processReceivingMessage(sender, omemoMessage, messageInfo);
                     if (decrypted != null) {
                         notifyOmemoMessageReceived(decrypted.getBody(), (Message) packet, null, messageInfo);
                     }
-                } catch (NoRawSessionException e) {
-                    try {
-                        LOGGER.log(Level.INFO, "Received message with invalid session. Send RatchetUpdateMessage.");
-                        sendOmemoRatchetUpdateMessage(new OmemoDevice(packet.getFrom().asBareJid(), omemoMessageElement.getHeader().getSid()));
-                    } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
-                        LOGGER.log(Level.WARNING, e.getMessage());
-                    }
-                } catch (SmackException.NoResponseException | CorruptedOmemoKeyException | XMPPException.XMPPErrorException | CryptoFailedException e) {
+                }
+            } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
+                LOGGER.log(Level.WARNING, e.getMessage());
+            } catch (NoRawSessionException e) {
+                try {
+                    OmemoDevice device = new OmemoDevice(sender, omemoMessage.getHeader().getSid());
+                    LOGGER.log(Level.INFO, "Received message with invalid session from " +
+                            device + ". Send RatchetUpdateMessage.");
+                    sendOmemoRatchetUpdateMessage(device);
+                } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
                     LOGGER.log(Level.WARNING, e.getMessage());
                 }
             }
@@ -765,54 +745,46 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         @Override
         public void onCarbonCopyReceived(CarbonExtension.Direction direction, Message carbonCopy, Message wrappingMessage) {
             if (omemoMessageFilter.accept(carbonCopy)) {
+                BareJid sender = getSenderBareJidFromMucMessage(carbonCopy);
                 Message decrypted;
                 MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
+                OmemoMessageElement omemoMessageElement = carbonCopy.getExtension(ENCRYPTED, OMEMO_NAMESPACE);
                 OmemoMessageInformation<T_IdKey> messageInfo = new OmemoMessageInformation<>();
+
                 if (CarbonExtension.Direction.received.equals(direction)) {
                     messageInfo.setCarbon(OmemoMessageInformation.CARBON.RECV);
                 } else {
                     messageInfo.setCarbon(OmemoMessageInformation.CARBON.SENT);
                 }
 
-                BareJid sender = getSenderBareJidFromMucMessage(carbonCopy);
-                OmemoMessageElement omemoMessageElement = carbonCopy.getExtension(ENCRYPTED, OMEMO_NAMESPACE);
-                //Is it a MUC message...
-                if (sender != null) {
-                    MultiUserChat muc = mucm.getMultiUserChat(carbonCopy.getFrom().asEntityBareJidIfPossible());
-                    try {
+                try {
+                    //Is it a MUC message...
+                    if (sender != null) {
+                        MultiUserChat muc = mucm.getMultiUserChat(carbonCopy.getFrom().asEntityBareJidIfPossible());
                         decrypted = processReceivingMessage(sender, omemoMessageElement, messageInfo);
                         if (decrypted != null) {
                             notifyOmemoMucMessageReceived(muc, sender, decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
                         }
-                    } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
-                        LOGGER.log(Level.WARNING, e.getMessage());
-                    } catch (NoRawSessionException e) {
-                        try {
-                            LOGGER.log(Level.INFO, "Received message with invalid session. Send RatchetUpdateMessage.");
-                            sendOmemoRatchetUpdateMessage(new OmemoDevice(sender, omemoMessageElement.getHeader().getSid()));
-                        } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
-                            LOGGER.log(Level.WARNING, e.getMessage());
-                        }
                     }
-                }
-
-                //... or a normal chat message...
-                else {
-                    sender = carbonCopy.getFrom().asBareJid();
-                    try {
+                    //... or a normal chat message...
+                    else {
+                        sender = carbonCopy.getFrom().asBareJid();
                         decrypted = processReceivingMessage(sender, omemoMessageElement, messageInfo);
                         if (decrypted != null) {
                             notifyOmemoMessageReceived(decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
                         }
-                    } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
+
+                    }
+                } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
+                    LOGGER.log(Level.WARNING, e.getMessage());
+                } catch (NoRawSessionException e) {
+                    try {
+                        OmemoDevice device = new OmemoDevice(sender, omemoMessageElement.getHeader().getSid());
+                        LOGGER.log(Level.INFO, "Received message with invalid session from " +
+                                device + ". Send RatchetUpdateMessage.");
+                        sendOmemoRatchetUpdateMessage(device);
+                    } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
                         LOGGER.log(Level.WARNING, e.getMessage());
-                    } catch (NoRawSessionException e) {
-                        try {
-                            LOGGER.log(Level.INFO, "Received message with invalid session. Send RatchetUpdateMessage.");
-                            sendOmemoRatchetUpdateMessage(new OmemoDevice(sender, omemoMessageElement.getHeader().getSid()));
-                        } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
-                            LOGGER.log(Level.WARNING, e.getMessage());
-                        }
                     }
                 }
             }
