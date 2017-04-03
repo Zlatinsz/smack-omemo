@@ -30,6 +30,7 @@ import org.jivesoftware.smackx.muc.RoomInfo;
 import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
+import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
 import org.jivesoftware.smackx.omemo.internal.ClearTextMessage;
 import org.jivesoftware.smackx.omemo.util.OmemoConstants;
@@ -175,7 +176,7 @@ public final class OmemoManager extends Manager {
      * @throws XMPPException.XMPPErrorException     Exception
      * @throws CorruptedOmemoKeyException             When the used keys are invalid
      */
-    public ClearTextMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
+    public ClearTextMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException, NoRawSessionException {
         return getOmemoService().processLocalMessage(sender, omemoMessage);
     }
 

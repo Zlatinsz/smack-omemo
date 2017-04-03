@@ -98,21 +98,26 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         Cipher cipher = Cipher.getInstance(CIPHERMODE, PROVIDER);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
 
-        byte[] body = (message.getBytes(StringUtils.UTF8));
-        byte[] ciphertext = cipher.doFinal(body);
+        byte[] body;
+        byte[] ciphertext;
 
-        if (OmemoConstants.APPEND_AUTH_TAG_TO_MESSAGE_KEY) {
-            byte[] clearKeyWithAuthTag = new byte[messageKey.length + 16];
-            byte[] cipherTextWithoutAuthTag = new byte[ciphertext.length - 16];
+        if(message != null) {
+            body = (message.getBytes(StringUtils.UTF8));
+            ciphertext = cipher.doFinal(body);
 
-            System.arraycopy(messageKey, 0, clearKeyWithAuthTag, 0, 16);
-            System.arraycopy(ciphertext, 0, cipherTextWithoutAuthTag, 0, cipherTextWithoutAuthTag.length);
-            System.arraycopy(ciphertext, ciphertext.length - 16, clearKeyWithAuthTag, 16, 16);
+            if (OmemoConstants.APPEND_AUTH_TAG_TO_MESSAGE_KEY) {
+                byte[] clearKeyWithAuthTag = new byte[messageKey.length + 16];
+                byte[] cipherTextWithoutAuthTag = new byte[ciphertext.length - 16];
 
-            ciphertextMessage = cipherTextWithoutAuthTag;
-            messageKey = clearKeyWithAuthTag;
-        } else {
-            ciphertextMessage = ciphertext;
+                System.arraycopy(messageKey, 0, clearKeyWithAuthTag, 0, 16);
+                System.arraycopy(ciphertext, 0, cipherTextWithoutAuthTag, 0, cipherTextWithoutAuthTag.length);
+                System.arraycopy(ciphertext, ciphertext.length - 16, clearKeyWithAuthTag, 16, 16);
+
+                ciphertextMessage = cipherTextWithoutAuthTag;
+                messageKey = clearKeyWithAuthTag;
+            } else {
+                ciphertextMessage = ciphertext;
+            }
         }
     }
 
@@ -125,6 +130,20 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      */
     public void addRecipient(OmemoDevice device) throws CannotEstablishOmemoSessionException,
             CryptoFailedException, UndecidedOmemoIdentityException, CorruptedOmemoKeyException {
+        addRecipient(device, false);
+    }
+
+    /**
+     * Add a new recipient device to the message.
+     * @param device recipient device
+     * @param ignoreTrust ignore current trust state? Useful for keyTransportMessages that are sent to repair a session
+     * @throws CannotEstablishOmemoSessionException
+     * @throws CryptoFailedException
+     * @throws UndecidedOmemoIdentityException
+     * @throws CorruptedOmemoKeyException
+     */
+    public void addRecipient(OmemoDevice device, boolean ignoreTrust) throws CannotEstablishOmemoSessionException,
+            CryptoFailedException, UndecidedOmemoIdentityException, CorruptedOmemoKeyException {
         //For each recipient device: Encrypt message key with session key
         if (!omemoStore.containsRawSession(device)) {
             omemoStore.getOmemoService().buildSessionFromOmemoBundle(device);
@@ -134,12 +153,12 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
                 omemoStore.getOmemoSessionOf(device);
 
         if (session != null) {
-            if (!omemoStore.isDecidedOmemoIdentity(device, session.getIdentityKey())) {
+            if (!ignoreTrust && !omemoStore.isDecidedOmemoIdentity(device, session.getIdentityKey())) {
                 //Warn user of undecided device
                 throw new UndecidedOmemoIdentityException(device);
             }
 
-            if (omemoStore.isTrustedOmemoIdentity(device, session.getIdentityKey())) {
+            if (!ignoreTrust && omemoStore.isTrustedOmemoIdentity(device, session.getIdentityKey())) {
                 //Encrypt key and save to header
                 CiphertextTuple encryptedKey = session.encryptMessageKey(messageKey);
                 keys.add(new OmemoMessageElement.OmemoHeader.Key(encryptedKey.getCiphertext(), device.getDeviceId(), encryptedKey.isPreKeyMessage()));

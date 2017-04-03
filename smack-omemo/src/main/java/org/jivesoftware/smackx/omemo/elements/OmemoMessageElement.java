@@ -21,6 +21,7 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smack.util.XmlStringBuilder;
 import org.jivesoftware.smack.util.stringencoder.Base64;
+import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 
@@ -181,7 +182,9 @@ public class OmemoMessageElement implements ExtensionElement {
 
         sb.closeElement(HEADER);
 
-        sb.openElement(PAYLOAD).append(Base64.encodeToString(payload)).closeElement(PAYLOAD);
+        if(payload != null) {
+            sb.openElement(PAYLOAD).append(Base64.encodeToString(payload)).closeElement(PAYLOAD);
+        }
 
         sb.closeElement(this);
         return sb;
@@ -219,7 +222,7 @@ public class OmemoMessageElement implements ExtensionElement {
      * @param keyId   the key we want to decrypt (usually our own device id)
      * @return message as plaintext
      */
-    public Message decrypt(OmemoSession<?, ?, ?, ?, ?, ?, ?, ?, ?> session, int keyId) throws CryptoFailedException {
+    public Message decrypt(OmemoSession<?, ?, ?, ?, ?, ?, ?, ?, ?> session, int keyId) throws CryptoFailedException, NoRawSessionException {
         String plain;
         byte[] cipherText = getPayload();
         byte[] messageKey = new byte[16];

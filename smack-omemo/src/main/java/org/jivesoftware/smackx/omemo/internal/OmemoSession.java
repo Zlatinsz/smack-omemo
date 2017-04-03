@@ -18,6 +18,7 @@ package org.jivesoftware.smackx.omemo.internal;
 
 import org.jivesoftware.smackx.omemo.OmemoStore;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
+import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 
 /**
  * This class represents a OMEMO session between us and another device.
@@ -99,8 +100,10 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      *
      * @param encryptedKey encrypted key
      * @return serialized decrypted key
+     * @throws CryptoFailedException when decryption fails.
+     * @throws NoRawSessionException when no session was found in the double ratchet library
      */
-    public abstract byte[] decryptMessageKey(byte[] encryptedKey) throws CryptoFailedException;
+    public abstract byte[] decryptMessageKey(byte[] encryptedKey) throws CryptoFailedException, NoRawSessionException;
 
     /**
      * Return the identityKey of the session.
