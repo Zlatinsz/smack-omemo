@@ -23,10 +23,10 @@ import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jxmpp.jid.BareJid;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -49,15 +49,15 @@ import java.util.logging.Logger;
  */
 public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
         extends OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
-    public static final String LAST_PRE_KEY_ID = "lastPreKeyId";
-    public static final String IDENTITY_KEY_PAIR = "identityKeyPair";
-    public static final String IDENTITY_KEY = "identityKey";
-    public static final String CURRENT_SIGNED_PRE_KEY = "currentSignedPreKey";
-    public static final String SESSION = "session";
-    public static final String TRUST = "trust";
-    public static final String DEVICE_LIST = "deviceList";
-    public static final String LAST_MESSAGE_RECEIVED = "lastMessageReceived";
-    public static final String LAST_SIGNED_PREKEY_RENEWAL = "lastSignedPreKeyRenewal";
+    private static final String LAST_PRE_KEY_ID = "lastPreKeyId";
+    private static final String IDENTITY_KEY_PAIR = "identityKeyPair";
+    private static final String IDENTITY_KEY = "identityKey";
+    private static final String CURRENT_SIGNED_PRE_KEY = "currentSignedPreKey";
+    private static final String SESSION = "session";
+    private static final String TRUST = "trust";
+    private static final String DEVICE_LIST = "deviceList";
+    private static final String LAST_MESSAGE_RECEIVED = "lastMessageReceived";
+    private static final String LAST_SIGNED_PREKEY_RENEWAL = "lastSignedPreKeyRenewal";
 
     private static final Logger LOGGER = Logger.getLogger(FileBasedOmemoStore.class.getName());
 
@@ -529,6 +529,14 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
+    public void purgeOwnDeviceKeys() {
+        File dir = getDevicePath();
+        if(dir != null) {
+            deleteRecursive(dir);
+        }
+    }
+
+    @Override
     public Date getDateOfLastSignedPreKeyRenewal() {
         File dir = getDevicePath();
         if(dir != null) {
@@ -618,15 +626,15 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         }
     }
 
-    public File getOmemoPath() {
+    private File getOmemoPath() {
         return create(new File(base.getAbsolutePath() + "/omemo"));
     }
 
-    public File getUserPath() {
+    private File getUserPath() {
         return create(new File(getOmemoPath().getAbsolutePath() + "/" + userJid.toString() + "/"));
     }
 
-    public File getDevicePath() {
+    private File getDevicePath() {
         File[] content = getUserPath().listFiles();
         if (content != null && content.length == 1) {
             int devId = Integer.parseInt(content[0].getName());
@@ -636,7 +644,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         }
     }
 
-    public File getContactsPath() {
+    private File getContactsPath() {
         File f = getDevicePath();
         if (f != null) {
             return create(new File(f.getAbsolutePath() + "/contacts"));
@@ -644,7 +652,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
-    public File getContactDevicePath(OmemoDevice device) {
+    private File getContactDevicePath(OmemoDevice device) {
         File dir = getContactsPath();
         if (dir != null) {
             return create(new File(dir.getAbsolutePath() + "/" + device.getJid().toString() + "/" + device.getDeviceId()));
@@ -660,7 +668,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
-    public File getSignedPreKeysPath() {
+    private File getSignedPreKeysPath() {
         File f = getDevicePath();
         if (f != null) {
             return create(new File(f.getAbsolutePath() + "/signedPreKeys"));
@@ -668,7 +676,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
-    public File getPreKeysPath() {
+    private File getPreKeysPath() {
         File f = getDevicePath();
         if (f != null) {
             return create(new File(f.getAbsolutePath() + "/preKeys"));
@@ -683,7 +691,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return path;
     }
 
-    public void writeBytes(byte[] data, File destination) {
+    private void writeBytes(byte[] data, File destination) {
         FileOutputStream fos = null;
         try {
             if (!destination.exists()) {
@@ -703,7 +711,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         }
     }
 
-    public byte[] readBytes(File from) {
+    private byte[] readBytes(File from) {
         if (from.exists()) {
             FileInputStream fis = null;
             try {
@@ -725,7 +733,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
-    public void writeInt(File to, int i) {
+    private void writeInt(File to, int i) {
         try {
             writeBytes(Integer.toString(i).getBytes(StringUtils.UTF8), to);
         } catch (UnsupportedEncodingException e) {
@@ -733,7 +741,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         }
     }
 
-    public int readInt(File from) {
+    private int readInt(File from) {
         byte[] bytes = readBytes(from);
         if (bytes != null) {
             try {
@@ -743,5 +751,25 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             }
         }
         return -1;
+    }
+
+    /**
+     * Recursively delete all data except trust decisions from a directory
+     * @param f file or directory
+     */
+    private static boolean deleteRecursive(File f) {
+        if(f != null) {
+            if(f.isFile()) {
+                return f.delete();
+            } else {
+                boolean deleted = true;
+                File[] files = f.listFiles();
+                for(File f1 : (files != null ? files : new File[]{})) {
+                    deleted &= deleteRecursive(f1);
+                }
+                return deleted && f.delete();
+            }
+        }
+        return true;
     }
 }

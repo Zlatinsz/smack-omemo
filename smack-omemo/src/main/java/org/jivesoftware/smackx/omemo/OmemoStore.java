@@ -87,14 +87,11 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      */
     void regenerate() throws CorruptedOmemoKeyException {
         LOGGER.log(Level.INFO, "Regenerating...");
-        //TODO: Flush complete store
-
         int nextPreKeyId = 1;
         storeOmemoIdentityKeyPair(generateOmemoIdentityKeyPair());
         storeOmemoPreKeys(generateOmemoPreKeys(nextPreKeyId, TARGET_PRE_KEY_COUNT));
         storeLastPreKeyId(keyUtil().addInBounds(nextPreKeyId, TARGET_PRE_KEY_COUNT));
         storeCurrentSignedPreKeyId(-1); //Set back to no-value default
-
         changeSignedPreKey();
     }
 
@@ -631,6 +628,11 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param deviceList list of the contacts devices' ids.
      */
     public abstract void storeCachedDeviceList(BareJid contact, CachedDeviceList deviceList);
+
+    /**
+     * Delete this device's IdentityKey, PreKeys, SignedPreKeys and Sessions.
+     */
+    public abstract void purgeOwnDeviceKeys();
 
     /**
      * Set the OmemoService object that we will use.

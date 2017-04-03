@@ -210,11 +210,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     private void regenerate() throws CorruptedOmemoKeyException {
         //Generate unique ID that is not already taken
+
         int deviceIdCandidate;
         do {
             deviceIdCandidate = omemoStore.generateOmemoDeviceId();
         } while (!omemoStore.isAvailableDeviceId(deviceIdCandidate));
-
+        omemoStore.purgeOwnDeviceKeys();
         omemoStore.storeOmemoDeviceId(deviceIdCandidate);
         omemoStore.regenerate();
     }
@@ -684,12 +685,16 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             if (mucm.getJoinedRooms().contains(sender.asBareJid().asEntityBareJidIfPossible())) {
                 MultiUserChat muc = mucm.getMultiUserChat(sender.asEntityBareJidIfPossible());
                 BareJid senderContact = muc.getOccupant(sender.asEntityFullJidIfPossible()).getJid().asBareJid();
+                OmemoMessageElement omemoMessage = packet.getExtension(ENCRYPTED, OMEMO_NAMESPACE);
                 try {
-                    decrypted = processReceivingMessage(senderContact, (OmemoMessageElement) packet.getExtension(ENCRYPTED, OMEMO_NAMESPACE), messageInfo);
+                    decrypted = processReceivingMessage(senderContact, omemoMessage, messageInfo);
                     if (decrypted != null) {
                         notifyOmemoMucMessageReceived(muc, senderContact, decrypted.getBody(), (Message) packet, null, messageInfo);
                     }
-                } catch (SmackException.NoResponseException | CorruptedOmemoKeyException | XMPPException.XMPPErrorException | CryptoFailedException e) {
+                } catch (CryptoFailedException e) {
+
+                }
+                catch (CorruptedOmemoKeyException | SmackException.NoResponseException | XMPPException.XMPPErrorException e) {
                     LOGGER.log(Level.WARNING, e.getMessage());
                 }
             }
