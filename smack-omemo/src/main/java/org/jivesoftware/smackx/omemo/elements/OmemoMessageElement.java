@@ -21,9 +21,9 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smack.util.XmlStringBuilder;
 import org.jivesoftware.smack.util.stringencoder.Base64;
+import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
-import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -40,16 +40,16 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.PROVIDER;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.CIPHERMODE;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.KEYTYPE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.PROVIDER;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.ENCRYPTED;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.HEADER;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.PAYLOAD;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.IV;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.RID;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.KEY;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.PAYLOAD;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.PREKEY;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.RID;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.SID;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
 

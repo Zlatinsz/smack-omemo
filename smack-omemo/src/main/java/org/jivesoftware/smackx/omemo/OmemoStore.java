@@ -160,7 +160,12 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         for (Map.Entry<Integer, T_Sess> e : rawSessions.entrySet()) {
             OmemoDevice omemoDevice = new OmemoDevice(contact, e.getKey());
             try {
-                sessions.put(omemoDevice, createOmemoSession(omemoDevice, loadOmemoIdentityKey(omemoDevice)));
+                T_IdKey identityKey = loadOmemoIdentityKey(omemoDevice);
+                if(identityKey != null) {
+                    sessions.put(omemoDevice, createOmemoSession(omemoDevice, identityKey));
+                } else {
+                    LOGGER.log(Level.WARNING, "IdentityKey of "+omemoDevice+" is null");
+                }
             } catch (CorruptedOmemoKeyException e1) {
                 LOGGER.log(Level.WARNING, e1.getMessage());
             }
