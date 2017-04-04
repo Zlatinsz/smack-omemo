@@ -270,8 +270,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                         byte[] bytes = readBytes(f);
                         if (bytes != null) {
                             try {
-                                keyUtil().preKeyPublicFromBytes(bytes);
-                            } catch (CorruptedOmemoKeyException e) {
+                                return keyUtil().preKeyFromBytes(bytes);
+                            } catch (IOException e) {
                                 LOGGER.log(Level.SEVERE, e.getMessage());
                                 return null;
                             }
