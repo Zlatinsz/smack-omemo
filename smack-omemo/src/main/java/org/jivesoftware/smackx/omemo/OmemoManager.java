@@ -211,10 +211,16 @@ public final class OmemoManager extends Manager {
             Message chatMessage = new Message();
             chatMessage.setFrom(connection().getUser().asBareJid());
             chatMessage.addExtension(encrypted);
-            chatMessage.setBody(BODY_OMEMO_HINT);
 
-            OmemoManager.addMamStorageHint(chatMessage);
-            OmemoManager.addExplicitMessageEncryptionHint(chatMessage);
+            if(OmemoConstants.ADD_OMEMO_HINT_BODY) {
+                chatMessage.setBody(BODY_OMEMO_HINT);
+            }
+            if(OmemoConstants.ADD_MAM_STORAGE_HINT) {
+                OmemoManager.addMamStorageHint(chatMessage);
+            }
+            if(OmemoConstants.ADD_EME_ENCRYPTION_HINT) {
+                OmemoManager.addExplicitMessageEncryptionHint(chatMessage);
+            }
 
             return chatMessage;
         }
@@ -227,11 +233,10 @@ public final class OmemoManager extends Manager {
      * @param omemoMessage message
      */
     public static void addMamStorageHint(Message omemoMessage) {
-        if(omemoMessage == null) {
-            return;
-        }
         //Tell server to store message despite possibly empty body
-        omemoMessage.addExtension(new StandardExtensionElement("store", "urn:xmpp:hints"));
+        if(omemoMessage != null) {
+            omemoMessage.addExtension(new StandardExtensionElement("store", "urn:xmpp:hints"));
+        }
     }
 
     /**
@@ -240,13 +245,12 @@ public final class OmemoManager extends Manager {
      * @param omemoMessage message
      */
     public static void addExplicitMessageEncryptionHint(Message omemoMessage) {
-        if(omemoMessage == null) {
-            return;
-        }
         //Explicit Message Encryption
-        StandardExtensionElement.Builder b = StandardExtensionElement.builder("encryption", "urn:xmpp:eme:0");
-        b.addAttribute("name", OMEMO).addAttribute("namespace", OMEMO_NAMESPACE);
-        omemoMessage.addExtension(b.build());
+        if (omemoMessage != null) {
+            StandardExtensionElement.Builder b = StandardExtensionElement.builder("encryption", "urn:xmpp:eme:0");
+            b.addAttribute("name", OMEMO).addAttribute("namespace", OMEMO_NAMESPACE);
+            omemoMessage.addExtension(b.build());
+        }
     }
 
     /**
@@ -286,7 +290,6 @@ public final class OmemoManager extends Manager {
      * @return true if server supports pep
      */
     public boolean serverSupportsOmemo(DomainBareJid server) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
-        //TODO: Which is better?
         return ServiceDiscoveryManager.getInstanceFor(connection()).discoverInfo(server).containsFeature(PubSub.NAMESPACE);
     }
 
@@ -315,7 +318,6 @@ public final class OmemoManager extends Manager {
         getOmemoService().getOmemoStore().changeSignedPreKey();
         //publish
         getOmemoService().publishInformationIfNeeded(false, false);
-        //TODO: delete old keys
     }
 
     /**
@@ -323,9 +325,7 @@ public final class OmemoManager extends Manager {
      * @param stanza stanza
      * @return true if stanza has extension 'encrypted'
      */
-    public static boolean stanzaContainsOmemoMessage(Stanza stanza) {
+    public static boolean stanzaContainsOmemoElement(Stanza stanza) {
         return stanza.hasExtension(OmemoConstants.Encrypted.ENCRYPTED, OMEMO_NAMESPACE);
     }
-
-
 }

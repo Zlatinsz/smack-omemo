@@ -39,6 +39,10 @@ public class OmemoConstants {
     public static int RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS = 24 * 7; //One week
     public static int MAX_NUMBER_OF_STORED_SIGNED_PREKEYS = 4;
 
+    public static boolean ADD_OMEMO_HINT_BODY = true;
+    public static boolean ADD_EME_ENCRYPTION_HINT = true;
+    public static boolean ADD_MAM_STORAGE_HINT = true;
+
     //Constants
     /**
      * Omemo related namespace.
