@@ -21,6 +21,25 @@ package org.jivesoftware.smackx.omemo.util;
  * @author Paul Schaub
  */
 public class OmemoConstants {
+
+    //Settings
+    /**
+     * Mitigate vulnerability found in the OMEMO audit.
+     * Activate when all clients support it.
+     */
+    public static boolean APPEND_AUTH_TAG_TO_MESSAGE_KEY = false;
+
+    public static boolean IGNORE_STALE_DEVICES = true;
+    public static int IGNORE_STALE_DEVICE_AFTER_HOURS = 24 * 7; //One week
+
+    public static boolean DELETE_STALE_DEVICES = true;
+    public static int DELETE_STALE_DEVICE_AFTER_HOURS = 24 * 7 * 4; //A month
+
+    public static boolean RENEW_OLD_SIGNED_PREKEYS = false;
+    public static int RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS = 24 * 7; //One week
+    public static int MAX_NUMBER_OF_STORED_SIGNED_PREKEYS = 4;
+
+    //Constants
     /**
      * Omemo related namespace.
      */
@@ -39,22 +58,6 @@ public class OmemoConstants {
      * How many preKeys do we want to publish?
      */
     public static final int TARGET_PRE_KEY_COUNT = 100;
-
-    /**
-     * Mitigate vulnerability found in the OMEMO audit.
-     * Activate when all clients support it.
-     */
-    public static final boolean APPEND_AUTH_TAG_TO_MESSAGE_KEY = false;
-
-    public static final boolean IGNORE_STALE_DEVICES = true;
-    public static final int IGNORE_STALE_DEVICE_AFTER_HOURS = 24 * 7; //One week
-
-    public static final boolean DELETE_STALE_DEVICES = true;
-    public static final int DELETE_STALE_DEVICE_AFTER_HOURS = 24 * 7 * 4; //A month
-
-    public static final boolean RENEW_OLD_SIGNED_PREKEYS = false;
-    public static final int RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS = 24 * 7; //One week
-    public static final int MAX_NUMBER_OF_STORED_SIGNED_PREKEYS = 4;
 
     public static final int TYPE_OMEMO_PREKEY_MESSAGE = 1;
     public static final int TYPE_OMEMO_MESSAGE = 0;

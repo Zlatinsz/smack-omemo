@@ -147,4 +147,16 @@ Note, that you cannot decrypt an OMEMO encrypted message twice for reasons of fo
 A ClearTextMessage contains the decrypted body of the message, as well as additional information like if/how the message was encrypted in the first place.
 Unfortunately due to the fact that you cannot decrypt messages twice, you have to keep track of the message history locally on the device and ideally also keep track of the last received message, so you can query the server only for messages newer than that.
 
+
+Features
+--------
+* decryption and encryption of OMEMO messages (single and multi user chat)
+* provides information about trust status of incoming messages
+* automatic publishing of bundle
+* automatic merging of incoming devicelist updates
+* ignores stale devices after period of inactivity
+* removes stale devices from device list after period of inactivity
+* automatic repair of broken sessions through ratchet update messages
+* automatic renewal of signed preKeys
+
 Copyright (C) Jive Software 2002-2008
