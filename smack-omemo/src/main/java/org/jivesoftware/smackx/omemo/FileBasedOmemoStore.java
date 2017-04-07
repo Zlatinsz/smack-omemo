@@ -328,10 +328,11 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public HashMap<Integer, T_PreKey> loadOmemoPreKeys() {
         File dir = getPreKeysPath();
+        HashMap<Integer, T_PreKey> preKeys = new HashMap<>();
         if (dir != null) {
             File[] list = dir.listFiles();
             if (list != null) {
-                HashMap<Integer, T_PreKey> preKeys = new HashMap<>();
+
                 for (File f : list) {
                     T_PreKey preKey;
                     try {
@@ -344,10 +345,9 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                         LOGGER.log(Level.SEVERE, e.getMessage());
                     }
                 }
-                return preKeys;
             }
         }
-        return null;
+        return preKeys;
     }
 
     @Override
@@ -370,10 +370,11 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public HashMap<Integer, T_SigPreKey> loadOmemoSignedPreKeys() {
         File dir = getSignedPreKeysPath();
+        HashMap<Integer, T_SigPreKey> signedPreKeys = new HashMap<>();
         if (dir != null) {
             File[] list = dir.listFiles();
             if (list != null) {
-                HashMap<Integer, T_SigPreKey> signedPreKeys = new HashMap<>();
+
                 for (File f : list) {
                     byte[] bytes = readBytes(f);
                     try {
@@ -385,10 +386,10 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                         LOGGER.log(Level.SEVERE, e.getMessage());
                     }
                 }
-                return signedPreKeys;
+
             }
         }
-        return null;
+        return signedPreKeys;
     }
 
     @Override
@@ -429,11 +430,11 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public HashMap<Integer, T_Sess> loadAllRawSessionsOf(BareJid contact) {
         File dir = getContactsPath();
+        HashMap<Integer, T_Sess> sessions = new HashMap<>();
         if (dir != null) {
             dir = create(new File(dir.getAbsolutePath() + "/" + contact.toString()));
             File[] list = dir.listFiles();
             if (list != null) {
-                HashMap<Integer, T_Sess> sessions = new HashMap<>();
                 for (File f : list) {
                     if (f.isDirectory()) {
                         try {
@@ -447,10 +448,9 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                         }
                     }
                 }
-                return sessions;
             }
         }
-        return null;
+        return sessions;
     }
 
     @Override
@@ -586,7 +586,6 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
                     }
                 } catch (UnsupportedEncodingException e) {
                     LOGGER.log(Level.SEVERE, e.getMessage());
-                    return null;
                 }
             }
         }
