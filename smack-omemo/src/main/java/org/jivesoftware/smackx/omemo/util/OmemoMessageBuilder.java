@@ -65,10 +65,19 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     private final OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore;
 
     private byte[] messageKey = generateKey();
-    private final byte[] initializationVector = generateIv();
+    private byte[] initializationVector = generateIv();
 
     private byte[] ciphertextMessage;
     private final ArrayList<OmemoMessageElement.OmemoHeader.Key> keys = new ArrayList<>();
+
+    public OmemoMessageBuilder(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
+                               byte[] aesKey, byte[] iv)
+            throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+            UnsupportedEncodingException, NoSuchProviderException, InvalidAlgorithmParameterException {
+        this.omemoStore = omemoStore;
+        this.messageKey = aesKey;
+        this.initializationVector = iv;
+    }
 
     public OmemoMessageBuilder(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore, String message)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,

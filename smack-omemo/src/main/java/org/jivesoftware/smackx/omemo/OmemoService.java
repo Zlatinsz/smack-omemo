@@ -134,19 +134,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws UnsupportedEncodingException         when UTF8 is unavailable
      * @throws BadPaddingException                  when cipher.doFinal gets wrong padding
      * @throws IllegalBlockSizeException            when cipher.doFinal gets wrong Block size.
-     * @throws InterruptedException                 when we get interrupted
-     * @throws CorruptedOmemoKeyException             when an OMEMO key is invalid
-     * @throws XMPPException.XMPPErrorException     when an XMPP error occurs
-     * @throws SmackException.NotConnectedException when we are/get disconnected
-     * @throws SmackException.NoResponseException   when we get no response
      */
     public OmemoService(OmemoManager manager,
                         OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> store)
             throws NoSuchPaddingException, InvalidKeyException, UnsupportedEncodingException, IllegalBlockSizeException,
-            BadPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException,
-            InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException,
-            SmackException.NotConnectedException, SmackException.NoResponseException {
-        Security.addProvider(new BouncyCastleProvider());
+            BadPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
         //Check availability of algorithms and encodings needed for crypto
         checkAvailableAlgorithms();
 
@@ -155,6 +147,18 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         store.setOmemoService(this); //Tell the store about us
         this.ownJid = manager.getConnection().getUser().asBareJid();
         this.pubSubHelper = new PubSubHelper(manager);
+        omemoManager.setOmemoService(this);     //Let the manager know we are ready
+    }
+
+    /**
+     * Initialize OMEMO functionality. Should be called once after the service has been created.
+     * @throws InterruptedException
+     * @throws CorruptedOmemoKeyException
+     * @throws XMPPException.XMPPErrorException
+     * @throws SmackException.NotConnectedException
+     * @throws SmackException.NoResponseException
+     */
+    public void setup() throws InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
         if (getOmemoStore().isFreshInstallation()) {
             LOGGER.log(Level.INFO, "No key material found. Looks like we have a fresh installation.");
             //Create new key material and publish it to the server
@@ -165,7 +169,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         subscribeToDeviceLists();
         registerOmemoMessageStanzaListeners();  //Wait for new OMEMO messages
         omemoStore.initializeOmemoSessions();   //Preload existing OMEMO sessions
-        omemoManager.setOmemoService(this);     //Let the manager know we are ready
     }
 
     protected void checkAvailableAlgorithms() throws NoSuchPaddingException, UnsupportedEncodingException,
@@ -237,9 +240,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             omemoStore.setDateOfLastSignedPreKeyRenewal(new Date());
         }
 
-        LeafNode bundleNode = PubSubManager.getInstance(omemoManager.getConnection(), ownJid)
-                .getOrCreateLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(omemoStore.loadOmemoDeviceId()));
-        bundleNode.send(new PayloadItem<>(omemoStore.packOmemoBundle()));
+        //publish
+        PubSubManager.getInstance(omemoManager.getConnection(), ownJid).tryToPublishAndPossibleAutoCreate(
+                PEP_NODE_BUNDLE_FROM_DEVICE_ID(omemoStore.loadOmemoDeviceId()),
+                new PayloadItem<>(omemoStore.packOmemoBundle()));
     }
 
     /**
@@ -624,7 +628,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return builder.finish();
     }
 
-    protected OmemoMessageElement prepareOmemoKeyTransportElement(OmemoDevice recipient) throws CryptoFailedException,
+    public OmemoMessageElement prepareOmemoKeyTransportElement(OmemoDevice... recipients) throws CryptoFailedException,
             UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CannotEstablishOmemoSessionException {
         OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
                 builder;
@@ -634,25 +638,41 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 NoSuchPaddingException | InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException e) {
             throw new CryptoFailedException(e);
         }
-        builder.addRecipient(recipient);
+        for(OmemoDevice r : recipients) {
+            builder.addRecipient(r);
+        }
         return builder.finish();
     }
 
-    protected void sendOmemoRatchetUpdateMessage(OmemoDevice recipient, boolean preKeyMessage) throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException, CannotEstablishOmemoSessionException {
+    public OmemoMessageElement prepareOmemoKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice... recipients) throws CryptoFailedException,
+            UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CannotEstablishOmemoSessionException {
+        OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
+                builder;
+        try {
+            builder = new OmemoMessageBuilder<>(omemoStore, aesKey, iv);
+        } catch (UnsupportedEncodingException | BadPaddingException | IllegalBlockSizeException | NoSuchProviderException |
+                NoSuchPaddingException | InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException e) {
+            throw new CryptoFailedException(e);
+        }
+        for(OmemoDevice r : recipients) {
+            builder.addRecipient(r);
+        }
+        return builder.finish();
+    }
+
+    protected Message getOmemoRatchetUpdateMessage(OmemoDevice recipient, boolean preKeyMessage) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException, CryptoFailedException, UndecidedOmemoIdentityException {
         if(preKeyMessage) {
             buildSessionFromOmemoBundle(recipient);
         }
         OmemoMessageElement keyTransportElement = prepareOmemoKeyTransportElement(recipient);
-        Message ratchetUpdateMessage = new Message();
-        ratchetUpdateMessage.setFrom(ownJid);
+        Message ratchetUpdateMessage = omemoManager.finishMessage(keyTransportElement);
         ratchetUpdateMessage.setTo(recipient.getJid());
-        ratchetUpdateMessage.addExtension(keyTransportElement);
-        if(OmemoConstants.ADD_MAM_STORAGE_HINT) {
-            OmemoManager.addMamStorageHint(ratchetUpdateMessage);
-        }
-        if(OmemoConstants.ADD_EME_ENCRYPTION_HINT) {
-            OmemoManager.addExplicitMessageEncryptionHint(ratchetUpdateMessage);
-        }
+        return ratchetUpdateMessage;
+    }
+
+    protected void sendOmemoRatchetUpdateMessage(OmemoDevice recipient, boolean preKeyMessage) throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException, CannotEstablishOmemoSessionException {
+        Message ratchetUpdateMessage = getOmemoRatchetUpdateMessage(recipient, preKeyMessage);
+
         try {
             omemoManager.getConnection().sendStanza(ratchetUpdateMessage);
         } catch (SmackException.NotConnectedException | InterruptedException e) {

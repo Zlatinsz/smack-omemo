@@ -28,11 +28,13 @@ import org.jivesoftware.smackx.mam.MamManager;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.muc.RoomInfo;
 import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
+import org.jivesoftware.smackx.omemo.exceptions.CannotEstablishOmemoSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
 import org.jivesoftware.smackx.omemo.internal.ClearTextMessage;
+import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.pubsub.packet.PubSub;
 import org.jxmpp.jid.BareJid;
@@ -163,6 +165,18 @@ public final class OmemoManager extends Manager {
         return finishMessage(encrypted);
     }
 
+    public void sendRatchetUpdateMessage(OmemoDevice recipient)
+            throws CorruptedOmemoKeyException, UndecidedOmemoIdentityException, CryptoFailedException,
+            CannotEstablishOmemoSessionException {
+        getOmemoService().sendOmemoRatchetUpdateMessage(recipient, false);
+    }
+
+    public OmemoMessageElement createKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice ... to)
+            throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException,
+            CannotEstablishOmemoSessionException {
+        return getOmemoService().prepareOmemoKeyTransportElement(aesKey, iv, to);
+    }
+
     /**
      * Decrypt an OMEMO message. This method comes handy when dealing with messages that were not automatically
      * decrypted by smack-omemo, eg. MAM query messages.
@@ -206,7 +220,7 @@ public final class OmemoManager extends Manager {
      * @param encrypted OmemoMessageElement
      * @return Message containing the OMEMO element and some additional information
      */
-    private Message finishMessage(OmemoMessageElement encrypted) {
+    Message finishMessage(OmemoMessageElement encrypted) {
         if (encrypted != null) {
             Message chatMessage = new Message();
             chatMessage.setFrom(connection().getUser().asBareJid());
@@ -228,7 +242,8 @@ public final class OmemoManager extends Manager {
     }
 
     /**
-     * Add a storage hint for MAM.
+     * Add a storage hint for MAM (XEP-0313). This allows the server to archive the message even though it has no
+     * body element.
      *
      * @param omemoMessage message
      */
@@ -240,7 +255,7 @@ public final class OmemoManager extends Manager {
     }
 
     /**
-     * Add an EME hint about OMEMO encryption.
+     * Add an EME (XEP-0380) hint about OMEMO encryption. This indicates the recipient that the message is encrypted.
      *
      * @param omemoMessage message
      */
