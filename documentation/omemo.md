@@ -44,9 +44,11 @@ to achieve message synchronization across all (on- and offline) devices.
 Setup
 -----
 
-On first start, the client has to initialize the providers.
+On first start, you have to set a security provider like bouncycastle.
+Also the client has to initialize the providers.
 
 ```
+Security.addProvider(new BouncyCastleProvider());
 new OmemoInitializer().initialize();
 ```
 
@@ -67,6 +69,13 @@ example, I assume, that you use smack-omemo together with smack-omemo-signal.
 ```
 SignalOmemoStore omemoStore = new SignalFileBasedOmemoStore(omemoManager, path);
 SignalOmemoService omemoService = new SignalOmemoService(omemoManager, omemoStore);
+```
+
+The next step is to start the setup method of the service. This will subscribe the service to OMEMO device lists, upload the bundle and so on.
+Note, that this method does some heavy work on the network.
+
+```
+omemoService.setup();
 ```
 
 At this point, the module has already generated some keys and announced OMEMO support.
