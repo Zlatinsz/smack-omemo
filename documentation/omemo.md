@@ -23,10 +23,11 @@ fetch old chat history.
 
 Most implementations of OMEMO use the signal-protocol libraries provided by
 OpenWhisperSystems. Unlike Smack, those libraries are licensed under the GPL,
-which prevents a Apache licensed OMEMO implementation using those libraries.
-The module smack-omemo contains therefore no code related to signal-protocol.
+which prevents a Apache licensed OMEMO implementation using those libraries (see
+[licensing situation](https://github.com/igniterealtime/Smack/wiki/OMEMO-libsignal-Licensing-Situation)).
+The module smack-omemo therefore contains no code related to signal-protocol.
 However, almost all functionality is capsulated in that module. If you want
-to use OMEMO in a GPL client, you can use the [smack-omemo-signal](https://github.com/vanitasvitae/smack-omemo-signal),
+to use OMEMO in a GPL client, you can use the smack-omemo-signal
 Smack module, which binds the signal-protocol library to smack-omemo.
 It is also possible, to port smack-omemo to other libraries implementing the
 double ratchet algorithm.
@@ -40,6 +41,24 @@ to store and exchange key bundles.
 Optionally your server should support Message Carbons ([XEP-0280](http://xmpp.org/extensions/xep-0280.html))
 and Message Archive Management ([XEP-0313](http://xmpp.org/extensions/xep-0313.html))
 to achieve message synchronization across all (on- and offline) devices.
+
+Dependencies
+------------
+
+If you want to use smack-omemo-signal in your project, make sure to include the following dependencies:
+
+- bcprov-jdk15on-156.jar
+- curve25519-java-0.3.0.jar
+- protobuf-java-2.5.0.jar
+- signal-protocol-java-2.4.0.jar
+
+You also need to include the following smack-modules in your project:
+
+- smack-core
+- smack-experimental
+- smack-extensions
+- smack-im
+- smack-java7
 
 Setup
 -----
