@@ -16,7 +16,6 @@
  */
 package org.jivesoftware.smackx.omemo;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPException;
@@ -69,7 +68,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.Security;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -152,6 +150,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Initialize OMEMO functionality. Should be called once after the service has been created.
+     *
      * @throws InterruptedException
      * @throws CorruptedOmemoKeyException
      * @throws XMPPException.XMPPErrorException
@@ -171,6 +170,18 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         omemoStore.initializeOmemoSessions();   //Preload existing OMEMO sessions
     }
 
+    /**
+     * Test availability of required algorithms. We do this in advance, so we can simplify exception handling later.
+     *
+     * @throws NoSuchPaddingException
+     * @throws UnsupportedEncodingException
+     * @throws InvalidAlgorithmParameterException
+     * @throws NoSuchAlgorithmException
+     * @throws IllegalBlockSizeException
+     * @throws BadPaddingException
+     * @throws NoSuchProviderException
+     * @throws InvalidKeyException
+     */
     protected void checkAvailableAlgorithms() throws NoSuchPaddingException, UnsupportedEncodingException,
             InvalidAlgorithmParameterException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             NoSuchProviderException, InvalidKeyException {

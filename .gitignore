@@ -25,6 +25,3 @@ extensions/bin
 
 target/
 .metadata
-
-# OMEMO
-smack-omemo-signal
