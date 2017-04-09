@@ -56,7 +56,7 @@ allprojects {
 			':smack-resolver-javax',
 			':smack-resolver-minidns',
 			':smack-omemo',
-//			':smack-omemo-signal',
+			':smack-omemo-signal',
 		].collect{ project(it) }
 		projectsWithUnitTests = subprojects - projectsWithoutUnitTests
 		androidProjects = [
@@ -69,7 +69,7 @@ allprojects {
 			':smack-extensions',
 			':smack-experimental',
 			':smack-omemo',
-//			':smack-omemo-signal',
+			':smack-omemo-signal',
 		].collect{ project(it) }
 		androidBootClasspathProjects = [
 			':smack-android',
@@ -394,7 +394,7 @@ project(':smack-integration-test').clirr.enabled = false
 
 // Disable clirr on omemo modules
 project(':smack-omemo').clirr.enabled = false
-//project(':smack-omemo-signal').clirr.enabled = false
+project(':smack-omemo-signal').clirr.enabled = false
 
 subprojects*.jar {
    manifest {

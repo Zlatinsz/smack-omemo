@@ -37,7 +37,6 @@ import org.whispersystems.libsignal.state.SignedPreKeyRecord;
 import org.whispersystems.libsignal.state.SignedPreKeyStore;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Implementation of the OmemoStore using the Signal library.

@@ -127,7 +127,7 @@ public class SignalOmemoSession extends OmemoSession<IdentityKeyPair, IdentityKe
             } catch (InvalidMessageException | InvalidVersionException e) {
                 SignalMessage message = new SignalMessage(encryptedKey);
                 decryptedKey = cipher.decrypt(message);
-            } catch (InvalidKeyIdException e ){
+            } catch (InvalidKeyIdException e){
                 throw new NoRawSessionException(e);
             }
             catch (InvalidKeyException | UntrustedIdentityException e) {
