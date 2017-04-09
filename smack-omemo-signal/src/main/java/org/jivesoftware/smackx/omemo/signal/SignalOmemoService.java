@@ -77,6 +77,7 @@ public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKe
         try {
             builder.process(preKeyBundle);
             LOGGER.log(Level.INFO, "Session built with " + contact);
+            omemoStore.getOmemoSessionOf(contact); //method puts session in session map.
         } catch (org.whispersystems.libsignal.InvalidKeyException e) {
             throw new CorruptedOmemoKeyException(e.getMessage());
         } catch (UntrustedIdentityException wontEverHappen) {

@@ -114,6 +114,10 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return identityKey;
     }
 
+    public void setIdentityKey(T_IdKey identityKey) {
+        this.identityKey = identityKey;
+    }
+
     /**
      * Return the fingerprint of the contacts identityKey.
      *

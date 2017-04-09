@@ -198,6 +198,13 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             }
             omemoSessions.put(device, s);
         }
+        if(s.getIdentityKey() == null) {
+            try {
+                s.setIdentityKey(loadOmemoIdentityKey(device));
+            } catch (CorruptedOmemoKeyException e) {
+                LOGGER.log(Level.WARNING, "Can't update IdentityKey of "+device+": "+e.getMessage());
+            }
+        }
         return s;
     }
 
