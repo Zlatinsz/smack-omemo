@@ -40,6 +40,7 @@ import org.jivesoftware.smackx.pubsub.packet.PubSub;
 import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.DomainBareJid;
 import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.FullJid;
 import org.jxmpp.jid.Jid;
 
 import java.security.NoSuchAlgorithmException;
@@ -281,15 +282,18 @@ public final class OmemoManager extends Manager {
     /**
      * Returns true, if the device resource has announced OMEMO support.
      *
-     * @param resource jid of a resource
+     * @param fullJid jid of a resource
      * @return true if resource supports OMEMO
      * @throws XMPPException.XMPPErrorException     if
      * @throws SmackException.NotConnectedException something
      * @throws InterruptedException                 goes
      * @throws SmackException.NoResponseException   wrong
      */
-    public boolean resourceSupportsOmemo(Jid resource) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
-        return ServiceDiscoveryManager.getInstanceFor(connection()).discoverInfo(resource).containsFeature(PEP_NODE_DEVICE_LIST_NOTIFY);
+    public boolean resourceSupportsOmemo(FullJid fullJid) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+        if(fullJid.hasNoResource()) {
+            throw new AssertionError("Jid "+fullJid+" has no resource part.");
+        }
+        return ServiceDiscoveryManager.getInstanceFor(connection()).discoverInfo(fullJid).containsFeature(PEP_NODE_DEVICE_LIST_NOTIFY);
     }
 
     /**
