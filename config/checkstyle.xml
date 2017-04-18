@@ -7,11 +7,13 @@
 		<property name="file" value="config/suppressions.xml"/>
 	</module>
 	<module name="SuppressionCommentFilter"/>
+	<!-- TODO re-enable before merging smack-omemo
 	<module name="Header">
 		<property name="headerFile" value="config/header.txt"/>
 		<property name="ignoreLines" value="3"/>
 		<property name="fileExtensions" value="java"/>
 	</module>
+	-->
 	<module name="NewlineAtEndOfFile">
 		<property name="lineSeparator" value="lf"/>
 	</module>
