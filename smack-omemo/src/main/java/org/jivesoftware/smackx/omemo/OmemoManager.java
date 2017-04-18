@@ -41,7 +41,6 @@ import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.DomainBareJid;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.FullJid;
-import org.jxmpp.jid.Jid;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
