@@ -107,19 +107,24 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public int loadLastPreKeyId() {
         File dir = getDevicePath();
-        if (dir != null) {
-            File[] l = dir.listFiles();
-            if (l != null) {
-                for (File f : l) {
-                    if (f.getName().equals(LAST_PRE_KEY_ID)) {
-                        int i = readInt(f);
-                        if (i != -1) {
-                            return i;
-                        }
-                    }
+        if (dir == null) {
+            return 0;
+        }
+
+        File[] l = dir.listFiles();
+        if (l == null) {
+            return 0;
+        }
+
+        for (File f : l) {
+            if (f.getName().equals(LAST_PRE_KEY_ID)) {
+                int i = readInt(f);
+                if (i != -1) {
+                    return i;
                 }
             }
         }
+
         return 0;
     }
 
