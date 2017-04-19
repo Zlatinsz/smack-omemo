@@ -23,6 +23,7 @@ import org.jivesoftware.smack.filter.StanzaFilter;
 import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Stanza;
+import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.carbons.CarbonCopyReceivedListener;
 import org.jivesoftware.smackx.carbons.CarbonManager;
@@ -56,6 +57,7 @@ import org.jivesoftware.smackx.pubsub.EventElement;
 import org.jivesoftware.smackx.pubsub.ItemsExtension;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.PayloadItem;
+import org.jivesoftware.smackx.pubsub.PubSubException;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.EntityBareJid;
@@ -158,7 +160,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NoResponseException
      * @throws SmackException.NotLoggedInException
      */
-    public void setup() throws InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException, SmackException.NotLoggedInException {
+    public void setup() throws InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException, SmackException.NotLoggedInException, PubSubException.NotALeafNodeException {
         if (!omemoManager.getConnection().isAuthenticated()) {
             throw new SmackException.NotLoggedInException();
         }
@@ -167,7 +169,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             //Create new key material and publish it to the server
             publishInformationIfNeeded(true, false);
         } else {
-            publishDeviceIdIfNeeded(false);
+            publishInformationIfNeeded(false,false);
         }
         subscribeToDeviceLists();
         registerOmemoMessageStanzaListeners();  //Wait for new OMEMO messages
@@ -200,8 +202,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * This method is used to prevent us from getting our node too often (it may take some time).
      */
     private LeafNode fetchDeviceListNode() throws SmackException.NotConnectedException, InterruptedException,
-            SmackException.NoResponseException, XMPPException.XMPPErrorException {
-        return PubSubManager.getInstance(omemoManager.getConnection(), ownJid).getOrCreateLeafNode(PEP_NODE_DEVICE_LIST);
+            SmackException.NoResponseException, XMPPException.XMPPErrorException, PubSubException.NotALeafNodeException {
+        return PubSubManager.getInstance(omemoManager.getConnection(), ownJid).getLeafNode(PEP_NODE_DEVICE_LIST);
     }
 
     /**
@@ -212,7 +214,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     void publishInformationIfNeeded(boolean regenerate, boolean deleteOtherDevices) throws InterruptedException,
             XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException,
-            CorruptedOmemoKeyException {
+            CorruptedOmemoKeyException, PubSubException.NotALeafNodeException {
         if (regenerate) {
             regenerate();
         }
@@ -270,10 +272,16 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     private void publishDeviceIdIfNeeded(boolean deleteOtherDevices)
             throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException,
-            XMPPException.XMPPErrorException {
+            XMPPException.XMPPErrorException, PubSubException.NotALeafNodeException {
         boolean publish = false;
-        this.ownDeviceListNode = fetchDeviceListNode();
-        OmemoDeviceListElement deviceList = getPubSubHelper().extractDeviceListFrom(ownDeviceListNode);
+        OmemoDeviceListElement deviceList = null;
+        try {
+            this.ownDeviceListNode = fetchDeviceListNode();
+            deviceList = getPubSubHelper().extractDeviceListFrom(ownDeviceListNode);
+        } catch (XMPPException.XMPPErrorException e) {
+            this.ownDeviceListNode = null;
+            publish = true;
+        }
 
         if (deviceList == null) {
             deviceList = new OmemoDeviceListElement();
@@ -327,9 +335,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     protected void publishDeviceIds(OmemoDeviceListElement deviceList)
             throws InterruptedException, XMPPException.XMPPErrorException,
-            SmackException.NotConnectedException, SmackException.NoResponseException {
-        PubSubManager.getInstance(omemoManager.getConnection(),ownJid).getOrCreateLeafNode(OmemoConstants.PEP_NODE_DEVICE_LIST)
-                .send(new PayloadItem<>(deviceList));
+            SmackException.NotConnectedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
+        PubSubManager.getInstance(omemoManager.getConnection(),ownJid)
+                .tryToPublishAndPossibleAutoCreate(OmemoConstants.PEP_NODE_DEVICE_LIST, new PayloadItem<>(deviceList));
     }
 
     /**
@@ -350,7 +358,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         if (devices == null) {
             try {
                 omemoStore.mergeCachedDeviceList(jid, pubSubHelper.fetchDeviceList(jid));
-            } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException | SmackException.NoResponseException e) {
+            } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException | SmackException.NoResponseException | PubSubException.NotALeafNodeException e) {
                 LOGGER.log(Level.WARNING, e.getMessage());
             }
         }

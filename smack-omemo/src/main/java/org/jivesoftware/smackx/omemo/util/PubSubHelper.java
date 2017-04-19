@@ -24,6 +24,7 @@ import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.PayloadItem;
+import org.jivesoftware.smackx.pubsub.PubSubException;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jxmpp.jid.BareJid;
 
@@ -53,8 +54,8 @@ public class PubSubHelper {
      * @throws InterruptedException                 goes
      * @throws SmackException.NoResponseException   wrong
      */
-    public OmemoDeviceListElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
-        LeafNode node = PubSubManager.getInstance(manager.getConnection(), contact).getNode(PEP_NODE_DEVICE_LIST);
+    public OmemoDeviceListElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
+        LeafNode node = PubSubManager.getInstance(manager.getConnection(), contact).getLeafNode(PEP_NODE_DEVICE_LIST);
         return extractDeviceListFrom(node);
     }
 
@@ -68,8 +69,8 @@ public class PubSubHelper {
      * @throws InterruptedException                 goes
      * @throws SmackException.NoResponseException   wrong
      */
-    public OmemoBundleElement fetchBundle(OmemoDevice contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
-        LeafNode node = PubSubManager.getInstance(manager.getConnection(), contact.getJid()).getNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
+    public OmemoBundleElement fetchBundle(OmemoDevice contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
+        LeafNode node = PubSubManager.getInstance(manager.getConnection(), contact.getJid()).getLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
         if (node != null) {
             return extractBundleFrom(node);
         } else {
