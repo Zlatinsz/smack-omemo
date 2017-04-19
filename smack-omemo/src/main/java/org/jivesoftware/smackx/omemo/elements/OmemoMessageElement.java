@@ -84,7 +84,7 @@ public class OmemoMessageElement implements ExtensionElement {
      * @return payload
      */
     public byte[] getPayload() {
-        return payload;
+        return payload.clone();
     }
 
     /**
@@ -222,6 +222,7 @@ public class OmemoMessageElement implements ExtensionElement {
      * @param keyId   the key we want to decrypt (usually our own device id)
      * @return message as plaintext
      */
+    // TODO Move this method into OmemoSession. Not sure if it should/must be public? -Flow
     public Message decrypt(OmemoSession<?, ?, ?, ?, ?, ?, ?, ?, ?> session, int keyId) throws CryptoFailedException, NoRawSessionException {
         String plain;
         byte[] cipherText = getPayload();

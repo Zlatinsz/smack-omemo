@@ -22,6 +22,7 @@ package org.jivesoftware.smackx.omemo.util;
  */
 public class OmemoConstants {
 
+    // TODO Most of this should probably be static configuration via setters within OmemoManager. To discuss. -Flow
     //Settings
     /**
      * Mitigate vulnerability found in the OMEMO audit.
@@ -95,6 +96,7 @@ public class OmemoConstants {
      * @param deviceId id of the device
      * @return node name of the devices bundle node
      */
+    // TODO should be a private static method in PubSubHelper -Flow
     public static String PEP_NODE_BUNDLE_FROM_DEVICE_ID(int deviceId) {
         return PEP_NODE_BUNDLES + ":" + deviceId;
     }

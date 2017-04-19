@@ -31,6 +31,7 @@ public class OmemoMessageInformation<T_IdKey> {
     /**
      * Empty constructor.
      */
+    // TOOD Move this class into smackx.omemo and make this constructor package protected. -Flow
     public OmemoMessageInformation() {
     }
 

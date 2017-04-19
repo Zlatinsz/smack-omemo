@@ -82,8 +82,9 @@ public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKe
             omemoStore.getOmemoSessionOf(contact); //method puts session in session map.
         } catch (org.whispersystems.libsignal.InvalidKeyException e) {
             throw new CorruptedOmemoKeyException(e.getMessage());
-        } catch (UntrustedIdentityException wontEverHappen) {
-            //I hope
+        } catch (UntrustedIdentityException e) {
+            // This should never happen.
+            throw new AssertionError(e);
         }
     }
 }

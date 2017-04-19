@@ -61,7 +61,7 @@ public class OmemoBundleElement implements ExtensionElement {
      * @return signedPreKey as byte array
      */
     public byte[] getSignedPreKey() {
-        return this.signedPreKey;
+        return this.signedPreKey.clone();
     }
 
     /**
@@ -79,7 +79,7 @@ public class OmemoBundleElement implements ExtensionElement {
      * @return signature as byte array
      */
     public byte[] getSignedPreKeySignature() {
-        return signedPreKeySignature;
+        return signedPreKeySignature.clone();
     }
 
     /**
@@ -90,7 +90,7 @@ public class OmemoBundleElement implements ExtensionElement {
      * @return public identityKey as byte array
      */
     public byte[] getIdentityKey() {
-        return this.identityKey;
+        return this.identityKey.clone();
     }
 
     /**
