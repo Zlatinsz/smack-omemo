@@ -320,6 +320,7 @@ public final class OmemoManager extends Manager {
 
     /**
      * Returns true, if the device resource has announced OMEMO support.
+     * Throws an IllegalArgumentException if the provided FullJid does not have a resource part.
      *
      * @param fullJid jid of a resource
      * @return true if resource supports OMEMO
@@ -330,7 +331,7 @@ public final class OmemoManager extends Manager {
      */
     public boolean resourceSupportsOmemo(FullJid fullJid) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         if(fullJid.hasNoResource()) {
-            throw new AssertionError("Jid "+fullJid+" has no resource part.");
+            throw new IllegalArgumentException("Jid "+fullJid+" has no resource part.");
         }
         return ServiceDiscoveryManager.getInstanceFor(connection()).discoverInfo(fullJid).containsFeature(PEP_NODE_DEVICE_LIST_NOTIFY);
     }
