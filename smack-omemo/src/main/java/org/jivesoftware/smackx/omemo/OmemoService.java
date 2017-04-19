@@ -561,7 +561,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 continue;
             }
 
-            if (IGNORE_STALE_DEVICES && new Date().getTime() - omemoStore.getDateOfLastReceivedMessage(d).getTime()
+            final long now = System.currentTimeMillis();
+            if (IGNORE_STALE_DEVICES && now - omemoStore.getDateOfLastReceivedMessage(d).getTime()
                     > 1000L * 60 * 60 * IGNORE_STALE_DEVICE_AFTER_HOURS) {
                 LOGGER.log(Level.WARNING, "Refusing to encrypt message for stale device " + d +
                         " which was inactive for at least " + IGNORE_STALE_DEVICE_AFTER_HOURS +" hours.");
