@@ -70,6 +70,20 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     private byte[] ciphertextMessage;
     private final ArrayList<OmemoMessageElement.OmemoHeader.Key> keys = new ArrayList<>();
 
+    /**
+     * Create a OmemoMessageBuilder.
+     * @param omemoStore        OmemoStore
+     * @param aesKey            AES key that will be transported to the recipient. This is used eg. to encrypt the body.
+     * @param iv                IV
+     * @throws NoSuchPaddingException
+     * @throws BadPaddingException
+     * @throws InvalidKeyException
+     * @throws NoSuchAlgorithmException
+     * @throws IllegalBlockSizeException
+     * @throws UnsupportedEncodingException
+     * @throws NoSuchProviderException
+     * @throws InvalidAlgorithmParameterException
+     */
     public OmemoMessageBuilder(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
                                byte[] aesKey, byte[] iv)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
@@ -79,6 +93,20 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         this.initializationVector = iv;
     }
 
+    /**
+     * Create a new OmemoMessageBuilder with random IV and AES key.
+     *
+     * @param omemoStore    omemoStore
+     * @param message       Messages body.
+     * @throws NoSuchPaddingException
+     * @throws BadPaddingException
+     * @throws InvalidKeyException
+     * @throws NoSuchAlgorithmException
+     * @throws IllegalBlockSizeException
+     * @throws UnsupportedEncodingException
+     * @throws NoSuchProviderException
+     * @throws InvalidAlgorithmParameterException
+     */
     public OmemoMessageBuilder(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore, String message)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
             UnsupportedEncodingException, NoSuchProviderException, InvalidAlgorithmParameterException {
@@ -136,6 +164,8 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param device recipient device
      * @throws CannotEstablishOmemoSessionException when no session can be established
      * @throws CryptoFailedException                when encrypting the messageKey fails
+     * @throws UndecidedOmemoIdentityException
+     * @throws CorruptedOmemoKeyException
      */
     public void addRecipient(OmemoDevice device) throws CannotEstablishOmemoSessionException,
             CryptoFailedException, UndecidedOmemoIdentityException, CorruptedOmemoKeyException {
@@ -195,6 +225,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Generate a new AES key used to encrypt the message.
      *
      * @return new AES key
+     * @throws NoSuchAlgorithmException
      */
     private static byte[] generateKey() throws NoSuchAlgorithmException {
         KeyGenerator generator = KeyGenerator.getInstance(KEYTYPE);

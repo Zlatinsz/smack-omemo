@@ -126,6 +126,9 @@ public final class OmemoManager extends Manager {
      * Clear all other devices except this one from our device list and republish the list.
      *
      * @throws SmackException if something goes wrong TODO: Is this still necessary?
+     * @throws InterruptedException
+     * @throws XMPPException.XMPPErrorException
+     * @throws CorruptedOmemoKeyException
      */
     public void purgeDevices() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
         if(service == null) {
@@ -136,6 +139,10 @@ public final class OmemoManager extends Manager {
 
     /**
      * Generate fresh identity keys and bundle and publish it to the server.
+     * @throws SmackException
+     * @throws InterruptedException
+     * @throws XMPPException.XMPPErrorException
+     * @throws CorruptedOmemoKeyException
      */
     public void regenerate() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
         throwIfNoServiceSet();
@@ -150,6 +157,9 @@ public final class OmemoManager extends Manager {
      * @param message Message that will be encrypted. The body of the message will be encrypted.
      * @return new a new Message with the encrypted message in the 'encrypted' element and a hint for
      * OMEMO-uncapable clients in the body
+     * @throws CryptoFailedException
+     * @throws UndecidedOmemoIdentityException
+     * @throws NoSuchAlgorithmException
      */
     public Message encrypt(BareJid to, Message message) throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         throwIfNoServiceSet();
@@ -164,6 +174,9 @@ public final class OmemoManager extends Manager {
      * @param message    Message that will be encrypted. The body of the message will be encrypted.
      * @return new a new Message with the encrypted message in the 'encrypted' element and a hint for
      * OMEMO-incapable clients in the body
+     * @throws CryptoFailedException
+     * @throws UndecidedOmemoIdentityException
+     * @throws NoSuchAlgorithmException
      */
     public Message encrypt(List<BareJid> recipients, Message message) throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         throwIfNoServiceSet();
@@ -171,6 +184,16 @@ public final class OmemoManager extends Manager {
         return finishMessage(encrypted);
     }
 
+    /**
+     * Send a ratchet update message. This can be used to advance the ratchet of a session in order to maintain forward
+     * secrecy.
+     *
+     * @param recipient recipient
+     * @throws CorruptedOmemoKeyException
+     * @throws UndecidedOmemoIdentityException
+     * @throws CryptoFailedException
+     * @throws CannotEstablishOmemoSessionException
+     */
     public void sendRatchetUpdateMessage(OmemoDevice recipient)
             throws CorruptedOmemoKeyException, UndecidedOmemoIdentityException, CryptoFailedException,
             CannotEstablishOmemoSessionException {
@@ -178,6 +201,19 @@ public final class OmemoManager extends Manager {
         getOmemoService().sendOmemoRatchetUpdateMessage(recipient, false);
     }
 
+    /**
+     * Create a new KeyTransportElement. This message will contain the AES-Key and IV that can be used eg. for encrypted
+     * Jingle file transfer.
+     *
+     * @param aesKey    AES key to transport
+     * @param iv        Initialization vector
+     * @param to        list of recipient devices
+     * @return          KeyTransportMessage
+     * @throws UndecidedOmemoIdentityException
+     * @throws CorruptedOmemoKeyException
+     * @throws CryptoFailedException
+     * @throws CannotEstablishOmemoSessionException
+     */
     public OmemoMessageElement createKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice ... to)
             throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException,
             CannotEstablishOmemoSessionException {
@@ -196,7 +232,8 @@ public final class OmemoManager extends Manager {
      * @throws SmackException.NotConnectedException Exception
      * @throws CryptoFailedException                When decryption fails
      * @throws XMPPException.XMPPErrorException     Exception
-     * @throws CorruptedOmemoKeyException             When the used keys are invalid
+     * @throws CorruptedOmemoKeyException           When the used keys are invalid
+     * @throws NoRawSessionException
      */
     public ClearTextMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException, NoRawSessionException {
         throwIfNoServiceSet();
@@ -319,6 +356,10 @@ public final class OmemoManager extends Manager {
      *
      * @param server domainBareJid of the server to test
      * @return true if server supports pep
+     * @throws XMPPException.XMPPErrorException
+     * @throws SmackException.NotConnectedException
+     * @throws InterruptedException
+     * @throws SmackException.NoResponseException
      */
     public boolean serverSupportsOmemo(DomainBareJid server) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         return ServiceDiscoveryManager.getInstanceFor(connection()).discoverInfo(server).containsFeature(PubSub.NAMESPACE);
@@ -344,6 +385,7 @@ public final class OmemoManager extends Manager {
      * @throws XMPPException.XMPPErrorException XMPP error
      * @throws SmackException.NotConnectedException XMPP error
      * @throws SmackException.NoResponseException XMPP error
+     * @throws PubSubException.NotALeafNodeException
      */
     public void rotateSignedPreKey() throws CorruptedOmemoKeyException, InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
         throwIfNoServiceSet();
@@ -362,6 +404,9 @@ public final class OmemoManager extends Manager {
         return stanza.hasExtension(OmemoConstants.Encrypted.ENCRYPTED, OMEMO_NAMESPACE);
     }
 
+    /**
+     * Throw an IllegalStateException if no OmemoService is set.
+     */
     public void throwIfNoServiceSet() {
         if(service == null) {
             throw new IllegalStateException("No OmemoService set in OmemoManager.");

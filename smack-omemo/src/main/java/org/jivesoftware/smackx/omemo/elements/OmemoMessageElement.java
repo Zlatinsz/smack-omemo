@@ -221,6 +221,8 @@ public class OmemoMessageElement implements ExtensionElement {
      * @param session OmemoSession with the sender device
      * @param keyId   the key we want to decrypt (usually our own device id)
      * @return message as plaintext
+     * @throws CryptoFailedException
+     * @throws NoRawSessionException
      */
     // TODO Move this method into OmemoSession. Not sure if it should/must be public? -Flow
     public Message decrypt(OmemoSession<?, ?, ?, ?, ?, ?, ?, ?, ?> session, int keyId) throws CryptoFailedException, NoRawSessionException {

@@ -151,6 +151,12 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
      */
     public abstract T_IdKey identityKeyFromBytes(byte[] data) throws CorruptedOmemoKeyException;
 
+    /**
+     * Serialize an identityKey into bytes.
+     *
+     * @param identityKey idKey
+     * @return bytes
+     */
     public abstract byte[] identityKeyToBytes(T_IdKey identityKey);
 
     /**
@@ -348,6 +354,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     /**
      * Create a new crypto-specific Session object.
      *
+     * @param store    omemoStore
      * @param from the device we want to create the session with.
      * @return a new session
      */
@@ -358,6 +365,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     /**
      * Create a new concrete OmemoSession with a contact.
      *
+     * @param store       omemoStore
      * @param device      device to establish the session with
      * @param identityKey identityKey of the device
      * @return concrete OmemoSession

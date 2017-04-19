@@ -383,6 +383,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      *
      * @param device device
      * @return identityKey
+     * @throws CorruptedOmemoKeyException when the key in question is corrupted and cant be deserialized.
      */
     public abstract T_IdKey loadOmemoIdentityKey(OmemoDevice device) throws CorruptedOmemoKeyException;
 
@@ -466,6 +467,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
     /**
      * Get the date of the last time the signed preKey was renewed.
+     * @return date
      */
     public abstract Date getDateOfLastSignedPreKeyRenewal();
 

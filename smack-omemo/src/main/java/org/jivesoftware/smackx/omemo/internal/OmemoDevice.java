@@ -27,6 +27,12 @@ public class OmemoDevice {
     private final BareJid jid;
     private final int deviceId;
 
+    /**
+     * Create a new OmemoDevice.
+     *
+     * @param jid jid of the contact
+     * @param deviceId deviceId if the device.
+     */
     public OmemoDevice(BareJid jid, int deviceId) {
         this.jid = jid;
         this.deviceId = deviceId;

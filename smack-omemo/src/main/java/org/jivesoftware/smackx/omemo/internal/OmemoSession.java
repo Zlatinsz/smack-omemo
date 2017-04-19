@@ -91,6 +91,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      *
      * @param messageKey serialized key to encrypt
      * @return A CiphertextTuple containing the ciphertext and the messageType
+     * @throws CryptoFailedException
      */
     public abstract CiphertextTuple encryptMessageKey(byte[] messageKey) throws CryptoFailedException;
 
@@ -114,6 +115,10 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return identityKey;
     }
 
+    /**
+     * Set the identityKey of the remote device.
+     * @param identityKey identityKey
+     */
     public void setIdentityKey(T_IdKey identityKey) {
         this.identityKey = identityKey;
     }

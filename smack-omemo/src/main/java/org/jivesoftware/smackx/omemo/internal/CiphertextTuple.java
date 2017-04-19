@@ -27,6 +27,12 @@ public class CiphertextTuple {
     private final byte[] ciphertext;
     private final int messageType;
 
+    /**
+     * Create a new CiphertextTuple.
+     *
+     * @param ciphertext ciphertext
+     * @param type type
+     */
     public CiphertextTuple(byte[] ciphertext, int type) {
         this.ciphertext = ciphertext;
         this.messageType = type;

@@ -155,6 +155,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NotConnectedException
      * @throws SmackException.NoResponseException
      * @throws SmackException.NotLoggedInException
+     * @throws PubSubException.NotALeafNodeException
      */
     public void setup() throws InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException, SmackException.NotLoggedInException, PubSubException.NotALeafNodeException {
         if (!omemoManager.getConnection().isAuthenticated()) {
@@ -201,6 +202,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      *
      * @param regenerate         Do we want to generate a new Identity?
      * @param deleteOtherDevices Do we want to delete other devices from our deviceList?
+     * @throws InterruptedException
+     * @throws XMPPException.XMPPErrorException
+     * @throws SmackException.NotConnectedException
+     * @throws SmackException.NoResponseException
+     * @throws CorruptedOmemoKeyException
+     * @throws PubSubException.NotALeafNodeException
      */
     void publishInformationIfNeeded(boolean regenerate, boolean deleteOtherDevices) throws InterruptedException,
             XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException,
@@ -232,6 +239,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Publish a fresh bundle to the server.
+     * @throws SmackException.NotConnectedException
+     * @throws InterruptedException
+     * @throws SmackException.NoResponseException
+     * @throws CorruptedOmemoKeyException
+     * @throws XMPPException.XMPPErrorException
      */
     private void publishBundle()
             throws SmackException.NotConnectedException, InterruptedException,
@@ -257,6 +269,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @param deleteOtherDevices Do we want to remove other devices from the list?
      *                           If we do, publish the list with only our id, regardless if we were on the list
      *                           already.
+     * @throws SmackException.NotConnectedException
+     * @throws InterruptedException
+     * @throws SmackException.NoResponseException
+     * @throws XMPPException.XMPPErrorException
+     * @throws PubSubException.NotALeafNodeException
      */
     private void publishDeviceIdIfNeeded(boolean deleteOtherDevices)
             throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException,
@@ -393,6 +410,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      *
      * @param bundle T_Bundle (depends on used Signal/Olm library)
      * @param device OmemoDevice
+     * @throws CorruptedOmemoKeyException
      */
     protected abstract void processBundle(T_Bundle bundle, OmemoDevice device) throws CorruptedOmemoKeyException;
 
@@ -450,9 +468,17 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * Process a received message. Try to decrypt it in case we are a recipient device. If we are not a recipient
      * device, return null.
      *
-     * @param sender  the BareJid of the sender of the message
-     * @param message the encrypted message
+     * @param sender        the BareJid of the sender of the message
+     * @param message       the encrypted message
+     * @param information   OmemoMessageInformation object which will contain meta data about the decrypted message
      * @return decrypted message or null
+     * @throws NoRawSessionException
+     * @throws InterruptedException
+     * @throws SmackException.NoResponseException
+     * @throws SmackException.NotConnectedException
+     * @throws CryptoFailedException
+     * @throws XMPPException.XMPPErrorException
+     * @throws CorruptedOmemoKeyException
      */
     private Message processReceivingMessage(BareJid sender, OmemoMessageElement message, final OmemoMessageInformation<T_IdKey> information)
             throws NoRawSessionException, InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException,
@@ -513,6 +539,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @param recipient BareJid of the recipient
      * @param message   message to encrypt.
      * @return OmemoMessageElement
+     * @throws CryptoFailedException
+     * @throws UndecidedOmemoIdentityException
+     * @throws NoSuchAlgorithmException
      */
     OmemoMessageElement processSendingMessage(BareJid recipient, Message message)
             throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
@@ -528,6 +557,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @param recipients List of BareJids of all recipients
      * @param message    message to encrypt.
      * @return OmemoMessageElement
+     * @throws CryptoFailedException
+     * @throws UndecidedOmemoIdentityException
+     * @throws NoSuchAlgorithmException
      */
     OmemoMessageElement processSendingMessage(List<BareJid> recipients, Message message)
             throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
@@ -577,10 +609,17 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Decrypt a incoming OmemoMessageElement that was sent by the OmemoDevice 'from'.
      *
-     * @param from    OmemoDevice that sent the message
-     * @param message Encrypted OmemoMessageElement
+     * @param from          OmemoDevice that sent the message
+     * @param message       Encrypted OmemoMessageElement
+     * @param information   OmemoMessageInformation object which will contain metadata about the encryption
      * @return Decrypted message
      * @throws CryptoFailedException when decrypting message fails for some reason
+     * @throws InterruptedException
+     * @throws CorruptedOmemoKeyException
+     * @throws XMPPException.XMPPErrorException
+     * @throws SmackException.NotConnectedException
+     * @throws SmackException.NoResponseException
+     * @throws NoRawSessionException
      */
     private Message decryptOmemoMessageElement(OmemoDevice from, OmemoMessageElement message, final OmemoMessageInformation<T_IdKey> information)
             throws CryptoFailedException, InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException,
@@ -658,8 +697,19 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return builder.finish();
     }
 
+    /**
+     * Prepares a keyTransportElement with a random aes key and iv.
+     *
+     * @param recipients recipients
+     * @return KeyTransportElement
+     * @throws CryptoFailedException
+     * @throws UndecidedOmemoIdentityException
+     * @throws CorruptedOmemoKeyException
+     * @throws CannotEstablishOmemoSessionException
+     */
     public OmemoMessageElement prepareOmemoKeyTransportElement(OmemoDevice... recipients) throws CryptoFailedException,
             UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CannotEstablishOmemoSessionException {
+
         OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
                 builder;
         try {
@@ -677,6 +727,18 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return builder.finish();
     }
 
+    /**
+     * Prepare a KeyTransportElement with aesKey and iv.
+     *
+     * @param aesKey        AES key
+     * @param iv            initialization vector
+     * @param recipients    recipients
+     * @return              KeyTransportElement
+     * @throws CryptoFailedException
+     * @throws UndecidedOmemoIdentityException
+     * @throws CorruptedOmemoKeyException
+     * @throws CannotEstablishOmemoSessionException
+     */
     public OmemoMessageElement prepareOmemoKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice... recipients) throws CryptoFailedException,
             UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CannotEstablishOmemoSessionException {
         OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
@@ -696,6 +758,17 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return builder.finish();
     }
 
+    /**
+     * Return a new RatchetUpdateMessage.
+     * @param recipient     recipient
+     * @param preKeyMessage if true, a new session will be built for this message (useful to repair broken sessions)
+     *                      otherwise the message will be encrypted using the existing session.
+     * @return              OmemoRatchetUpdateMessage
+     * @throws CannotEstablishOmemoSessionException
+     * @throws CorruptedOmemoKeyException
+     * @throws CryptoFailedException
+     * @throws UndecidedOmemoIdentityException
+     */
     protected Message getOmemoRatchetUpdateMessage(OmemoDevice recipient, boolean preKeyMessage) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException, CryptoFailedException, UndecidedOmemoIdentityException {
         if(preKeyMessage) {
             buildSessionFromOmemoBundle(recipient);
@@ -708,6 +781,16 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return ratchetUpdateMessage;
     }
 
+    /**
+     * Send an OmemoRatchetUpdateMessage to recipient. If preKeyMessage is true, the message will be encrypted using a
+     * freshly built session. This can be used to repair broken sessions.
+     * @param recipient         recipient
+     * @param preKeyMessage     shall this be a preKeyMessage?
+     * @throws UndecidedOmemoIdentityException
+     * @throws CorruptedOmemoKeyException
+     * @throws CryptoFailedException
+     * @throws CannotEstablishOmemoSessionException
+     */
     protected void sendOmemoRatchetUpdateMessage(OmemoDevice recipient, boolean preKeyMessage) throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException, CannotEstablishOmemoSessionException {
         Message ratchetUpdateMessage = getOmemoRatchetUpdateMessage(recipient, preKeyMessage);
 
@@ -867,6 +950,18 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
     };
 
+    /**
+     * Try to decrypt a mamQueryResult. Note that OMEMO messages can only be decrypted once on a device, so if you
+     * try to decrypt a message that has been decrypted earlier in time, the decryption will fail. You should handle
+     * message history locally when using OMEMO, since you cannot rely on MAM.
+     *
+     * @param mamQueryResult mamQueryResult that shall be decrypted.
+     * @return list of decrypted messages.
+     * @throws InterruptedException
+     * @throws XMPPException.XMPPErrorException
+     * @throws SmackException.NotConnectedException
+     * @throws SmackException.NoResponseException
+     */
     public List<ClearTextMessage<T_IdKey>> decryptMamQueryResult(MamManager.MamQueryResult mamQueryResult)
             throws InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
         List<ClearTextMessage<T_IdKey>> result = new ArrayList<>();
@@ -936,6 +1031,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      *
      * @param decryptedBody      decrypted Body element of the message
      * @param encryptedMessage   unmodified message as it was received
+     * @param wrappingMessage    message that wrapped the incoming message
      * @param messageInformation information about the messages encryption (used identityKey, carbon...)
      */
     private void notifyOmemoMessageReceived(String decryptedBody, Message encryptedMessage, Message wrappingMessage, OmemoMessageInformation<T_IdKey> messageInformation) {

@@ -36,7 +36,7 @@ public class OmemoMessageInformation<T_IdKey> {
     }
 
     /**
-     * Creates a new OmemoMessageInformation object.
+     * Creates a new OmemoMessageInformation object. Its assumed, that this is about an OMEMO message.
      *
      * @param senderIdentityKey identityKey of the sender device
      * @param senderDevice      device that sent the message
@@ -49,6 +49,14 @@ public class OmemoMessageInformation<T_IdKey> {
         this.isOmemoMessage = true;
     }
 
+    /**
+     * Create a new OmemoMessageInformation.
+     *
+     * @param senderIdentityKey identityKey of the sender device
+     * @param senderDevice      device that sent the message
+     * @param carbon            Carbon type
+     * @param omemo             is this an omemo message?
+     */
     public OmemoMessageInformation(T_IdKey senderIdentityKey, OmemoDevice senderDevice, CARBON carbon, boolean omemo) {
         this(senderIdentityKey, senderDevice, carbon);
         this.isOmemoMessage = omemo;

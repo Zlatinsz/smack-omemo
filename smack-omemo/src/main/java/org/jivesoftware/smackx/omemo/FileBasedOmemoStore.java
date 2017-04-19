@@ -731,14 +731,29 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         }
     }
 
+    /**
+     * Return the root path of the OMEMO store.
+     *
+     * @return path
+     */
     private File getOmemoPath() {
         return create(new File(base.getAbsolutePath() + "/omemo"));
     }
 
+    /**
+     * Return the OMEMO storage directory of the current user.
+     *
+     * @return path
+     */
     private File getUserPath() {
         return create(new File(getOmemoPath().getAbsolutePath() + "/" + userJid.toString() + "/"));
     }
 
+    /**
+     * Return the OMEMO storage path of this device.
+     *
+     * @return path
+     */
     private File getDevicePath() {
         File[] content = getUserPath().listFiles();
         if (content != null && content.length == 1) {
@@ -749,6 +764,11 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         }
     }
 
+    /**
+     * Return the OMEMO storage path of the contacts of this device.
+     *
+     * @return path
+     */
     private File getContactsPath() {
         File f = getDevicePath();
         if (f != null) {
@@ -757,6 +777,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
+    /**
+     * Return the OMEMO storage path of the contact 'device'.
+     *
+     * @param device device in question
+     * @return path
+     */
     private File getContactDevicePath(OmemoDevice device) {
         File dir = getContactsPath();
         if (dir != null) {
@@ -765,6 +791,11 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
+    /**
+     * Return the OMEMO storage path of the identityKey of the current user.
+     *
+     * @return path
+     */
     public File getIdentityKeyPath() {
         File f = getDevicePath();
         if (f != null) {
@@ -773,6 +804,11 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
+    /**
+     * Return the OMEMO storage path of the signed preKeys of the user.
+     *
+     * @return path
+     */
     private File getSignedPreKeysPath() {
         File f = getDevicePath();
         if (f != null) {
@@ -781,6 +817,11 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
+    /**
+     * Return the OMEMO storage path of the normal preKeys of the user.
+     *
+     * @return path
+     */
     private File getPreKeysPath() {
         File f = getDevicePath();
         if (f != null) {
@@ -789,6 +830,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
+    /**
+     * Create the path in the file system.
+     *
+     * @param path path to create
+     * @return path
+     */
     public File create(File path) {
         if (!path.exists()) {
             path.mkdirs();
@@ -796,6 +843,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return path;
     }
 
+    /**
+     * Write bytes into file.
+     *
+     * @param data data
+     * @param destination destination file.
+     */
     private static void writeBytes(byte[] data, File destination) {
         FileOutputStream fos = null;
         try {
@@ -823,6 +876,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         }
     }
 
+    /**
+     * Read bytes from file.
+     *
+     * @param from file
+     * @return bytes
+     */
     private static byte[] readBytes(File from) {
         if (!from.exists()) {
             return null;
@@ -851,6 +910,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return null;
     }
 
+    /**
+     * Write integer to file.
+     *
+     * @param to file
+     * @param i int
+     */
     private static void writeInt(File to, int i) {
         try {
             writeBytes(Integer.toString(i).getBytes(StringUtils.UTF8), to);
@@ -859,6 +924,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         }
     }
 
+    /**
+     * Read integer from file
+     *
+     * @param from file
+     * @return int
+     */
     private static int readInt(File from) {
         byte[] bytes = readBytes(from);
 
@@ -876,8 +947,10 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     /**
-     * Recursively delete all data except trust decisions from a directory
+     * Recursively delete all data except trust decisions from a directory.
+     *
      * @param f file or directory
+     * @return success
      */
     private static boolean deleteRecursive(File f) {
         if(f == null) {
