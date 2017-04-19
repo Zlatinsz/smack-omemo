@@ -207,8 +207,8 @@ public class OmemoMessageElement implements ExtensionElement {
             s += "  payload: " + new String(getPayload(), StringUtils.UTF8);
             return s;
         } catch (UnsupportedEncodingException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
-            return null;
+            // UTF-8 must be supported on all platforms claiming to be java compatible.
+            throw new AssertionError(e);
         }
     }
 
