@@ -93,15 +93,16 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
 
     @Override
     public void storeOmemoDeviceId(int deviceId) {
-        if (loadOmemoDeviceId() != deviceId) {
-            File[] list = getUserPath().listFiles();
-            if (list != null) {
-                for (File f : list) {
-                    f.delete();
-                }
-            }
-            create(new File(getUserPath().getAbsolutePath() + "/" + deviceId));
+        if (loadOmemoDeviceId() == deviceId) {
+            return;
         }
+        File[] list = getUserPath().listFiles();
+        if (list != null) {
+            for (File f : list) {
+                f.delete();
+            }
+        }
+        create(new File(getUserPath().getAbsolutePath() + "/" + deviceId));
     }
 
     @Override
@@ -139,13 +140,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public T_IdKeyPair loadOmemoIdentityKeyPair() throws CorruptedOmemoKeyException {
         File dir = getDevicePath();
-        if (dir != null) {
-            byte[] bytes = readBytes(new File(dir.getAbsolutePath() + "/" + IDENTITY_KEY_PAIR));
-            if (bytes != null) {
-                return keyUtil().identityKeyPairFromBytes(bytes);
-            }
+        if(dir == null) {
+            return null;
         }
-        return null;
+
+        byte[] bytes = readBytes(new File(dir.getAbsolutePath() + "/" + IDENTITY_KEY_PAIR));
+        return (bytes != null ? keyUtil().identityKeyPairFromBytes(bytes) : null);
     }
 
     @Override
@@ -159,13 +159,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public T_IdKey loadOmemoIdentityKey(OmemoDevice device) throws CorruptedOmemoKeyException {
         File dir = getContactDevicePath(device);
-        if (dir != null) {
-            byte[] bytes = readBytes(new File(dir.getAbsolutePath() + "/" + IDENTITY_KEY));
-            if (bytes != null) {
-                return keyUtil().identityKeyFromBytes(bytes);
-            }
+        if (dir == null) {
+            return null;
         }
-        return null;
+
+        byte[] bytes = readBytes(new File(dir.getAbsolutePath() + "/" + IDENTITY_KEY));
+        return (bytes != null ? keyUtil().identityKeyFromBytes(bytes) : null);
     }
 
     @Override
@@ -179,111 +178,142 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public boolean isTrustedOmemoIdentity(OmemoDevice device, T_IdKey identityKey) {
         File dir = getContactDevicePath(device);
-        if (dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + TRUST);
-            byte[] bytes = readBytes(f);
-            if (bytes != null && bytes.length != 0) {
-                if (bytes[0] != '1') {
-                    return false;
-                }
-                byte[] tfp = new byte[bytes.length - 1];
-                System.arraycopy(bytes, 1, tfp, 0, tfp.length);
-                byte[] fp;
-                try {
-                    fp = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
-                } catch (UnsupportedEncodingException e) {
-                    LOGGER.log(Level.SEVERE, e.getMessage());
-                    return false;
-                }
-                return Arrays.equals(fp, tfp);
-            }
+        if(dir == null) {
+            return false;
         }
-        return false;
+
+        File f = new File(dir.getAbsolutePath() + "/" + TRUST);
+        byte[] bytes = readBytes(f);
+
+        if(bytes == null) {
+            return false;
+        }
+
+        if (bytes[0] != '1') {
+            return false;
+        }
+
+        byte[] tfp = new byte[bytes.length - 1];
+        System.arraycopy(bytes, 1, tfp, 0, tfp.length);
+
+        byte[] fp;
+        try {
+            fp = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "isTrustedOmemoIdentity has failed due to an unsupported encoding: "
+                    +e.getMessage());
+            return false;
+        }
+
+        return Arrays.equals(fp, tfp);
     }
 
     @Override
     public boolean isDecidedOmemoIdentity(OmemoDevice device, T_IdKey identityKey) {
         File dir = getContactDevicePath(device);
-        if (dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + TRUST);
-            if (f.exists() && f.isFile()) {
-                byte[] bytes = readBytes(f);
-                if (bytes != null && bytes.length != 0) {
-                    byte[] tfp = new byte[bytes.length - 1];
-                    System.arraycopy(bytes, 1, tfp, 0, tfp.length);
-                    byte[] fp;
-                    try {
-                        fp = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
-                    } catch (UnsupportedEncodingException e) {
-                        LOGGER.log(Level.SEVERE, e.getMessage());
-                        return false;
-                    }
-                    return Arrays.equals(fp, tfp);
-                }
-            }
+        if (dir == null) {
+            return false;
         }
-        return false;
+
+        File f = new File(dir.getAbsolutePath() + "/" + TRUST);
+        if (!f.exists() || !f.isFile()) {
+            return false;
+        }
+
+        byte[] bytes = readBytes(f);
+        if(bytes == null || bytes.length == 0) {
+            return false;
+        }
+
+        byte[] tfp = new byte[bytes.length - 1];
+        System.arraycopy(bytes, 1, tfp, 0, tfp.length);
+        byte[] fp;
+
+        try {
+            fp = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "isDecidedOmemoIdentity has failed due to an unsupported encoding: "
+                    +e.getMessage());
+            return false;
+        }
+
+        return Arrays.equals(fp, tfp);
     }
 
     @Override
     public void trustOmemoIdentity(OmemoDevice device, T_IdKey identityKey) {
         File dir = getContactDevicePath(device);
-        if (dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + TRUST);
-
-            byte[] a;
-            try {
-                a = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
-            } catch (UnsupportedEncodingException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage());
-                return;
-            }
-            byte[] b = new byte[a.length + 1];
-            b[0] = '1';
-            System.arraycopy(a, 0, b, 1, a.length);
-            writeBytes(b, f);
+        if(dir == null) {
+            return;
         }
+
+        File f = new File(dir.getAbsolutePath() + "/" + TRUST);
+        byte[] a;
+
+        try {
+            a = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "trustOmemoIdentity failed due to unsupported encoding:"+e.getMessage());
+            return;
+        }
+        //Prepend 1 to fingerpint to symbolize trust
+        byte[] b = new byte[a.length + 1];
+        b[0] = '1';
+        System.arraycopy(a, 0, b, 1, a.length);
+        writeBytes(b, f);
     }
 
     @Override
     public void distrustOmemoIdentity(OmemoDevice device, T_IdKey identityKey) {
         File dir = getContactDevicePath(device);
-        if (dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + TRUST);
-            byte[] a;
-            try {
-                a = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
-            } catch (UnsupportedEncodingException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage());
-                return;
-            }
-            byte[] b = new byte[a.length + 1];
-            b[0] = '0';
-            System.arraycopy(a, 0, b, 1, a.length);
-            writeBytes(b, f);
+        if (dir == null) {
+            return;
         }
+
+        File f = new File(dir.getAbsolutePath() + "/" + TRUST);
+        byte[] a;
+
+        try {
+            a = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "distrustOmemoIdentity failed due to unsupported encoding: "+e.getMessage());
+            return;
+        }
+        //Prepend 0 to fingerprint to symbolize distrust
+        byte[] b = new byte[a.length + 1];
+        b[0] = '0';
+        System.arraycopy(a, 0, b, 1, a.length);
+        writeBytes(b, f);
     }
 
     @Override
     public T_PreKey loadOmemoPreKey(int preKeyId) {
         File dir = getPreKeysPath();
-        if (dir != null) {
-            File[] keys = dir.listFiles();
-            if (keys != null) {
-                for (File f : keys) {
-                    if (f.getName().equals(Integer.toString(preKeyId))) {
-                        byte[] bytes = readBytes(f);
-                        if (bytes != null) {
-                            try {
-                                return keyUtil().preKeyFromBytes(bytes);
-                            } catch (IOException e) {
-                                LOGGER.log(Level.SEVERE, e.getMessage());
-                                return null;
-                            }
-                        }
-                    }
+        if(dir == null) {
+            return null;
+        }
 
-                }
+        File[] keys = dir.listFiles();
+        if (keys == null) {
+            return null;
+        }
+
+        for (File f : keys) {
+            if (!f.getName().equals(Integer.toString(preKeyId))) {
+                continue;
+            }
+
+            byte[] bytes = readBytes(f);
+            if (bytes == null) {
+                continue;
+            }
+
+            try {
+                return keyUtil().preKeyFromBytes(bytes);
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "loadOmemoPreKey has failed for file "
+                        +f.getAbsolutePath()+": "+e.getMessage());
+                return null;
             }
         }
         return null;
@@ -310,15 +340,14 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public int loadCurrentSignedPreKeyId() {
         File dir = getDevicePath();
-        if (dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + CURRENT_SIGNED_PRE_KEY);
-            int i = readInt(f);
-            if (i != -1) {
-                return i;
-            }
+        if (dir == null) {
+            return 0;
         }
 
-        return 0;
+        File f = new File(dir.getAbsolutePath() + "/" + CURRENT_SIGNED_PRE_KEY);
+        int i = readInt(f);
+
+        return (i != -1 ? i : 0);
     }
 
     @Override
@@ -334,22 +363,31 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     public HashMap<Integer, T_PreKey> loadOmemoPreKeys() {
         File dir = getPreKeysPath();
         HashMap<Integer, T_PreKey> preKeys = new HashMap<>();
-        if (dir != null) {
-            File[] list = dir.listFiles();
-            if (list != null) {
 
-                for (File f : list) {
-                    T_PreKey preKey;
-                    try {
-                        byte[] bytes = readBytes(f);
-                        if (bytes != null) {
-                            preKey = keyUtil().preKeyFromBytes(bytes);
-                            preKeys.put(Integer.parseInt(f.getName()), preKey);
-                        }
-                    } catch (IOException e) {
-                        LOGGER.log(Level.SEVERE, e.getMessage());
-                    }
+        if (dir == null) {
+            return preKeys;
+        }
+
+        File[] list = dir.listFiles();
+        if (list == null) {
+            return preKeys;
+        }
+
+        for (File f : list) {
+            T_PreKey preKey;
+
+            try {
+                byte[] bytes = readBytes(f);
+
+                if (bytes == null) {
+                    continue;
                 }
+
+                preKey = keyUtil().preKeyFromBytes(bytes);
+                preKeys.put(Integer.parseInt(f.getName()), preKey);
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "loadOmemoPreKeys has failed for file "
+                        +f.getAbsolutePath()+": "+e.getMessage());
             }
         }
         return preKeys;
@@ -358,40 +396,52 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public T_SigPreKey loadOmemoSignedPreKey(int signedPreKeyId) {
         File dir = getSignedPreKeysPath();
-        if (dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + signedPreKeyId);
-            byte[] bytes = readBytes(f);
-            if (bytes != null) {
-                try {
-                    return keyUtil().signedPreKeyFromBytes(bytes);
-                } catch (IOException e) {
-                    LOGGER.log(Level.SEVERE, e.getMessage());
-                }
-            }
+        if (dir == null) {
+            return null;
         }
-        return null;
+
+        File f = new File(dir.getAbsolutePath() + "/" + signedPreKeyId);
+        byte[] bytes = readBytes(f);
+
+        if (bytes == null) {
+            return null;
+        }
+
+        try {
+            return keyUtil().signedPreKeyFromBytes(bytes);
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "loadOmemoSignedPreKey has failed: "+e.getMessage());
+            return null;
+        }
     }
 
     @Override
     public HashMap<Integer, T_SigPreKey> loadOmemoSignedPreKeys() {
         File dir = getSignedPreKeysPath();
         HashMap<Integer, T_SigPreKey> signedPreKeys = new HashMap<>();
-        if (dir != null) {
-            File[] list = dir.listFiles();
-            if (list != null) {
 
-                for (File f : list) {
-                    byte[] bytes = readBytes(f);
-                    try {
-                        if (bytes != null) {
-                            T_SigPreKey s = keyUtil().signedPreKeyFromBytes(bytes);
-                            signedPreKeys.put(Integer.parseInt(f.getName()), s);
-                        }
-                    } catch (IOException e) {
-                        LOGGER.log(Level.SEVERE, e.getMessage());
-                    }
-                }
+        if (dir == null) {
+            return signedPreKeys;
+        }
 
+        File[] list = dir.listFiles();
+        if (list == null) {
+            return signedPreKeys;
+        }
+
+        for (File f : list) {
+            byte[] bytes = readBytes(f);
+
+            if(bytes == null) {
+                continue;
+            }
+
+            try {
+                T_SigPreKey s = keyUtil().signedPreKeyFromBytes(bytes);
+                signedPreKeys.put(Integer.parseInt(f.getName()), s);
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "loadOmemoSignedPreKeys has failed for file "
+                        +f.getAbsolutePath()+": "+e.getMessage());
             }
         }
         return signedPreKeys;
@@ -418,41 +468,56 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public T_Sess loadRawSession(OmemoDevice device) {
         File dir = getContactDevicePath(device);
-        if (dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + SESSION);
-            byte[] bytes = readBytes(f);
-            if (bytes != null) {
-                try {
-                    return keyUtil().rawSessionFromBytes(bytes);
-                } catch (IOException e) {
-                    LOGGER.log(Level.SEVERE, e.getMessage());
-                }
-            }
+        if (dir == null) {
+            return null;
         }
-        return null;
+
+        File f = new File(dir.getAbsolutePath() + "/" + SESSION);
+        byte[] bytes = readBytes(f);
+
+        if (bytes == null) {
+            return null;
+        }
+
+        try {
+            return keyUtil().rawSessionFromBytes(bytes);
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "loadRawSession has failed: "+e.getMessage());
+            return null;
+        }
     }
 
     @Override
     public HashMap<Integer, T_Sess> loadAllRawSessionsOf(BareJid contact) {
         File dir = getContactsPath();
         HashMap<Integer, T_Sess> sessions = new HashMap<>();
-        if (dir != null) {
-            dir = create(new File(dir.getAbsolutePath() + "/" + contact.toString()));
-            File[] list = dir.listFiles();
-            if (list != null) {
-                for (File f : list) {
-                    if (f.isDirectory()) {
-                        try {
-                            int id = Integer.parseInt(f.getName());
-                            T_Sess s = loadRawSession(new OmemoDevice(contact, id));
-                            if (s != null) {
-                                sessions.put(id, s);
-                            }
-                        } catch (NumberFormatException ignored) {
 
-                        }
-                    }
+        if (dir == null) {
+            return sessions;
+        }
+
+        dir = create(new File(dir.getAbsolutePath() + "/" + contact.toString()));
+        File[] list = dir.listFiles();
+
+        if (list == null) {
+            return sessions;
+        }
+
+        for (File f : list) {
+            if (!f.isDirectory()) {
+                continue;
+            }
+
+            try {
+                int id = Integer.parseInt(f.getName());
+                T_Sess s = loadRawSession(new OmemoDevice(contact, id));
+
+                if (s != null) {
+                    sessions.put(id, s);
                 }
+            } catch (NumberFormatException e) {
+                LOGGER.log(Level.WARNING, "loadAllRawSessions has failed for file "
+                        +f.getAbsolutePath()+": "+e.getMessage());
             }
         }
         return sessions;
@@ -494,42 +559,57 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public void setDateOfLastReceivedMessage(OmemoDevice from, Date date) {
         File dir = getContactDevicePath(from);
-        if(dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + LAST_MESSAGE_RECEIVED);
-            try {
-                writeBytes(Long.toString(date.getTime()).getBytes(StringUtils.UTF8), f);
-            } catch (UnsupportedEncodingException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage());
-            }
+        if(dir == null) {
+            return;
+        }
+
+        File f = new File(dir.getAbsolutePath() + "/" + LAST_MESSAGE_RECEIVED);
+
+        try {
+            writeBytes(Long.toString(date.getTime()).getBytes(StringUtils.UTF8), f);
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "setDateOfLastReceivedMessage has failed: "+e.getMessage());
         }
     }
 
     @Override
     public Date getDateOfLastReceivedMessage(OmemoDevice from) {
         File dir = getContactDevicePath(from);
-        if(dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + LAST_MESSAGE_RECEIVED);
-            if(f.exists() && f.isFile()) {
-                try {
-                    return new Date(Long.valueOf(new String(readBytes(f), StringUtils.UTF8).trim().replace("\n","")));
-                } catch (UnsupportedEncodingException e) {
-                    LOGGER.log(Level.SEVERE, e.getMessage());
-                }
-            }
+        if(dir == null) {
+            return null;
         }
-        return null;
+
+        File f = new File(dir.getAbsolutePath() + "/" + LAST_MESSAGE_RECEIVED);
+        if(!f.exists() || !f.isFile()) {
+            return null;
+        }
+
+        try {
+            byte[] b = readBytes(f);
+
+            if(b == null) {
+                return null;
+            }
+
+            return new Date(Long.valueOf(new String(b, StringUtils.UTF8).trim().replace("\n","")));
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "getDateOfLastReceivedMessage failed: "+e.getMessage());
+            return null;
+        }
     }
 
     @Override
     public void setDateOfLastSignedPreKeyRenewal(Date date) {
         File dir = getDevicePath();
-        if(dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + LAST_SIGNED_PREKEY_RENEWAL);
-            try {
-                writeBytes(Long.toString(date.getTime()).getBytes(StringUtils.UTF8), f);
-            } catch (UnsupportedEncodingException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage());
-            }
+        if(dir == null) {
+            return;
+        }
+
+        File f = new File(dir.getAbsolutePath() + "/" + LAST_SIGNED_PREKEY_RENEWAL);
+        try {
+            writeBytes(Long.toString(date.getTime()).getBytes(StringUtils.UTF8), f);
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "setDateOfLastSignedPreKeyRenewal has failed: "+e.getMessage());
         }
     }
 
@@ -544,57 +624,72 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     @Override
     public Date getDateOfLastSignedPreKeyRenewal() {
         File dir = getDevicePath();
-        if(dir != null) {
-            File f = new File(dir.getAbsolutePath() + "/" + LAST_SIGNED_PREKEY_RENEWAL);
-            if(f.exists() && f.isFile()) {
-                try {
-                    return new Date(Long.valueOf(new String(readBytes(f), StringUtils.UTF8).trim()));
-                } catch (UnsupportedEncodingException e) {
-                    LOGGER.log(Level.SEVERE, e.getMessage());
-                }
-            }
+        if(dir == null) {
+            return null;
         }
-        return null;
+
+        File f = new File(dir.getAbsolutePath() + "/" + LAST_SIGNED_PREKEY_RENEWAL);
+        if(!f.exists() || !f.isFile()) {
+            return null;
+        }
+
+        try {
+            return new Date(Long.valueOf(new String(readBytes(f), StringUtils.UTF8).trim()));
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "getDateOfLastSignedPreKeyRenewal has failed: "+e.getMessage());
+            return null;
+        }
     }
 
     @Override
     public CachedDeviceList loadCachedDeviceList(BareJid contact) {
+        CachedDeviceList cachedDeviceList = new CachedDeviceList();
+
         if (contact == null) {
             return null;
         }
+
         File dir = getContactsPath();
-        if (dir != null) {
-            dir = create(new File(dir.getAbsolutePath() + "/" + contact.toString()));
-            File f = new File(dir.getAbsolutePath() + "/" + DEVICE_LIST);
-            byte[] bytes = readBytes(f);
-            if (bytes != null) {
-                try {
-                    String s = new String(bytes, StringUtils.UTF8);
-                    if (s.contains("a:") && s.contains("i:")) {
-                        CachedDeviceList cachedDeviceList = new CachedDeviceList();
+        if (dir == null) {
+            return cachedDeviceList;
+        }
 
-                        String a = s.substring(s.indexOf("a:") + 2, s.indexOf("i:"));
-                        String[] ids = a.split(",");
-                        for (String id : ids) {
-                            cachedDeviceList.addDevice(Integer.parseInt(id));
-                        }
+        dir = create(new File(dir.getAbsolutePath() + "/" + contact.toString()));
+        File f = new File(dir.getAbsolutePath() + "/" + DEVICE_LIST);
+        byte[] bytes = readBytes(f);
 
-                        String i = s.substring(s.indexOf("i:") + 2);
-                        String[] iids = i.split(",");
-                        for (String iid : iids) {
-                            if (iid.length() > 0) {
-                                cachedDeviceList.getInactiveDevices().add(Integer.parseInt(iid));
-                            }
-                        }
+        if (bytes == null) {
+            return cachedDeviceList;
+        }
 
-                        return cachedDeviceList;
-                    }
-                } catch (UnsupportedEncodingException e) {
-                    LOGGER.log(Level.SEVERE, e.getMessage());
+        try {
+            String s = new String(bytes, StringUtils.UTF8);
+
+            if (!s.contains("a:") || !s.contains("i:")) {
+                return cachedDeviceList;
+            }
+
+            String a = s.substring(s.indexOf("a:") + 2, s.indexOf("i:"));
+            String[] ids = a.split(",");
+
+            for (String id : ids) {
+                cachedDeviceList.addDevice(Integer.parseInt(id));
+            }
+
+            String i = s.substring(s.indexOf("i:") + 2);
+            String[] iids = i.split(",");
+
+            for (String iid : iids) {
+                if (iid.length() > 0) {
+                    cachedDeviceList.getInactiveDevices().add(Integer.parseInt(iid));
                 }
             }
+
+            return cachedDeviceList;
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "loadCachedDeviceList failed: "+e.getMessage());
+            return cachedDeviceList;
         }
-        return new CachedDeviceList();
     }
 
     @Override
@@ -603,30 +698,36 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             return;
         }
         File dir = getContactsPath();
-        if (dir != null) {
-            dir = create(new File(dir.getAbsolutePath() + "/" + contact.toString()));
 
-            String s = "a:";
-            for (int i : deviceList.getActiveDevices()) {
-                s += i + ",";
-            }
-            if (s.endsWith(",")) {
-                s = s.substring(0, s.length() - 1);
-            }
-            s += "i:";
-            for (int i : deviceList.getInactiveDevices()) {
-                s += i + ",";
-            }
-            if (s.endsWith(",")) {
-                s = s.substring(0, s.length() - 1);
-            }
+        if(dir == null) {
+            return;
+        }
 
-            File f = new File(dir + "/" + DEVICE_LIST);
-            try {
-                writeBytes(s.getBytes(StringUtils.UTF8), f);
-            } catch (UnsupportedEncodingException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage());
-            }
+        dir = create(new File(dir.getAbsolutePath() + "/" + contact.toString()));
+
+        String s = "a:";
+        for (int i : deviceList.getActiveDevices()) {
+            s += i + ",";
+        }
+
+        if (s.endsWith(",")) {
+            s = s.substring(0, s.length() - 1);
+        }
+
+        s += "i:";
+        for (int i : deviceList.getInactiveDevices()) {
+            s += i + ",";
+        }
+
+        if (s.endsWith(",")) {
+            s = s.substring(0, s.length() - 1);
+        }
+
+        File f = new File(dir + "/" + DEVICE_LIST);
+        try {
+            writeBytes(s.getBytes(StringUtils.UTF8), f);
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "storeCachedDeviceList has failed: "+e.getMessage());
         }
     }
 
@@ -695,66 +796,83 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         return path;
     }
 
-    private void writeBytes(byte[] data, File destination) {
+    private static void writeBytes(byte[] data, File destination) {
         FileOutputStream fos = null;
         try {
+
             if (!destination.exists()) {
                 destination.createNewFile();
             }
+
             fos = new FileOutputStream(destination);
             fos.write(data);
+
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.log(Level.SEVERE, "writeBytes has failed to write: "+e.getMessage());
         } finally {
+
             try {
-                if (fos != null)
+
+                if (fos != null) {
                     fos.close();
+                }
+
             } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage());
+                LOGGER.log(Level.SEVERE, "writeBytes has failed to close OutputStream: "+e.getMessage());
             }
         }
     }
 
-    private byte[] readBytes(File from) {
-        if (from.exists()) {
-            FileInputStream fis = null;
+    private static byte[] readBytes(File from) {
+        if (!from.exists()) {
+            return null;
+        }
+
+        FileInputStream fis = null;
+
+        try {
+            fis = new FileInputStream(from);
+            byte[] buffer = new byte[(int) from.length()];
+            fis.read(buffer);
+            return buffer;
+
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "readBytes has failed to read: "+e.getMessage());
+
+        } finally {
             try {
-                fis = new FileInputStream(from);
-                byte[] buffer = new byte[(int) from.length()];
-                fis.read(buffer);
-                return buffer;
+                if (fis != null)
+                    fis.close();
+
             } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage());
-            } finally {
-                try {
-                    if (fis != null)
-                        fis.close();
-                } catch (IOException e) {
-                    LOGGER.log(Level.SEVERE, e.getMessage());
-                }
+                LOGGER.log(Level.SEVERE, "readBytes has failed to close the InputStream: "+e.getMessage());
             }
         }
         return null;
     }
 
-    private void writeInt(File to, int i) {
+    private static void writeInt(File to, int i) {
         try {
             writeBytes(Integer.toString(i).getBytes(StringUtils.UTF8), to);
         } catch (UnsupportedEncodingException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.log(Level.SEVERE, "writeInt has failed due to unsupported encoding: "+e.getMessage());
         }
     }
 
-    private int readInt(File from) {
+    private static int readInt(File from) {
         byte[] bytes = readBytes(from);
-        if (bytes != null) {
-            try {
-                return Integer.parseInt(new String(bytes, StringUtils.UTF8));
-            } catch (NumberFormatException | UnsupportedEncodingException ignored) {
-                LOGGER.log(Level.SEVERE, ignored.getMessage());
-            }
+
+        if (bytes == null) {
+            return -1;
         }
-        return -1;
+
+        try {
+            return Integer.parseInt(new String(bytes, StringUtils.UTF8));
+
+        } catch (NumberFormatException | UnsupportedEncodingException e) {
+            LOGGER.log(Level.SEVERE, "readInt has failed due to unsupported encoding: "+e.getMessage());
+            return -1;
+        }
     }
 
     /**
@@ -762,18 +880,26 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      * @param f file or directory
      */
     private static boolean deleteRecursive(File f) {
-        if(f != null) {
-            if(f.isFile()) {
-                return f.delete();
-            } else {
-                boolean deleted = true;
-                File[] files = f.listFiles();
-                for(File f1 : (files != null ? files : new File[]{})) {
-                    deleted &= deleteRecursive(f1);
-                }
-                return deleted && f.delete();
-            }
+        if(f == null) {
+            return true;
         }
-        return true;
+
+        if(f.isFile()) {
+            return f.delete();
+
+        } else {
+            boolean deleted = true;
+            File[] files = f.listFiles();
+
+            if(files == null) {
+                return true;
+            }
+
+            for(File f1 : files) {
+                deleted &= deleteRecursive(f1);
+            }
+
+            return deleted && f.delete();
+        }
     }
 }
