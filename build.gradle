@@ -402,6 +402,10 @@ subprojects*.jar {
    }
 }
 
+(subprojects - project(':smack-omemo-signal'))*.checkstyle {
+	configProperties.checkstyleLicenseHeader = "header"
+}
+
 configure(androidBootClasspathProjects) {
 	compileJava {
 		options.bootClasspath = androidBootClasspath
