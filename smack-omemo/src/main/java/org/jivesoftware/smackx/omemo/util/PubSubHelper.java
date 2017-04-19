@@ -38,6 +38,7 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_
  */
 public class PubSubHelper {
 
+    // TODO This class should simply be part of OmemoService -Flow
     private final OmemoManager manager;
 
     public PubSubHelper(OmemoManager manager) {
