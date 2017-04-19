@@ -24,9 +24,9 @@ import org.jivesoftware.smack.packet.Message;
  * @author Paul Schaub
  */
 public class ClearTextMessage<T_IdKey> {
-    private String body;
-    private Message encryptedMessage;
-    private OmemoMessageInformation<T_IdKey> messageInformation;
+    private final String body;
+    private final Message encryptedMessage;
+    private final OmemoMessageInformation<T_IdKey> messageInformation;
 
     public ClearTextMessage(String message, Message original, OmemoMessageInformation<T_IdKey> messageInfo) {
         this.body = message;
