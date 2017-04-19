@@ -3,6 +3,7 @@
 // manifest is a OsgiManifest. Possible caused by
 // evaluationDependsOnChildren in the root project.
 apply plugin: 'osgi'
+apply plugin: 'checkstyle'
 
 repositories {
     mavenCentral()
@@ -17,4 +18,8 @@ dependencies {
 
 javadoc {
 	enabled = false
+}
+
+checkstyle {
+	configProperties.checkstyleLicenseHeader = "smack-omemo-signal-gplv3-license-header"
 }
