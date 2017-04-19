@@ -99,7 +99,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * Same as encryptMessageKey, just the other way round.
      *
      * @param encryptedKey encrypted key
-     * @return serialized decrypted key
+     * @return serialized decrypted key or null
      * @throws CryptoFailedException when decryption fails.
      * @throws NoRawSessionException when no session was found in the double ratchet library
      */

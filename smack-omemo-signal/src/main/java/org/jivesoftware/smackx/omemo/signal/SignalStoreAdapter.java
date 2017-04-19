@@ -64,7 +64,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         try {
             return omemoStore.loadOmemoIdentityKeyPair();
         } catch (CorruptedOmemoKeyException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.log(Level.SEVERE, "getIdentityKeyPair has failed: "+ e.getMessage());
             return null;
         }
     }
@@ -79,7 +79,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         try {
             omemoStore.storeOmemoIdentityKey(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress), identityKey);
         } catch (XmppStringprepException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.log(Level.SEVERE, "saveIdentity has failed:" +e.getMessage());
         }
     }
 
@@ -109,7 +109,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         try {
             return (loadPreKey(i) != null);
         } catch (InvalidKeyIdException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, "containsPreKey has failed: "+e.getMessage());
             return false;
         }
     }
@@ -125,7 +125,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
             SessionRecord s = omemoStore.loadRawSession(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress));
             return (s != null ? s : new SessionRecord());
         } catch (XmppStringprepException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.log(Level.SEVERE, "loadSession has failed: "+e.getMessage());
             return null;
         }
     }
@@ -136,7 +136,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         try {
             contactsSessions = omemoStore.loadAllRawSessionsOf(JidCreate.bareFrom(s));
         } catch (XmppStringprepException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, "getSubDeviceSessions has failed:"+e.getMessage());
         }
         if (contactsSessions != null) {
             return new ArrayList<>(contactsSessions.keySet());
@@ -149,7 +149,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         try {
             omemoStore.storeRawSession(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress), sessionRecord);
         } catch (XmppStringprepException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.log(Level.SEVERE, "storeSession has failed:"+e.getMessage());
         }
     }
 
@@ -158,7 +158,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         try {
             return omemoStore.containsRawSession(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress));
         } catch (XmppStringprepException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, "containsSession has failed: "+e.getMessage());
             return false;
         }
     }
@@ -168,7 +168,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         try {
             omemoStore.removeRawSession(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress));
         } catch (XmppStringprepException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, "deleteSession has failed: "+e.getMessage());
         }
     }
 
@@ -177,7 +177,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         try {
             omemoStore.removeAllRawSessionsOf(JidCreate.bareFrom(s));
         } catch (XmppStringprepException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, "deleteAllSession has failed: "+e.getMessage());
         }
     }
 
@@ -208,7 +208,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         try {
             return loadSignedPreKey(i) != null;
         } catch (InvalidKeyIdException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, "containsSignedPreKey has failed: "+e.getMessage());
             return false;
         }
     }

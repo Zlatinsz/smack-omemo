@@ -44,6 +44,18 @@ public class PubSubHelper {
         this.manager = manager;
     }
 
+    public LeafNode fetchDeviceListNode() throws InterruptedException, PubSubException.NotALeafNodeException,
+            XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
+        return PubSubManager.getInstance(manager.getConnection(),
+                manager.getConnection().getUser().asBareJid()).getLeafNode(PEP_NODE_DEVICE_LIST);
+    }
+
+    public LeafNode fetchDeviceListNode(BareJid contact)
+            throws InterruptedException, PubSubException.NotALeafNodeException, XMPPException.XMPPErrorException,
+            SmackException.NotConnectedException, SmackException.NoResponseException {
+        return PubSubManager.getInstance(manager.getConnection(), contact).getLeafNode(PEP_NODE_DEVICE_LIST);
+    }
+
     /**
      * Directly fetch the device list of a contact.
      *
@@ -55,8 +67,7 @@ public class PubSubHelper {
      * @throws SmackException.NoResponseException   wrong
      */
     public OmemoDeviceListElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
-        LeafNode node = PubSubManager.getInstance(manager.getConnection(), contact).getLeafNode(PEP_NODE_DEVICE_LIST);
-        return extractDeviceListFrom(node);
+        return extractDeviceListFrom(fetchDeviceListNode(contact));
     }
 
     /**
@@ -122,5 +133,29 @@ public class PubSubHelper {
             return listElement;
         }
         return new OmemoDeviceListElement();
+    }
+
+    /**
+     * Publish the given deviceList to the server.
+     *
+     * @param deviceList list of deviceIDs
+     * @throws InterruptedException                 Exception
+     * @throws XMPPException.XMPPErrorException     Exception
+     * @throws SmackException.NotConnectedException Exception
+     * @throws SmackException.NoResponseException   Exception
+     */
+    public void publishDeviceIds(OmemoDeviceListElement deviceList)
+            throws InterruptedException, XMPPException.XMPPErrorException,
+            SmackException.NotConnectedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
+        PubSubManager.getInstance(manager.getConnection(), manager.getConnection().getUser().asBareJid())
+                .tryToPublishAndPossibleAutoCreate(OmemoConstants.PEP_NODE_DEVICE_LIST, new PayloadItem<>(deviceList));
+    }
+
+    public void publishOmemoBundle(OmemoBundleElement bundleElement, int deviceId)
+            throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException,
+            SmackException.NoResponseException {
+        PubSubManager.getInstance(manager.getConnection(), manager.getConnection().getUser().asBareJid())
+                .tryToPublishAndPossibleAutoCreate(OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID(deviceId),
+                        new PayloadItem<>(bundleElement));
     }
 }

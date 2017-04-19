@@ -67,7 +67,6 @@ public final class OmemoManager extends Manager {
     private static final WeakHashMap<XMPPConnection, OmemoManager> INSTANCES = new WeakHashMap<>();
     private OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> service;
 
-
     /**
      * Private constructor to prevent multiple instances on a single connection (which probably would be bad!).
      *
@@ -232,24 +231,27 @@ public final class OmemoManager extends Manager {
      * @return Message containing the OMEMO element and some additional information
      */
     Message finishMessage(OmemoMessageElement encrypted) {
-        if (encrypted != null) {
-            Message chatMessage = new Message();
-            chatMessage.setFrom(connection().getUser().asBareJid());
-            chatMessage.addExtension(encrypted);
-
-            if(OmemoConstants.ADD_OMEMO_HINT_BODY) {
-                chatMessage.setBody(BODY_OMEMO_HINT);
-            }
-            if(OmemoConstants.ADD_MAM_STORAGE_HINT) {
-                OmemoManager.addMamStorageHint(chatMessage);
-            }
-            if(OmemoConstants.ADD_EME_ENCRYPTION_HINT) {
-                OmemoManager.addExplicitMessageEncryptionHint(chatMessage);
-            }
-
-            return chatMessage;
+        if (encrypted == null) {
+            return null;
         }
-        return null;
+
+        Message chatMessage = new Message();
+        chatMessage.setFrom(connection().getUser().asBareJid());
+        chatMessage.addExtension(encrypted);
+
+        if(OmemoConstants.ADD_OMEMO_HINT_BODY) {
+            chatMessage.setBody(BODY_OMEMO_HINT);
+        }
+
+        if(OmemoConstants.ADD_MAM_STORAGE_HINT) {
+            OmemoManager.addMamStorageHint(chatMessage);
+        }
+
+        if(OmemoConstants.ADD_EME_ENCRYPTION_HINT) {
+            OmemoManager.addExplicitMessageEncryptionHint(chatMessage);
+        }
+
+        return chatMessage;
     }
 
     /**
