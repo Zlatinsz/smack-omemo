@@ -4,6 +4,7 @@
 // evaluationDependsOnChildren in the root project.
 apply plugin: 'osgi'
 apply plugin: 'checkstyle'
+apply plugin: 'maven'
 
 dependencies {
 	compile project(":smack-im")
@@ -14,4 +15,20 @@ dependencies {
 
 checkstyle {
 	configProperties.checkstyleLicenseHeader = "smack-omemo-signal-gplv3-license-header"
+}
+
+uploadArchives {
+	repositories {
+		mavenDeployer {
+			pom.project {
+				licenses {
+					license {
+						name 'GNU General Public License, version 3 or any later version'
+						url 'https://www.gnu.org/licenses/gpl.txt'
+						distribution 'repo'
+					}
+				}
+			}
+		}
+	}
 }

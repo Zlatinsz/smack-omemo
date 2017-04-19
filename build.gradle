@@ -352,14 +352,6 @@ subprojects {
 						developerConnection 'scm:git:https://github.com/igniterealtime/Smack.git'
 					}
 
-					licenses {
-						license {
-							name 'The Apache Software License, Version 2.0'
-							url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-							distribution 'repo'
-						}
-					}
-
 					developers {
 						developer {
 							id 'flow'
@@ -402,8 +394,25 @@ subprojects*.jar {
    }
 }
 
-(subprojects - project(':smack-omemo-signal'))*.checkstyle {
-	configProperties.checkstyleLicenseHeader = "header"
+configure(subprojects - project(':smack-omemo-signal')) {
+	checkstyle {
+		configProperties.checkstyleLicenseHeader = "header"
+	}
+	uploadArchives {
+		repositories {
+			mavenDeployer {
+				pom.project {
+					licenses {
+						license {
+							name 'The Apache Software License, Version 2.0'
+							url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+							distribution 'repo'
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 configure(androidBootClasspathProjects) {
