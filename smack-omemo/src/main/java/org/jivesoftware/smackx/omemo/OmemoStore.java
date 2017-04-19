@@ -136,7 +136,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
                     cachedDeviceList.merge(serverDeviceList);
                 }
             } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException | SmackException.NoResponseException e) {
-                LOGGER.log(Level.WARNING, e.getMessage());
+                LOGGER.log(Level.WARNING, "isAvailableDeviceId could not merge remote device list: "+e.getMessage());
             }
         }
         //Does the list already contain that id?
@@ -167,7 +167,8 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
                     LOGGER.log(Level.WARNING, "IdentityKey of "+omemoDevice+" is null");
                 }
             } catch (CorruptedOmemoKeyException e1) {
-                LOGGER.log(Level.WARNING, e1.getMessage());
+                LOGGER.log(Level.WARNING, "buildOmemoSessionFor could not create a session for "+omemoDevice+
+                        ": "+e1.getMessage());
             }
         }
         return sessions;
@@ -183,21 +184,27 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     getOmemoSessionOf(OmemoDevice device) {
         OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> s =
                 omemoSessions.get(device);
+
         if (s == null) {
             T_IdKey identityKey = null;
             try {
                 identityKey = loadOmemoIdentityKey(device);
             } catch (CorruptedOmemoKeyException e) {
-                LOGGER.log(Level.WARNING, e.getMessage());
+                LOGGER.log(Level.WARNING, "getOmemoSessionOf could not load identityKey of "+device+": "+e.getMessage());
             }
+
             if (identityKey != null) {
                 s = createOmemoSession(device, identityKey);
+
             } else {
-                LOGGER.log(Level.INFO, "No IdentityKey for device " + device);
+                LOGGER.log(Level.INFO, "getOmemoSessionOf couldn't find an identityKey for "+device
+                        +". Initiate session without.");
                 s = createOmemoSession(device, null);
             }
+
             omemoSessions.put(device, s);
         }
+
         if(s.getIdentityKey() == null) {
             try {
                 s.setIdentityKey(loadOmemoIdentityKey(device));
@@ -216,7 +223,11 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      */
     void mergeCachedDeviceList(BareJid contact, OmemoDeviceListElement list) {
         CachedDeviceList cached = loadCachedDeviceList(contact);
-        if (cached == null) cached = new CachedDeviceList();
+
+        if (cached == null) {
+            cached = new CachedDeviceList();
+        }
+
         cached.merge(list);
         storeCachedDeviceList(contact, cached);
     }
@@ -229,14 +240,16 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      */
     void changeSignedPreKey() throws CorruptedOmemoKeyException {
         int lastSignedPreKeyId = loadCurrentSignedPreKeyId();
+
         try {
             T_SigPreKey newSignedPreKey = generateOmemoSignedPreKey(loadOmemoIdentityKeyPair(), lastSignedPreKeyId + 1);
             storeOmemoSignedPreKey(lastSignedPreKeyId + 1, newSignedPreKey);
             storeCurrentSignedPreKeyId(lastSignedPreKeyId + 1);
             setDateOfLastSignedPreKeyRenewal(new Date());
             removeOldSignedPreKeys();
+
         } catch (CorruptedOmemoKeyException e) {
-            LOGGER.log(Level.INFO, "Couldn't generate SignedPreKey: " + e.getMessage());
+            LOGGER.log(Level.INFO, "Couldn't change SignedPreKey: " + e.getMessage());
             throw e;
         }
     }
@@ -245,14 +258,17 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Remove the oldest signedPreKey until there are only MAX_NUMBER_OF_STORED_SIGNED_PREKEYS left.
      */
     private void removeOldSignedPreKeys() {
-        if(MAX_NUMBER_OF_STORED_SIGNED_PREKEYS > 0) {
-            int currentId = loadCurrentSignedPreKeyId();
-            HashMap<Integer, T_SigPreKey> signedPreKeys = loadOmemoSignedPreKeys();
-            for (int i : signedPreKeys.keySet()) {
-                if (i <= currentId - MAX_NUMBER_OF_STORED_SIGNED_PREKEYS) {
-                    LOGGER.log(Level.INFO, "Remove signedPreKey " + i + ".");
-                    removeOmemoSignedPreKey(i);
-                }
+        if(MAX_NUMBER_OF_STORED_SIGNED_PREKEYS <= 0) {
+            return;
+        }
+
+        int currentId = loadCurrentSignedPreKeyId();
+        HashMap<Integer, T_SigPreKey> signedPreKeys = loadOmemoSignedPreKeys();
+
+        for (int i : signedPreKeys.keySet()) {
+            if (i <= currentId - MAX_NUMBER_OF_STORED_SIGNED_PREKEYS) {
+                LOGGER.log(Level.INFO, "Remove signedPreKey " + i + ".");
+                removeOmemoSignedPreKey(i);
             }
         }
     }
@@ -314,13 +330,12 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      */
     public int generateOmemoDeviceId() {
         int i = new Random().nextInt(Integer.MAX_VALUE);
-        if(i > 0) {
-            return i;
+
+        if(i == 0) {
+            return generateOmemoDeviceId();
         }
-        if(i < 0) {
-            return -i;
-        }
-        return generateOmemoDeviceId();
+
+        return Math.abs(i);
     }
 
     /**
@@ -679,8 +694,9 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     public String getFingerprint() {
         try {
             return keyUtil().getFingerprint(keyUtil().identityKeyFromPair(loadOmemoIdentityKeyPair()));
+
         } catch (CorruptedOmemoKeyException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, "getFingerprint failed due to corrupted identityKeyPair: "+e.getMessage());
             return null;
         }
     }
@@ -694,8 +710,9 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     public String getFingerprint(OmemoDevice device) {
         try {
             return keyUtil().getFingerprint(loadOmemoIdentityKey(device));
+
         } catch (CorruptedOmemoKeyException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            LOGGER.log(Level.WARNING, "getFingerprint failed due to corrupted identityKey: "+e.getMessage());
             return null;
         }
     }
