@@ -27,10 +27,9 @@ import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.util.KeyUtil;
-import org.jivesoftware.smackx.pubsub.LeafNode;
+import org.jivesoftware.smackx.pubsub.PubSubException;
 import org.jxmpp.jid.BareJid;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -62,7 +61,6 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
     protected HashMap<OmemoDevice, OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
             omemoSessions;
-    protected LeafNode ownDeviceListNode;
 
     /**
      * Create a new OmemoStore.
@@ -98,7 +96,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Preload all OMEMO sessions for our devices and our contacts.
      */
-    public void initializeOmemoSessions() {
+    void initializeOmemoSessions() {
         BareJid ownJid = omemoManager.getConnection().getUser().asBareJid();
         HashMap<Integer, T_Sess> ourDevices = loadAllRawSessionsOf(ownJid);
         ourDevices.remove(loadOmemoDeviceId());
@@ -129,15 +127,17 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         }
 
         //If Id is still available, get fresh list from the server and merge with local list to check again
-        if (ownDeviceListNode != null) {
-            try {
-                OmemoDeviceListElement serverDeviceList = omemoManager.getOmemoService().getPubSubHelper().extractDeviceListFrom(ownDeviceListNode);
-                if (serverDeviceList != null) {
-                    cachedDeviceList.merge(serverDeviceList);
-                }
-            } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException | SmackException.NoResponseException e) {
-                LOGGER.log(Level.WARNING, "isAvailableDeviceId could not merge remote device list: "+e.getMessage());
+        try {
+            OmemoDeviceListElement serverDeviceList = omemoManager.getOmemoService().getPubSubHelper()
+                    .fetchDeviceList(omemoManager.getConnection().getUser().asBareJid());
+            if (serverDeviceList != null) {
+                cachedDeviceList.merge(serverDeviceList);
             }
+        } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException
+                | SmackException.NoResponseException e) {
+            LOGGER.log(Level.WARNING, "isAvailableDeviceId could not merge remote device list: "+e.getMessage());
+        } catch (PubSubException.NotALeafNodeException e) {
+            throw new AssertionError(e);
         }
         //Does the list already contain that id?
         return !cachedDeviceList.contains(id);
@@ -151,7 +151,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param rawSessions HashMap of Integers (deviceIds) and T_Sess sessions.
      * @return HashMap of OmemoContacts and OmemoSessions
      */
-    HashMap<OmemoDevice, OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
+    private HashMap<OmemoDevice, OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
     buildOmemoSessionsFor(BareJid contact, HashMap<Integer, T_Sess> rawSessions) {
 
         HashMap<OmemoDevice, OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
@@ -245,7 +245,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             T_SigPreKey newSignedPreKey = generateOmemoSignedPreKey(loadOmemoIdentityKeyPair(), lastSignedPreKeyId + 1);
             storeOmemoSignedPreKey(lastSignedPreKeyId + 1, newSignedPreKey);
             storeCurrentSignedPreKeyId(lastSignedPreKeyId + 1);
-            setDateOfLastSignedPreKeyRenewal(new Date());
+            setDateOfLastSignedPreKeyRenewal();
             removeOldSignedPreKeys();
 
         } catch (CorruptedOmemoKeyException e) {
@@ -281,7 +281,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @return OmemoBundleElement
      * @throws CorruptedOmemoKeyException when a key could not be loaded
      */
-    public OmemoBundleElement packOmemoBundle() throws CorruptedOmemoKeyException {
+    OmemoBundleElement packOmemoBundle() throws CorruptedOmemoKeyException {
 
         int currentSignedPreKeyId = loadCurrentSignedPreKeyId();
         T_SigPreKey currentSignedPreKey = loadOmemoSignedPreKey(currentSignedPreKeyId);
@@ -328,7 +328,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      *
      * @return random device ID.
      */
-    public int generateOmemoDeviceId() {
+    int generateOmemoDeviceId() {
         int i = new Random().nextInt(Integer.MAX_VALUE);
 
         if(i == 0) {
@@ -358,7 +358,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      *
      * @return identityKeyPair
      */
-    public T_IdKeyPair generateOmemoIdentityKeyPair() {
+    T_IdKeyPair generateOmemoIdentityKeyPair() {
         return keyUtil().generateOmemoIdentityKeyPair();
     }
 
@@ -434,42 +434,46 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     public abstract void distrustOmemoIdentity(OmemoDevice device, T_IdKey identityKey);
 
     /**
-     * Set the date of the last message that was received from device 'from' to 'date'.
+     * Set the date in millis of the last message that was received from device 'from' to 'date'.
      *
      * @param from device in question
-     * @param date date of the last received message
+     * @param date date of the last received message in millis
      */
-    public abstract void setDateOfLastReceivedMessage(OmemoDevice from, Date date);
+    public abstract void setDateOfLastReceivedMessage(OmemoDevice from, long date);
 
     /**
-     * Set the date of the last message that was received from device 'from' to now.
+     * Set the date in millis of the last message that was received from device 'from' to now.
      *
      * @param from device in question
      */
     public void setDateOfLastReceivedMessage(OmemoDevice from) {
-        this.setDateOfLastReceivedMessage(from, new Date());
+        this.setDateOfLastReceivedMessage(from, System.currentTimeMillis());
     }
 
     /**
-     * Return the date of the last message that was received from device 'from'.
+     * Return the date in millis of the last message that was received from device 'from'.
      *
      * @param from device in question
-     * @return date if existent, otherwise null
+     * @return date if existent as long, otherwise -1
      */
-    public abstract Date getDateOfLastReceivedMessage(OmemoDevice from);
+    public abstract long getDateOfLastReceivedMessage(OmemoDevice from);
 
     /**
-     * Set the date of the last time the signed preKey was renewed.
+     * Set the date in millis of the last time the signed preKey was renewed.
      *
      * @param date date
      */
-    public abstract void setDateOfLastSignedPreKeyRenewal(Date date);
+    public abstract void setDateOfLastSignedPreKeyRenewal(long date);
+
+    public void setDateOfLastSignedPreKeyRenewal() {
+        setDateOfLastSignedPreKeyRenewal(System.currentTimeMillis());
+    }
 
     /**
-     * Get the date of the last time the signed preKey was renewed.
-     * @return date
+     * Get the date in millis of the last time the signed preKey was renewed.
+     * @return date if existent as long, otherwise -1
      */
-    public abstract Date getDateOfLastSignedPreKeyRenewal();
+    public abstract long getDateOfLastSignedPreKeyRenewal();
 
     /**
      * Generate 'count' new PreKeys beginning with id 'startId'.

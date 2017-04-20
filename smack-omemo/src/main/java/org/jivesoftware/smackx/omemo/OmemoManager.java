@@ -174,9 +174,9 @@ public final class OmemoManager extends Manager {
      * @param message    Message that will be encrypted. The body of the message will be encrypted.
      * @return new a new Message with the encrypted message in the 'encrypted' element and a hint for
      * OMEMO-incapable clients in the body
-     * @throws CryptoFailedException
-     * @throws UndecidedOmemoIdentityException
-     * @throws NoSuchAlgorithmException
+     * @throws CryptoFailedException            When something fails with the crypto
+     * @throws UndecidedOmemoIdentityException  When the trust if the session with the recipient is not yet decided
+     * @throws NoSuchAlgorithmException         When there is a missing algorithm
      */
     public Message encrypt(List<BareJid> recipients, Message message) throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         throwIfNoServiceSet();
@@ -189,10 +189,10 @@ public final class OmemoManager extends Manager {
      * secrecy.
      *
      * @param recipient recipient
-     * @throws CorruptedOmemoKeyException
-     * @throws UndecidedOmemoIdentityException
-     * @throws CryptoFailedException
-     * @throws CannotEstablishOmemoSessionException
+     * @throws UndecidedOmemoIdentityException      When the trust of session with the recipient is not decided yet
+     * @throws CorruptedOmemoKeyException           When the used identityKeys are corrupted
+     * @throws CryptoFailedException                When something fails with the crypto
+     * @throws CannotEstablishOmemoSessionException When we can't establish a session with the recipient
      */
     public void sendRatchetUpdateMessage(OmemoDevice recipient)
             throws CorruptedOmemoKeyException, UndecidedOmemoIdentityException, CryptoFailedException,
@@ -209,10 +209,10 @@ public final class OmemoManager extends Manager {
      * @param iv        Initialization vector
      * @param to        list of recipient devices
      * @return          KeyTransportMessage
-     * @throws UndecidedOmemoIdentityException
-     * @throws CorruptedOmemoKeyException
-     * @throws CryptoFailedException
-     * @throws CannotEstablishOmemoSessionException
+     * @throws UndecidedOmemoIdentityException      When the trust of session with the recipient is not decided yet
+     * @throws CorruptedOmemoKeyException           When the used identityKeys are corrupted
+     * @throws CryptoFailedException                When something fails with the crypto
+     * @throws CannotEstablishOmemoSessionException When we can't establish a session with the recipient
      */
     public OmemoMessageElement createKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice ... to)
             throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException,
@@ -233,7 +233,7 @@ public final class OmemoManager extends Manager {
      * @throws CryptoFailedException                When decryption fails
      * @throws XMPPException.XMPPErrorException     Exception
      * @throws CorruptedOmemoKeyException           When the used keys are invalid
-     * @throws NoRawSessionException
+     * @throws NoRawSessionException                When there is no double ratchet session found for this message
      */
     public ClearTextMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException, NoRawSessionException {
         throwIfNoServiceSet();
@@ -386,7 +386,7 @@ public final class OmemoManager extends Manager {
      * @throws XMPPException.XMPPErrorException XMPP error
      * @throws SmackException.NotConnectedException XMPP error
      * @throws SmackException.NoResponseException XMPP error
-     * @throws PubSubException.NotALeafNodeException
+     * @throws PubSubException.NotALeafNodeException if the bundle node on the server is a CollectionNode
      */
     public void rotateSignedPreKey() throws CorruptedOmemoKeyException, InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
         throwIfNoServiceSet();
@@ -408,7 +408,7 @@ public final class OmemoManager extends Manager {
     /**
      * Throw an IllegalStateException if no OmemoService is set.
      */
-    public void throwIfNoServiceSet() {
+    private void throwIfNoServiceSet() {
         if(service == null) {
             throw new IllegalStateException("No OmemoService set in OmemoManager.");
         }

@@ -26,7 +26,7 @@ public class OmemoConstants {
     //Settings
     /**
      * Mitigate vulnerability found in the OMEMO audit.
-     * Activate when all clients support it.
+     * Activate when all clients support it. TODO: Remove this at a later point
      */
     public static boolean APPEND_AUTH_TAG_TO_MESSAGE_KEY = true;
 
