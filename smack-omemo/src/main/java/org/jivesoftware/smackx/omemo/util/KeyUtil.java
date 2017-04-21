@@ -18,7 +18,7 @@ package org.jivesoftware.smackx.omemo.util;
 
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.OmemoStore;
-import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jxmpp.stringprep.XmppStringprepException;
@@ -60,7 +60,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          * @return identityKey
          * @throws CorruptedOmemoKeyException if the key is damaged/malformed
          */
-        public T_IdKey identityKey(OmemoBundleElement bundle) throws CorruptedOmemoKeyException {
+        public T_IdKey identityKey(OmemoBundleVAxolotlElement bundle) throws CorruptedOmemoKeyException {
             return identityKeyFromBytes(bundle.getIdentityKey());
         }
 
@@ -71,7 +71,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          * @return singedPreKey
          * @throws CorruptedOmemoKeyException if the key is damaged/malformed
          */
-        public T_ECPub signedPreKeyPublic(OmemoBundleElement bundle) throws CorruptedOmemoKeyException {
+        public T_ECPub signedPreKeyPublic(OmemoBundleVAxolotlElement bundle) throws CorruptedOmemoKeyException {
             return signedPreKeyPublicFromBytes(bundle.getSignedPreKey());
         }
 
@@ -81,7 +81,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          * @param bundle OmemoBundleElement
          * @return signedPreKeyId
          */
-        public int signedPreKeyId(OmemoBundleElement bundle) {
+        public int signedPreKeyId(OmemoBundleVAxolotlElement bundle) {
             return bundle.getSignedPreKeyId();
         }
 
@@ -91,7 +91,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          * @param bundle OmemoBundleElement
          * @return signature
          */
-        public byte[] signedPreKeySignature(OmemoBundleElement bundle) {
+        public byte[] signedPreKeySignature(OmemoBundleVAxolotlElement bundle) {
             return bundle.getSignedPreKeySignature();
         }
 
@@ -103,7 +103,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          * @return the preKey
          * @throws CorruptedOmemoKeyException when the key cannot be parsed from bytes
          */
-        public T_ECPub preKeyPublic(OmemoBundleElement bundle, int keyId) throws CorruptedOmemoKeyException {
+        public T_ECPub preKeyPublic(OmemoBundleVAxolotlElement bundle, int keyId) throws CorruptedOmemoKeyException {
             return preKeyPublicFromBytes(bundle.getPreKey(keyId));
         }
 
@@ -117,7 +117,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
          * @return a HashMap with one T_Bundle per preKey and the preKeyId as key
          * @throws CorruptedOmemoKeyException when one of the keys cannot be parsed
          */
-        public HashMap<Integer, T_Bundle> bundles(OmemoBundleElement bundle, OmemoDevice contact) throws CorruptedOmemoKeyException {
+        public HashMap<Integer, T_Bundle> bundles(OmemoBundleVAxolotlElement bundle, OmemoDevice contact) throws CorruptedOmemoKeyException {
             HashMap<Integer, T_Bundle> bundles = new HashMap<>();
             for (int deviceId : bundle.getPreKeys().keySet()) {
                 try {
@@ -256,7 +256,7 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
      * @return PreKeyBundle (T_PreKey)
      * @throws CorruptedOmemoKeyException if some key is damaged or malformed
      */
-    public abstract T_Bundle bundleFromOmemoBundle(OmemoBundleElement bundle, OmemoDevice contact, int keyId) throws CorruptedOmemoKeyException;
+    public abstract T_Bundle bundleFromOmemoBundle(OmemoBundleVAxolotlElement bundle, OmemoDevice contact, int keyId) throws CorruptedOmemoKeyException;
 
     /**
      * Extract the signature from a signedPreKey.

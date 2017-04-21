@@ -17,7 +17,7 @@
 package org.jivesoftware.smackx.omemo.provider;
 
 import org.jivesoftware.smack.provider.ExtensionElementProvider;
-import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
 import org.xmlpull.v1.XmlPullParser;
 
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.ID;
@@ -31,11 +31,11 @@ import static org.xmlpull.v1.XmlPullParser.START_TAG;
  *
  * @author Paul Schaub
  */
-public class OmemoDeviceListProvider extends ExtensionElementProvider<OmemoDeviceListElement> {
+public class OmemoDeviceListVAxolotlProvider extends ExtensionElementProvider<OmemoDeviceListVAxolotlElement> {
 
     @Override
-    public OmemoDeviceListElement parse(XmlPullParser parser, int initialDepth) throws Exception {
-        OmemoDeviceListElement list = new OmemoDeviceListElement();
+    public OmemoDeviceListVAxolotlElement parse(XmlPullParser parser, int initialDepth) throws Exception {
+        OmemoDeviceListVAxolotlElement list = new OmemoDeviceListVAxolotlElement();
         boolean stop = false;
         while (!stop) {
             int tag = parser.next();

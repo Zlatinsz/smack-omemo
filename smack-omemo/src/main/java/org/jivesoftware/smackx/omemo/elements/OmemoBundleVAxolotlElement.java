@@ -39,7 +39,7 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
  *
  * @author Paul Schaub
  */
-public class OmemoBundleElement implements ExtensionElement {
+public class OmemoBundleVAxolotlElement implements ExtensionElement {
 
     private final int signedPreKeyId;
     private final byte[] signedPreKey;
@@ -47,7 +47,7 @@ public class OmemoBundleElement implements ExtensionElement {
     private final byte[] identityKey;
     private final HashMap<Integer, byte[]> preKeys;
 
-    public OmemoBundleElement(int signedPreKeyId, byte[] signedPreKey, byte[] signedPreKeySig, byte[] identityKey, HashMap<Integer, byte[]> preKeys) {
+    public OmemoBundleVAxolotlElement(int signedPreKeyId, byte[] signedPreKey, byte[] signedPreKeySig, byte[] identityKey, HashMap<Integer, byte[]> preKeys) {
         this.signedPreKeyId = signedPreKeyId;
         this.signedPreKey = signedPreKey;
         this.signedPreKeySignature = signedPreKeySig;

@@ -20,8 +20,8 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
-import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
-import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
@@ -128,7 +128,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
         //If Id is still available, get fresh list from the server and merge with local list to check again
         try {
-            OmemoDeviceListElement serverDeviceList = omemoManager.getOmemoService().getPubSubHelper()
+            OmemoDeviceListVAxolotlElement serverDeviceList = omemoManager.getOmemoService().getPubSubHelper()
                     .fetchDeviceList(omemoManager.getConnection().getUser().asBareJid());
             if (serverDeviceList != null) {
                 cachedDeviceList.merge(serverDeviceList);
@@ -221,7 +221,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param contact Contact we received the list from.
      * @param list    List we received.
      */
-    void mergeCachedDeviceList(BareJid contact, OmemoDeviceListElement list) {
+    void mergeCachedDeviceList(BareJid contact, OmemoDeviceListVAxolotlElement list) {
         CachedDeviceList cached = loadCachedDeviceList(contact);
 
         if (cached == null) {
@@ -281,7 +281,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @return OmemoBundleElement
      * @throws CorruptedOmemoKeyException when a key could not be loaded
      */
-    OmemoBundleElement packOmemoBundle() throws CorruptedOmemoKeyException {
+    OmemoBundleVAxolotlElement packOmemoBundle() throws CorruptedOmemoKeyException {
 
         int currentSignedPreKeyId = loadCurrentSignedPreKeyId();
         T_SigPreKey currentSignedPreKey = loadOmemoSignedPreKey(currentSignedPreKeyId);
@@ -297,7 +297,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             storeLastPreKeyId(loadLastPreKeyId() + newKeysCount);
         }
 
-        return new OmemoBundleElement(
+        return new OmemoBundleVAxolotlElement(
                 currentSignedPreKeyId,
                 keyUtil().signedPreKeyPublicForBundle(currentSignedPreKey),
                 keyUtil().signedPreKeySignatureFromKey(currentSignedPreKey),

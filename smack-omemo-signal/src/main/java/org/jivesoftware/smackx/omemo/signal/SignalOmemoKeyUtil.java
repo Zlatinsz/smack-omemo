@@ -22,7 +22,7 @@ package org.jivesoftware.smackx.omemo.signal;
 
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.OmemoStore;
-import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.util.KeyUtil;
@@ -148,7 +148,7 @@ class SignalOmemoKeyUtil extends KeyUtil<IdentityKeyPair, IdentityKey, PreKeyRec
     }
 
     @Override
-    public PreKeyBundle bundleFromOmemoBundle(OmemoBundleElement bundle, OmemoDevice contact, int preKeyId) throws CorruptedOmemoKeyException {
+    public PreKeyBundle bundleFromOmemoBundle(OmemoBundleVAxolotlElement bundle, OmemoDevice contact, int preKeyId) throws CorruptedOmemoKeyException {
         return new PreKeyBundle(0,
                 contact.getDeviceId(),
                 preKeyId,

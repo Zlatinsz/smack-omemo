@@ -31,7 +31,7 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
  *
  * @author Paul Schaub
  */
-public class OmemoDeviceListElement extends HashSet<Integer> implements ExtensionElement {
+public class OmemoDeviceListVAxolotlElement extends HashSet<Integer> implements ExtensionElement {
 
     private static final long serialVersionUID = 635212332059449259L;
 

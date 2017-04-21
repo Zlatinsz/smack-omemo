@@ -19,8 +19,8 @@ package org.jivesoftware.smackx.omemo.util;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.omemo.OmemoManager;
-import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
-import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.PayloadItem;
@@ -89,7 +89,7 @@ public class PubSubHelper {
      * @throws SmackException.NoResponseException   wrong
      * @throws PubSubException.NotALeafNodeException when the device lists node is not a LeafNode
      */
-    public OmemoDeviceListElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
+    public OmemoDeviceListVAxolotlElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
         return extractDeviceListFrom(fetchDeviceListNode(contact));
     }
 
@@ -104,7 +104,7 @@ public class PubSubHelper {
      * @throws SmackException.NoResponseException   wrong
      * @throws PubSubException.NotALeafNodeException when the bundles node is not a LeafNode
      */
-    public OmemoBundleElement fetchBundle(OmemoDevice contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
+    public OmemoBundleVAxolotlElement fetchBundle(OmemoDevice contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
         LeafNode node = PubSubManager.getInstance(manager.getConnection(), contact.getJid()).getLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
         if (node != null) {
             return extractBundleFrom(node);
@@ -123,12 +123,12 @@ public class PubSubHelper {
      * @throws InterruptedException                 goes
      * @throws SmackException.NoResponseException   wrong
      */
-    public OmemoBundleElement extractBundleFrom(LeafNode node) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+    public OmemoBundleVAxolotlElement extractBundleFrom(LeafNode node) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         if (node == null) {
             return null;
         }
         try {
-            return (OmemoBundleElement) ((PayloadItem<?>) node.getItems().get(0)).getPayload();
+            return (OmemoBundleVAxolotlElement) ((PayloadItem<?>) node.getItems().get(0)).getPayload();
         } catch (IndexOutOfBoundsException e) {
             return null;
         }
@@ -144,19 +144,19 @@ public class PubSubHelper {
      * @throws InterruptedException                 goes
      * @throws SmackException.NoResponseException   wrong
      */
-    public OmemoDeviceListElement extractDeviceListFrom(LeafNode node) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+    public OmemoDeviceListVAxolotlElement extractDeviceListFrom(LeafNode node) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         if (node == null) {
             return null;
         }
         if(node.getItems().size() > 0) {
-            OmemoDeviceListElement listElement = (OmemoDeviceListElement) ((PayloadItem<?>) node.getItems().get(node.getItems().size() - 1)).getPayload();
+            OmemoDeviceListVAxolotlElement listElement = (OmemoDeviceListVAxolotlElement) ((PayloadItem<?>) node.getItems().get(node.getItems().size() - 1)).getPayload();
             if(node.getItems().size() > 1) {
                 node.deleteAllItems();
                 node.send(new PayloadItem<>(listElement));
             }
             return listElement;
         }
-        return new OmemoDeviceListElement();
+        return new OmemoDeviceListVAxolotlElement();
     }
 
     /**
@@ -169,7 +169,7 @@ public class PubSubHelper {
      * @throws SmackException.NoResponseException   Exception
      * @throws PubSubException.NotALeafNodeException Exception
      */
-    public void publishDeviceIds(OmemoDeviceListElement deviceList)
+    public void publishDeviceIds(OmemoDeviceListVAxolotlElement deviceList)
             throws InterruptedException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
         PubSubManager.getInstance(manager.getConnection(), manager.getConnection().getUser().asBareJid())
@@ -186,7 +186,7 @@ public class PubSubHelper {
      * @throws InterruptedException
      * @throws SmackException.NoResponseException
      */
-    public void publishOmemoBundle(OmemoBundleElement bundleElement, int deviceId)
+    public void publishOmemoBundle(OmemoBundleVAxolotlElement bundleElement, int deviceId)
             throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException {
         PubSubManager.getInstance(manager.getConnection(), manager.getConnection().getUser().asBareJid())

@@ -19,7 +19,7 @@ package org.jivesoftware.smackx.omemo.util;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.OmemoStore;
-import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoVAxolotlElement;
 import org.jivesoftware.smackx.omemo.exceptions.CannotEstablishOmemoSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
@@ -68,7 +68,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     private byte[] initializationVector = generateIv();
 
     private byte[] ciphertextMessage;
-    private final ArrayList<OmemoMessageElement.OmemoHeader.Key> keys = new ArrayList<>();
+    private final ArrayList<OmemoVAxolotlElement.OmemoHeader.Key> keys = new ArrayList<>();
 
     /**
      * Create a OmemoMessageBuilder.
@@ -200,7 +200,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             if (!ignoreTrust && omemoStore.isTrustedOmemoIdentity(device, session.getIdentityKey())) {
                 //Encrypt key and save to header
                 CiphertextTuple encryptedKey = session.encryptMessageKey(messageKey);
-                keys.add(new OmemoMessageElement.OmemoHeader.Key(encryptedKey.getCiphertext(), device.getDeviceId(), encryptedKey.isPreKeyMessage()));
+                keys.add(new OmemoVAxolotlElement.OmemoHeader.Key(encryptedKey.getCiphertext(), device.getDeviceId(), encryptedKey.isPreKeyMessage()));
             }
         } else {
             throw new CannotEstablishOmemoSessionException("Can't find or establish session with " + device);
@@ -212,13 +212,13 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      *
      * @return OmemoMessageElement
      */
-    public OmemoMessageElement finish() {
-        OmemoMessageElement.OmemoHeader header = new OmemoMessageElement.OmemoHeader(
+    public OmemoVAxolotlElement finish() {
+        OmemoVAxolotlElement.OmemoHeader header = new OmemoVAxolotlElement.OmemoHeader(
                 omemoStore.loadOmemoDeviceId(),
                 keys,
                 initializationVector
         );
-        return new OmemoMessageElement(header, ciphertextMessage);
+        return new OmemoVAxolotlElement(header, ciphertextMessage);
     }
 
     /**

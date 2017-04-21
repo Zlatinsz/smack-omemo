@@ -17,7 +17,7 @@
 package org.jivesoftware.smackx.omemo.internal;
 
 import org.jivesoftware.smack.packet.ExtensionElement;
-import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
 
 import java.io.Serializable;
 
@@ -36,12 +36,12 @@ import java.io.Serializable;
 public class CachedDeviceList implements ExtensionElement, Serializable {
     private static final long serialVersionUID = 3153579238321261203L;
 
-    private final OmemoDeviceListElement activeDevices;
-    private final OmemoDeviceListElement inactiveDevices;
+    private final OmemoDeviceListVAxolotlElement activeDevices;
+    private final OmemoDeviceListVAxolotlElement inactiveDevices;
 
     public CachedDeviceList() {
-        this.activeDevices = new OmemoDeviceListElement();
-        this.inactiveDevices = new OmemoDeviceListElement();
+        this.activeDevices = new OmemoDeviceListVAxolotlElement();
+        this.inactiveDevices = new OmemoDeviceListVAxolotlElement();
     }
 
     /**
@@ -50,7 +50,7 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
      *
      * @return active devices
      */
-    public OmemoDeviceListElement getActiveDevices() {
+    public OmemoDeviceListVAxolotlElement getActiveDevices() {
         return activeDevices;
     }
 
@@ -61,7 +61,7 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
      *
      * @return inactive devices
      */
-    public OmemoDeviceListElement getInactiveDevices() {
+    public OmemoDeviceListVAxolotlElement getInactiveDevices() {
         return inactiveDevices;
     }
 
@@ -70,8 +70,8 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
      *
      * @return all devices
      */
-    public OmemoDeviceListElement getAllDevices() {
-        OmemoDeviceListElement all = new OmemoDeviceListElement();
+    public OmemoDeviceListVAxolotlElement getAllDevices() {
+        OmemoDeviceListVAxolotlElement all = new OmemoDeviceListVAxolotlElement();
         all.addAll(activeDevices);
         all.addAll(inactiveDevices);
         return all;
@@ -83,7 +83,7 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
      *
      * @param deviceListUpdate received device list update
      */
-    public void merge(OmemoDeviceListElement deviceListUpdate) {
+    public void merge(OmemoDeviceListVAxolotlElement deviceListUpdate) {
         inactiveDevices.addAll(activeDevices);
         activeDevices.clear();
         activeDevices.addAll(deviceListUpdate);

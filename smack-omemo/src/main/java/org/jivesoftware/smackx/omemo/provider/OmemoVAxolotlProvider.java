@@ -18,7 +18,7 @@ package org.jivesoftware.smackx.omemo.provider;
 
 import org.jivesoftware.smack.provider.ExtensionElementProvider;
 import org.jivesoftware.smack.util.stringencoder.Base64;
-import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoVAxolotlElement;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.util.ArrayList;
@@ -39,13 +39,13 @@ import static org.xmlpull.v1.XmlPullParser.START_TAG;
  *
  * @author Paul Schaub
  */
-public class OmemoMessageProvider extends ExtensionElementProvider<OmemoMessageElement> {
+public class OmemoVAxolotlProvider extends ExtensionElementProvider<OmemoVAxolotlElement> {
 
     @Override
-    public OmemoMessageElement parse(XmlPullParser parser, int initialDepth) throws Exception {
+    public OmemoVAxolotlElement parse(XmlPullParser parser, int initialDepth) throws Exception {
         boolean inEncrypted = true;
         int sid = -1;
-        ArrayList<OmemoMessageElement.OmemoHeader.Key> keys = new ArrayList<>();
+        ArrayList<OmemoVAxolotlElement.OmemoHeader.Key> keys = new ArrayList<>();
         byte[] iv = null;
         byte[] payload = null;
 
@@ -72,7 +72,7 @@ public class OmemoMessageProvider extends ExtensionElementProvider<OmemoMessageE
                                     rid = Integer.parseInt(parser.getAttributeValue(i));
                                 }
                             }
-                            keys.add(new OmemoMessageElement.OmemoHeader.Key(Base64.decode(parser.nextText()), rid, prekey));
+                            keys.add(new OmemoVAxolotlElement.OmemoHeader.Key(Base64.decode(parser.nextText()), rid, prekey));
                             break;
                         case IV:
                             iv = Base64.decode(parser.nextText());
@@ -89,7 +89,7 @@ public class OmemoMessageProvider extends ExtensionElementProvider<OmemoMessageE
                     break;
             }
         }
-        OmemoMessageElement.OmemoHeader header = new OmemoMessageElement.OmemoHeader(sid, keys, iv);
-        return new OmemoMessageElement(header, payload);
+        OmemoVAxolotlElement.OmemoHeader header = new OmemoVAxolotlElement.OmemoHeader(sid, keys, iv);
+        return new OmemoVAxolotlElement(header, payload);
     }
 }

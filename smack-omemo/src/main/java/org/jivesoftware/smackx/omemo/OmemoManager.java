@@ -27,7 +27,7 @@ import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.mam.MamManager;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.muc.RoomInfo;
-import org.jivesoftware.smackx.omemo.elements.OmemoMessageElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoVAxolotlElement;
 import org.jivesoftware.smackx.omemo.exceptions.CannotEstablishOmemoSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
@@ -163,7 +163,7 @@ public final class OmemoManager extends Manager {
      */
     public Message encrypt(BareJid to, Message message) throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         throwIfNoServiceSet();
-        OmemoMessageElement encrypted = service.processSendingMessage(to, message);
+        OmemoVAxolotlElement encrypted = service.processSendingMessage(to, message);
         return finishMessage(encrypted);
     }
 
@@ -180,7 +180,7 @@ public final class OmemoManager extends Manager {
      */
     public Message encrypt(List<BareJid> recipients, Message message) throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         throwIfNoServiceSet();
-        OmemoMessageElement encrypted = getOmemoService().processSendingMessage(recipients, message);
+        OmemoVAxolotlElement encrypted = getOmemoService().processSendingMessage(recipients, message);
         return finishMessage(encrypted);
     }
 
@@ -214,7 +214,7 @@ public final class OmemoManager extends Manager {
      * @throws CryptoFailedException                When something fails with the crypto
      * @throws CannotEstablishOmemoSessionException When we can't establish a session with the recipient
      */
-    public OmemoMessageElement createKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice ... to)
+    public OmemoVAxolotlElement createKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice ... to)
             throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException,
             CannotEstablishOmemoSessionException {
         throwIfNoServiceSet();
@@ -267,7 +267,7 @@ public final class OmemoManager extends Manager {
      * @param encrypted OmemoMessageElement
      * @return Message containing the OMEMO element and some additional information
      */
-    Message finishMessage(OmemoMessageElement encrypted) {
+    Message finishMessage(OmemoVAxolotlElement encrypted) {
         if (encrypted == null) {
             return null;
         }

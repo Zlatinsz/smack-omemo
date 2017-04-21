@@ -16,7 +16,7 @@
  */
 package org.jivesoftware.smack.omemo;
 
-import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
 import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.junit.Test;
 
@@ -47,7 +47,7 @@ public class DeviceListTest {
         cached.getInactiveDevices().add(2);
         cached.getActiveDevices().add(3);
 
-        OmemoDeviceListElement update = new OmemoDeviceListElement();
+        OmemoDeviceListVAxolotlElement update = new OmemoDeviceListVAxolotlElement();
         update.add(4);
         update.add(1);
 

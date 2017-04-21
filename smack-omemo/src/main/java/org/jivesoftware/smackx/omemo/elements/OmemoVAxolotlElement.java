@@ -18,6 +18,7 @@ package org.jivesoftware.smackx.omemo.elements;
 
 import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smack.util.Objects;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smack.util.XmlStringBuilder;
 import org.jivesoftware.smack.util.stringencoder.Base64;
@@ -58,8 +59,8 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
  *
  * @author Paul Schaub
  */
-public class OmemoMessageElement implements ExtensionElement {
-    private static final Logger LOGGER = Logger.getLogger(OmemoMessageElement.class.getName());
+public class OmemoVAxolotlElement implements ExtensionElement {
+    private static final Logger LOGGER = Logger.getLogger(OmemoVAxolotlElement.class.getName());
     private final OmemoHeader header;
     private final byte[] payload;
 
@@ -69,8 +70,8 @@ public class OmemoMessageElement implements ExtensionElement {
      * @param header  header of the message
      * @param payload payload
      */
-    public OmemoMessageElement(OmemoHeader header, byte[] payload) {
-        this.header = header;
+    public OmemoVAxolotlElement(OmemoHeader header, byte[] payload) {
+        this.header = Objects.requireNonNull(header);
         this.payload = payload;
     }
 
@@ -84,7 +85,18 @@ public class OmemoMessageElement implements ExtensionElement {
      * @return payload
      */
     public byte[] getPayload() {
+        if (payload == null) {
+            return null;
+        }
         return payload.clone();
+    }
+
+    public boolean isKeyTransportElement() {
+        return payload == null;
+    }
+
+    public boolean isMessageElement() {
+        return payload != null;
     }
 
     /**
