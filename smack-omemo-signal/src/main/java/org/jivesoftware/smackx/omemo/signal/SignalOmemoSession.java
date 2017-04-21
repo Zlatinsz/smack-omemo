@@ -20,12 +20,12 @@
  */
 package org.jivesoftware.smackx.omemo.signal;
 
-import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
-import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.OmemoStore;
+import org.jivesoftware.smackx.omemo.elements.OmemoElement;
+import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.internal.CiphertextTuple;
-import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
+import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.whispersystems.libsignal.DuplicateMessageException;
 import org.whispersystems.libsignal.IdentityKey;
 import org.whispersystems.libsignal.IdentityKeyPair;
@@ -101,7 +101,7 @@ public class SignalOmemoSession extends OmemoSession<IdentityKeyPair, IdentityKe
         CiphertextMessage ciphertextMessage;
         ciphertextMessage = cipher.encrypt(messageKey);
         int type = (ciphertextMessage.getType() == CiphertextMessage.PREKEY_TYPE ?
-                OmemoConstants.TYPE_OMEMO_PREKEY_MESSAGE : OmemoConstants.TYPE_OMEMO_MESSAGE);
+                OmemoElement.TYPE_OMEMO_PREKEY_MESSAGE : OmemoElement.TYPE_OMEMO_MESSAGE);
         return new CiphertextTuple(ciphertextMessage.serialize(), type);
     }
 

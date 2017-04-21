@@ -26,6 +26,9 @@ import org.jivesoftware.smack.packet.ExtensionElement;
  */
 public abstract class OmemoElement implements ExtensionElement {
 
+    public static final int TYPE_OMEMO_PREKEY_MESSAGE = 1;
+    public static final int TYPE_OMEMO_MESSAGE = 0;
+
     public static final String ENCRYPTED = "encrypted";
     public static final String HEADER = "header";
     public static final String SID = "sid";

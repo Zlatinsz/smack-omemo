@@ -16,7 +16,7 @@
  */
 package org.jivesoftware.smackx.omemo.internal;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.TYPE_OMEMO_PREKEY_MESSAGE;
+import static org.jivesoftware.smackx.omemo.elements.OmemoElement.TYPE_OMEMO_PREKEY_MESSAGE;
 
 /**
  * Bundles a decrypted ciphertext together with information about the message type.

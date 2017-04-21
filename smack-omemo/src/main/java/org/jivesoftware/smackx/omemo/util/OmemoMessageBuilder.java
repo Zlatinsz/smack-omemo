@@ -17,6 +17,7 @@
 package org.jivesoftware.smackx.omemo.util;
 
 import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smackx.omemo.OmemoManager;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.OmemoStore;
 import org.jivesoftware.smackx.omemo.elements.OmemoVAxolotlElement;
@@ -142,7 +143,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             body = (message.getBytes(StringUtils.UTF8));
             ciphertext = cipher.doFinal(body);
 
-            if (OmemoConstants.APPEND_AUTH_TAG_TO_MESSAGE_KEY) {
+            if (OmemoManager.COMBINED_MESSAGE_KEY_AUTHTAG) {
                 byte[] clearKeyWithAuthTag = new byte[messageKey.length + 16];
                 byte[] cipherTextWithoutAuthTag = new byte[ciphertext.length - 16];
 

@@ -80,16 +80,10 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.DELETE_STALE_DEVICES;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.DELETE_STALE_DEVICE_AFTER_HOURS;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.IGNORE_STALE_DEVICES;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.IGNORE_STALE_DEVICE_AFTER_HOURS;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST_NOTIFY;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.RENEW_OLD_SIGNED_PREKEYS;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS;
 
 /**
  * This class contains OMEMO related logic and registers listeners etc.
@@ -249,9 +243,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             throws SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException {
         long lastSignedPreKeyRenewal = omemoStore.getDateOfLastSignedPreKeyRenewal();
-        if(RENEW_OLD_SIGNED_PREKEYS && lastSignedPreKeyRenewal != -1) {
+        if(OmemoManager.getRenewOldSignedPreKeys() && lastSignedPreKeyRenewal != -1) {
             if(System.currentTimeMillis() - lastSignedPreKeyRenewal
-                    > 1000L * 60 * 60 * RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS) {
+                    > 1000L * 60 * 60 * OmemoManager.getRenewOldSignedPreKeysAfterHours()) {
                 LOGGER.log(Level.INFO, "Renewing signedPreKey");
                 omemoStore.changeSignedPreKey();
             }
@@ -310,7 +304,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
         //Clear devices that we didn't receive a message from for a while
         Iterator<Integer> it = deviceList.iterator();
-        while(DELETE_STALE_DEVICES && it.hasNext()) {
+        while(OmemoManager.getDeleteStaleDevices() && it.hasNext()) {
 
             int id = it.next();
             if(id == ourDeviceId) {
@@ -325,9 +319,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 omemoStore.setDateOfLastReceivedMessage(d);
             }
 
-            if(System.currentTimeMillis() - date > 1000L * 60 * 60 * DELETE_STALE_DEVICE_AFTER_HOURS) {
+            if(System.currentTimeMillis() - date > 1000L * 60 * 60 * OmemoManager.getDeleteStaleDevicesAfterHours()) {
                 LOGGER.log(Level.INFO, "Remove device "+id+" because of more than " +
-                        DELETE_STALE_DEVICE_AFTER_HOURS + " hours of inactivity.");
+                        OmemoManager.getDeleteStaleDevicesAfterHours() + " hours of inactivity.");
                 it.remove();
                 publish = true;
             }
@@ -716,10 +710,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             }
 
             final long now = System.currentTimeMillis();
-            if (IGNORE_STALE_DEVICES && now - omemoStore.getDateOfLastReceivedMessage(d)
-                    > 1000L * 60 * 60 * IGNORE_STALE_DEVICE_AFTER_HOURS) {
+            if (OmemoManager.getIgnoreStaleDevices() && now - omemoStore.getDateOfLastReceivedMessage(d)
+                    > 1000L * 60 * 60 * OmemoManager.getIgnoreStaleDevicesAfterHours()) {
                 LOGGER.log(Level.WARNING, "Refusing to encrypt message for stale device " + d +
-                        " which was inactive for at least " + IGNORE_STALE_DEVICE_AFTER_HOURS +" hours.");
+                        " which was inactive for at least " + OmemoManager.getIgnoreStaleDevicesAfterHours() +" hours.");
             } else {
                 receivers.add(new OmemoDevice(ownJid, id));
             }

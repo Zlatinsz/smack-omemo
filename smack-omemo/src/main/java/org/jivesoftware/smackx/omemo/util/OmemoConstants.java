@@ -22,51 +22,6 @@ package org.jivesoftware.smackx.omemo.util;
  */
 public class OmemoConstants {
 
-    // TODO Most of this should probably be static configuration via setters within OmemoManager. To discuss. -Flow
-    //Settings
-    /**
-     * Mitigate vulnerability found in the OMEMO audit.
-     * Activate when all clients support it. TODO: Remove this at a later point
-     */
-    public static boolean APPEND_AUTH_TAG_TO_MESSAGE_KEY = true;
-
-    /**
-     * Ignore own other stale devices that we did not receive a message from for a period of time.
-     * Ignoring means do not encrypt messages for them. This helps to mitigate stale devices that threaten
-     * forward secrecy by never advancing ratchets.
-     */
-    public static boolean IGNORE_STALE_DEVICES = true;
-    public static int IGNORE_STALE_DEVICE_AFTER_HOURS = 24 * 7;         //One week
-
-    /**
-     * Delete stale devices from the device list after a period of time.
-     */
-    public static boolean DELETE_STALE_DEVICES = true;
-    public static int DELETE_STALE_DEVICE_AFTER_HOURS = 24 * 7 * 4;     //4 weeks
-
-    /**
-     * Upload a new signed prekey in intervals. This improves forward secrecy. Old keys are kept for some more time and
-     * then deleted.
-     */
-    public static boolean RENEW_OLD_SIGNED_PREKEYS = false;
-    public static int RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS = 24 * 7;    //One week
-    public static int MAX_NUMBER_OF_STORED_SIGNED_PREKEYS = 4;
-
-    /**
-     * Add a plaintext body hint about omemo encryption to the message.
-     */
-    public static boolean ADD_OMEMO_HINT_BODY = true;
-
-    /**
-     * Add Explicit Message Encryption hint (XEP-0380) to the message.
-     */
-    public static boolean ADD_EME_ENCRYPTION_HINT = true;
-
-    /**
-     * Add MAM storage hint to allow the server to store messages that do not contain a body.
-     */
-    public static boolean ADD_MAM_STORAGE_HINT = true;
-
     //Constants
     /**
      * Omemo related namespace.
@@ -83,9 +38,6 @@ public class OmemoConstants {
      * How many preKeys do we want to publish?
      */
     public static final int TARGET_PRE_KEY_COUNT = 100;
-
-    public static final int TYPE_OMEMO_PREKEY_MESSAGE = 1;
-    public static final int TYPE_OMEMO_MESSAGE = 0;
 
     /**
      * Return the node name of the PEP node containing the device bundle of the device with device id deviceId.

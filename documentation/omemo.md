@@ -94,15 +94,15 @@ The next step is to start the setup method of the service. This will subscribe t
 Note, that this method does some heavy work on the network.
 
 ```
-omemoService.setup();
+omemoManager.initialize();
 ```
 
 At this point, the module has already generated some keys and announced OMEMO support.
 To get updated with new OMEMO messages, you should register message listeners.
 
 ```
-omemoService.addOmemoMessageListener(myOmemoMessageListener);
-omemoService.addOmemoMucMessageListener(myOmemoMucMessageListener);
+omemoManager.addOmemoMessageListener(myOmemoMessageListener);
+omemoManager.addOmemoMucMessageListener(myOmemoMucMessageListener);
 ```
 
 Usage
@@ -169,7 +169,7 @@ String prettyFingerprint = omemoStore.keyUtil().prettyFingerprint(myFingerprint)
 
 If you want to decrypt a MamQueryResult, you can do so using the following method:
 ````
-List<ClearTextMessage<?>> decryptedMamQuery = omemoManager.decryptMamQueryResult(mamQueryResult);
+List<ClearTextMessage> decryptedMamQuery = omemoManager.decryptMamQueryResult(mamQueryResult);
 ````
 Note, that you cannot decrypt an OMEMO encrypted message twice for reasons of forward secrecy.
 A ClearTextMessage contains the decrypted body of the message, as well as additional information like if/how the message was encrypted in the first place.
@@ -178,7 +178,7 @@ Unfortunately due to the fact that you cannot decrypt messages twice, you have t
 
 Configuration
 -------------
-smack-omemo has some configuration options that can be changed on runtime by chaning values in `util.OmemoConstants`:
+smack-omemo has some configuration options that can be changed on runtime by changing values in `util.OmemoConstants`:
 
 * APPEND_AUTH_TAG_TO_MESSAGE_KEY mitigates a security vulnerability found in an independent audit of the OMEMO protocol. This SHOULD stay set to true.
 * IGNORE_STALE_DEVICES when set to true, smack-omemo will stop encrypting messages for **own** devices that have not send a message for some period of time (configurable in IGNORE_STALE_DEVICE_AFTER_HOURS)
@@ -193,7 +193,7 @@ Features
 * decryption and encryption of OMEMO messages (single and multi user chat)
 * provides information about trust status of incoming messages
 * automatic publishing of bundle
-* automatic merging of incoming devicelist updates
+* automatic merging of incoming deviceList updates
 * ignores stale devices after period of inactivity
 * removes stale devices from device list after period of inactivity
 * automatic repair of broken sessions through ratchet update messages

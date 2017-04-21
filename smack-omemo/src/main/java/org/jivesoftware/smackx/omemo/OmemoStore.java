@@ -36,7 +36,6 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.MAX_NUMBER_OF_STORED_SIGNED_PREKEYS;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.TARGET_PRE_KEY_COUNT;
 
 /**
@@ -258,7 +257,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Remove the oldest signedPreKey until there are only MAX_NUMBER_OF_STORED_SIGNED_PREKEYS left.
      */
     private void removeOldSignedPreKeys() {
-        if(MAX_NUMBER_OF_STORED_SIGNED_PREKEYS <= 0) {
+        if(OmemoManager.getMaxNumberOfStoredSignedPreKeys() <= 0) {
             return;
         }
 
@@ -266,7 +265,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         HashMap<Integer, T_SigPreKey> signedPreKeys = loadOmemoSignedPreKeys();
 
         for (int i : signedPreKeys.keySet()) {
-            if (i <= currentId - MAX_NUMBER_OF_STORED_SIGNED_PREKEYS) {
+            if (i <= currentId - OmemoManager.getMaxNumberOfStoredSignedPreKeys()) {
                 LOGGER.log(Level.INFO, "Remove signedPreKey " + i + ".");
                 removeOmemoSignedPreKey(i);
             }
