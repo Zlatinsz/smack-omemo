@@ -20,9 +20,9 @@ import org.jivesoftware.smack.provider.ExtensionElementProvider;
 import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
 import org.xmlpull.v1.XmlPullParser;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.ID;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.List.DEVICE;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.List.LIST;
+import static org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement.DEVICE;
+import static org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement.ID;
+import static org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement.LIST;
 import static org.xmlpull.v1.XmlPullParser.END_TAG;
 import static org.xmlpull.v1.XmlPullParser.START_TAG;
 

@@ -27,6 +27,7 @@ import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.mam.MamManager;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.muc.RoomInfo;
+import org.jivesoftware.smackx.omemo.elements.OmemoElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoVAxolotlElement;
 import org.jivesoftware.smackx.omemo.exceptions.CannotEstablishOmemoSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
@@ -35,6 +36,8 @@ import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
 import org.jivesoftware.smackx.omemo.internal.ClearTextMessage;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
+import org.jivesoftware.smackx.omemo.listener.OmemoMessageListener;
+import org.jivesoftware.smackx.omemo.listener.OmemoMucMessageListener;
 import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.pubsub.PubSubException;
 import org.jivesoftware.smackx.pubsub.packet.PubSub;
@@ -66,6 +69,9 @@ public final class OmemoManager extends Manager {
 
     private static final WeakHashMap<XMPPConnection, OmemoManager> INSTANCES = new WeakHashMap<>();
     private OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> service;
+
+    private boolean APPEND_EME_HINT = true;
+    private boolean APPEND_MAM_PROCESSING_HINT = true;
 
     /**
      * Private constructor to prevent multiple instances on a single connection (which probably would be bad!).
@@ -102,6 +108,13 @@ public final class OmemoManager extends Manager {
         } else {
             LOGGER.log(Level.WARNING, "Setting the OmemoService multiple times is not allowed.");
         }
+    }
+
+    public void initialize() throws CorruptedOmemoKeyException, InterruptedException, SmackException.NoResponseException,
+            SmackException.NotConnectedException, XMPPException.XMPPErrorException, SmackException.NotLoggedInException,
+            PubSubException.NotALeafNodeException {
+        throwIfNoServiceSet();
+        getOmemoService().initialize();
     }
 
     /**
@@ -235,7 +248,7 @@ public final class OmemoManager extends Manager {
      * @throws CorruptedOmemoKeyException           When the used keys are invalid
      * @throws NoRawSessionException                When there is no double ratchet session found for this message
      */
-    public ClearTextMessage<?> decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException, NoRawSessionException {
+    public ClearTextMessage decrypt(BareJid sender, Message omemoMessage) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException, NoRawSessionException {
         throwIfNoServiceSet();
         return getOmemoService().processLocalMessage(sender, omemoMessage);
     }
@@ -251,9 +264,9 @@ public final class OmemoManager extends Manager {
      * @throws SmackException.NotConnectedException Exception
      * @throws SmackException.NoResponseException   Exception
      */
-    public List<ClearTextMessage<?>> decryptMamQueryResult(MamManager.MamQueryResult mamQueryResult) throws InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
+    public List<ClearTextMessage> decryptMamQueryResult(MamManager.MamQueryResult mamQueryResult) throws InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
         throwIfNoServiceSet();
-        List<ClearTextMessage<?>> l = new ArrayList<>();
+        List<ClearTextMessage> l = new ArrayList<>();
         l.addAll(getOmemoService().decryptMamQueryResult(mamQueryResult));
         return l;
     }
@@ -376,6 +389,22 @@ public final class OmemoManager extends Manager {
         return getOmemoService().getOmemoStore().getFingerprint();
     }
 
+    public void addOmemoMessageListener(OmemoMessageListener listener) {
+        getOmemoService().addOmemoMessageListener(listener);
+    }
+
+    public void removeOmemoMessageListener(OmemoMessageListener listener) {
+        getOmemoService().removeOmemoMessageListener(listener);
+    }
+
+    public void addOmemoMucMessageListener(OmemoMucMessageListener listener) {
+        getOmemoService().addOmemoMucMessageListener(listener);
+    }
+
+    public void removeOmemoMucMessageListener(OmemoMucMessageListener listener) {
+        getOmemoService().removeOmemoMucMessageListener(listener);
+    }
+
     /**
      * Rotate the signedPreKey published in our OmemoBundle. This should be done every now and then (7-14 days).
      * The old signedPreKey should be kept for some more time (a month or so) to enable decryption of messages
@@ -402,7 +431,7 @@ public final class OmemoManager extends Manager {
      * @return true if stanza has extension 'encrypted'
      */
     public static boolean stanzaContainsOmemoElement(Stanza stanza) {
-        return stanza.hasExtension(OmemoConstants.Encrypted.ENCRYPTED, OMEMO_NAMESPACE);
+        return stanza.hasExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE);
     }
 
     /**

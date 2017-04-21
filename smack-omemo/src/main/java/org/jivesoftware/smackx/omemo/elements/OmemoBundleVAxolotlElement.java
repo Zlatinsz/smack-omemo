@@ -16,21 +16,12 @@
  */
 package org.jivesoftware.smackx.omemo.elements;
 
-import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.util.XmlStringBuilder;
 import org.jivesoftware.smack.util.stringencoder.Base64;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.BUNDLE;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_ID;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_SIG;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_PUB;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.IDENTITY_KEY;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEYS;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEY_ID;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEY_PUB;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
 
 /**
@@ -39,7 +30,7 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
  *
  * @author Paul Schaub
  */
-public class OmemoBundleVAxolotlElement implements ExtensionElement {
+public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
 
     private final int signedPreKeyId;
     private final byte[] signedPreKey;

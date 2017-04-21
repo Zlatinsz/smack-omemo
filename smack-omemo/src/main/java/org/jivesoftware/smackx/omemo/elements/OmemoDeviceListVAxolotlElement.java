@@ -16,14 +16,8 @@
  */
 package org.jivesoftware.smackx.omemo.elements;
 
-import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.util.XmlStringBuilder;
 
-import java.util.HashSet;
-
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.ID;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.List.DEVICE;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.List.LIST;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
 
 /**
@@ -31,9 +25,9 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
  *
  * @author Paul Schaub
  */
-public class OmemoDeviceListVAxolotlElement extends HashSet<Integer> implements ExtensionElement {
+public class OmemoDeviceListVAxolotlElement extends OmemoDeviceListElement {
 
-    private static final long serialVersionUID = 635212332059449259L;
+    private static final long serialVersionUID = 635212332059449233L;
 
     @Override
     public String getElementName() {

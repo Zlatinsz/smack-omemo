@@ -25,7 +25,7 @@ import org.jxmpp.jid.BareJid;
  * Listener interface that allows implementations to receive decrypted OMEMO MUC messages.
  * @author Paul Schaub
  */
-public interface OmemoMucMessageListener<T_IdKey> {
+public interface OmemoMucMessageListener {
 
     /**
      * Gets called whenever an OMEMO message has been received in a MultiUserChat and successfully decrypted.
@@ -37,5 +37,5 @@ public interface OmemoMucMessageListener<T_IdKey> {
      * @param omemoInformation information about the encryption of the message
      */
     void onOmemoMucMessageReceived(MultiUserChat muc, BareJid from, String decryptedBody, Message message,
-                                   Message wrappingMessage, OmemoMessageInformation<T_IdKey> omemoInformation);
+                                   Message wrappingMessage, OmemoMessageInformation omemoInformation);
 }

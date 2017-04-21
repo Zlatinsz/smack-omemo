@@ -16,7 +16,6 @@
  */
 package org.jivesoftware.smackx.omemo.elements;
 
-import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.util.Objects;
 import org.jivesoftware.smack.util.StringUtils;
@@ -44,14 +43,6 @@ import java.util.logging.Logger;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.CIPHERMODE;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.KEYTYPE;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.PROVIDER;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.ENCRYPTED;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.HEADER;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.IV;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.KEY;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.PAYLOAD;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.PREKEY;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.RID;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.SID;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
 
 /**
@@ -59,7 +50,7 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
  *
  * @author Paul Schaub
  */
-public class OmemoVAxolotlElement implements ExtensionElement {
+public class OmemoVAxolotlElement extends OmemoElement {
     private static final Logger LOGGER = Logger.getLogger(OmemoVAxolotlElement.class.getName());
     private final OmemoHeader header;
     private final byte[] payload;

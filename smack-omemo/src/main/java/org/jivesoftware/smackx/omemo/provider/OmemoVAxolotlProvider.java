@@ -23,14 +23,14 @@ import org.xmlpull.v1.XmlPullParser;
 
 import java.util.ArrayList;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.SID;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.HEADER;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.KEY;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.PREKEY;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.RID;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.IV;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.PAYLOAD;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Encrypted.ENCRYPTED;
+import static org.jivesoftware.smackx.omemo.elements.OmemoElement.ENCRYPTED;
+import static org.jivesoftware.smackx.omemo.elements.OmemoElement.HEADER;
+import static org.jivesoftware.smackx.omemo.elements.OmemoElement.IV;
+import static org.jivesoftware.smackx.omemo.elements.OmemoElement.KEY;
+import static org.jivesoftware.smackx.omemo.elements.OmemoElement.PAYLOAD;
+import static org.jivesoftware.smackx.omemo.elements.OmemoElement.PREKEY;
+import static org.jivesoftware.smackx.omemo.elements.OmemoElement.RID;
+import static org.jivesoftware.smackx.omemo.elements.OmemoElement.SID;
 import static org.xmlpull.v1.XmlPullParser.END_TAG;
 import static org.xmlpull.v1.XmlPullParser.START_TAG;
 

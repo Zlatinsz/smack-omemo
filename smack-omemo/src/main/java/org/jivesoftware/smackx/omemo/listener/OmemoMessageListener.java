@@ -24,7 +24,7 @@ import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
  *
  * @author Paul Schaub
  */
-public interface OmemoMessageListener<T_IdKey> {
+public interface OmemoMessageListener {
     /**
      * Gets called, whenever an OmemoMessage has been received and was successfully decrypted.
      *
@@ -33,5 +33,5 @@ public interface OmemoMessageListener<T_IdKey> {
      * @param wrappingMessage  Wrapping carbon message, in case the message was a carbon copy, else null.
      * @param omemoInformation Information about the messages encryption etc.
      */
-    void onOmemoMessageReceived(String decryptedBody, Message encryptedMessage, Message wrappingMessage, OmemoMessageInformation<T_IdKey> omemoInformation);
+    void onOmemoMessageReceived(String decryptedBody, Message encryptedMessage, Message wrappingMessage, OmemoMessageInformation omemoInformation);
 }

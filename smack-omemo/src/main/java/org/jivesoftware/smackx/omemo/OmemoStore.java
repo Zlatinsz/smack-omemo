@@ -128,7 +128,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
         //If Id is still available, get fresh list from the server and merge with local list to check again
         try {
-            OmemoDeviceListVAxolotlElement serverDeviceList = omemoManager.getOmemoService().getPubSubHelper()
+            OmemoDeviceListVAxolotlElement serverDeviceList = omemoManager.getOmemoService()
                     .fetchDeviceList(omemoManager.getConnection().getUser().asBareJid());
             if (serverDeviceList != null) {
                 cachedDeviceList.merge(serverDeviceList);

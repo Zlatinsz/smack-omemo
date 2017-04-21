@@ -22,14 +22,13 @@ import org.jivesoftware.smack.packet.Message;
  * Class that bundles a decrypted message together with the original message and some information about the encryption.
  *
  * @author Paul Schaub
- * @param <T_IdKey>    Type of the IdentityKey.
  */
-public class ClearTextMessage<T_IdKey> {
+public class ClearTextMessage {
     private final String body;
     private final Message encryptedMessage;
-    private final OmemoMessageInformation<T_IdKey> messageInformation;
+    private final OmemoMessageInformation messageInformation;
 
-    public ClearTextMessage(String message, Message original, OmemoMessageInformation<T_IdKey> messageInfo) {
+    public ClearTextMessage(String message, Message original, OmemoMessageInformation messageInfo) {
         this.body = message;
         this.encryptedMessage = original;
         this.messageInformation = messageInfo;
@@ -58,7 +57,7 @@ public class ClearTextMessage<T_IdKey> {
      *
      * @return omemoMessageInformation
      */
-    public OmemoMessageInformation<T_IdKey> getMessageInformation() {
+    public OmemoMessageInformation getMessageInformation() {
         return messageInformation;
     }
 }

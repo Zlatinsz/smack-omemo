@@ -79,9 +79,6 @@ public class OmemoConstants {
     public static final String PEP_NODE_DEVICE_LIST_NOTIFY = PEP_NODE_DEVICE_LIST + "+notify";
     public static final String PEP_NODE_BUNDLES = OMEMO_NAMESPACE + ".bundles";
 
-    //DeviceId
-    public static final String ID = "id";
-
     /**
      * How many preKeys do we want to publish?
      */
@@ -102,42 +99,6 @@ public class OmemoConstants {
     }
 
     public static final String BODY_OMEMO_HINT = "I sent you an OMEMO encrypted message but your client doesn’t seem to support that. Find more information on https://conversations.im/omemo";
-
-    /**
-     * Element names of a OMEMO deviceList update.
-     */
-    public static class List {
-        public static final String DEVICE = "device";
-        public static final String LIST = "list";
-    }
-
-    /**
-     * Element names of a OMEMO bundle.
-     */
-    public static class Bundle {
-        public static final String BUNDLE = "bundle";
-        public static final String SIGNED_PRE_KEY_PUB = "signedPreKeyPublic";
-        public static final String SIGNED_PRE_KEY_ID = "signedPreKeyId";
-        public static final String SIGNED_PRE_KEY_SIG = "signedPreKeySignature";
-        public static final String IDENTITY_KEY = "identityKey";
-        public static final String PRE_KEYS = "prekeys";
-        public static final String PRE_KEY_PUB = "preKeyPublic";
-        public static final String PRE_KEY_ID = "preKeyId";
-    }
-
-    /**
-     * Element names of a encrypted OMEMO message.
-     */
-    public static class Encrypted {
-        public static final String ENCRYPTED = "encrypted";
-        public static final String HEADER = "header";
-        public static final String SID = "sid";
-        public static final String KEY = "key";
-        public static final String RID = "rid";
-        public static final String PREKEY = "prekey";
-        public static final String IV = "iv";
-        public static final String PAYLOAD = "payload";
-    }
 
     /**
      * Information about the keys used for message encryption.

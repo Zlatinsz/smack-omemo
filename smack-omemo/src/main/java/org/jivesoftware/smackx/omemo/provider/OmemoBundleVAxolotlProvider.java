@@ -23,14 +23,14 @@ import org.xmlpull.v1.XmlPullParser;
 
 import java.util.HashMap;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_ID;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_PUB;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.SIGNED_PRE_KEY_SIG;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.IDENTITY_KEY;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEYS;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEY_PUB;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.PRE_KEY_ID;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Bundle.BUNDLE;
+import static org.jivesoftware.smackx.omemo.elements.OmemoBundleElement.BUNDLE;
+import static org.jivesoftware.smackx.omemo.elements.OmemoBundleElement.IDENTITY_KEY;
+import static org.jivesoftware.smackx.omemo.elements.OmemoBundleElement.PRE_KEYS;
+import static org.jivesoftware.smackx.omemo.elements.OmemoBundleElement.PRE_KEY_ID;
+import static org.jivesoftware.smackx.omemo.elements.OmemoBundleElement.PRE_KEY_PUB;
+import static org.jivesoftware.smackx.omemo.elements.OmemoBundleElement.SIGNED_PRE_KEY_ID;
+import static org.jivesoftware.smackx.omemo.elements.OmemoBundleElement.SIGNED_PRE_KEY_PUB;
+import static org.jivesoftware.smackx.omemo.elements.OmemoBundleElement.SIGNED_PRE_KEY_SIG;
 import static org.xmlpull.v1.XmlPullParser.END_TAG;
 import static org.xmlpull.v1.XmlPullParser.START_TAG;
 

@@ -19,12 +19,11 @@ package org.jivesoftware.smackx.omemo.internal;
 /**
  * Class that contains information about a decrypted message (eg. which key was used, if it was a carbon...).
  *
- * @param <T_IdKey> IdentityKey class
  * @author Paul Schaub
  */
-public class OmemoMessageInformation<T_IdKey> {
+public class OmemoMessageInformation {
     private boolean isOmemoMessage;
-    private T_IdKey senderIdentityKey;
+    private IdentityKeyWrapper senderIdentityKey;
     private OmemoDevice senderDevice;
     private CARBON carbon = CARBON.NONE;
 
@@ -42,7 +41,7 @@ public class OmemoMessageInformation<T_IdKey> {
      * @param senderDevice      device that sent the message
      * @param carbon            Carbon type
      */
-    public OmemoMessageInformation(T_IdKey senderIdentityKey, OmemoDevice senderDevice, CARBON carbon) {
+    public OmemoMessageInformation(IdentityKeyWrapper senderIdentityKey, OmemoDevice senderDevice, CARBON carbon) {
         this.senderIdentityKey = senderIdentityKey;
         this.senderDevice = senderDevice;
         this.carbon = carbon;
@@ -57,7 +56,7 @@ public class OmemoMessageInformation<T_IdKey> {
      * @param carbon            Carbon type
      * @param omemo             is this an omemo message?
      */
-    public OmemoMessageInformation(T_IdKey senderIdentityKey, OmemoDevice senderDevice, CARBON carbon, boolean omemo) {
+    public OmemoMessageInformation(IdentityKeyWrapper senderIdentityKey, OmemoDevice senderDevice, CARBON carbon, boolean omemo) {
         this(senderIdentityKey, senderDevice, carbon);
         this.isOmemoMessage = omemo;
     }
@@ -67,7 +66,7 @@ public class OmemoMessageInformation<T_IdKey> {
      *
      * @return identityKey
      */
-    public T_IdKey getSenderIdentityKey() {
+    public IdentityKeyWrapper getSenderIdentityKey() {
         return senderIdentityKey;
     }
 
@@ -76,7 +75,7 @@ public class OmemoMessageInformation<T_IdKey> {
      *
      * @param senderIdentityKey identityKey
      */
-    public void setSenderIdentityKey(T_IdKey senderIdentityKey) {
+    public void setSenderIdentityKey(IdentityKeyWrapper senderIdentityKey) {
         this.senderIdentityKey = senderIdentityKey;
     }
 
