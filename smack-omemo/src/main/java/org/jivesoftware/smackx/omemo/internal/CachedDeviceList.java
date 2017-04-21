@@ -16,10 +16,9 @@
  */
 package org.jivesoftware.smackx.omemo.internal;
 
-import org.jivesoftware.smack.packet.ExtensionElement;
-import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
-
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * This class is used to represent device lists of contacts.
@@ -33,15 +32,15 @@ import java.io.Serializable;
  *
  * @author Paul Schaub
  */
-public class CachedDeviceList implements ExtensionElement, Serializable {
+public class CachedDeviceList implements Serializable {
     private static final long serialVersionUID = 3153579238321261203L;
 
-    private final OmemoDeviceListVAxolotlElement activeDevices;
-    private final OmemoDeviceListVAxolotlElement inactiveDevices;
+    private final Set<Integer> activeDevices;
+    private final Set<Integer> inactiveDevices;
 
     public CachedDeviceList() {
-        this.activeDevices = new OmemoDeviceListVAxolotlElement();
-        this.inactiveDevices = new OmemoDeviceListVAxolotlElement();
+        this.activeDevices = new HashSet<>();
+        this.inactiveDevices = new HashSet<>();
     }
 
     /**
@@ -50,7 +49,7 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
      *
      * @return active devices
      */
-    public OmemoDeviceListVAxolotlElement getActiveDevices() {
+    public Set<Integer> getActiveDevices() {
         return activeDevices;
     }
 
@@ -61,7 +60,7 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
      *
      * @return inactive devices
      */
-    public OmemoDeviceListVAxolotlElement getInactiveDevices() {
+    public Set<Integer> getInactiveDevices() {
         return inactiveDevices;
     }
 
@@ -70,8 +69,8 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
      *
      * @return all devices
      */
-    public OmemoDeviceListVAxolotlElement getAllDevices() {
-        OmemoDeviceListVAxolotlElement all = new OmemoDeviceListVAxolotlElement();
+    public Set<Integer> getAllDevices() {
+        Set<Integer> all = new HashSet<>();
         all.addAll(activeDevices);
         all.addAll(inactiveDevices);
         return all;
@@ -83,7 +82,7 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
      *
      * @param deviceListUpdate received device list update
      */
-    public void merge(OmemoDeviceListVAxolotlElement deviceListUpdate) {
+    public void merge(Set<Integer> deviceListUpdate) {
         inactiveDevices.addAll(activeDevices);
         activeDevices.clear();
         activeDevices.addAll(deviceListUpdate);
@@ -99,6 +98,8 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
         activeDevices.add(deviceId);
     }
 
+    // TODO why is/was this needed? -Flow
+    /*
     @Override
     public String getElementName() {
         return activeDevices.getElementName();
@@ -113,6 +114,7 @@ public class CachedDeviceList implements ExtensionElement, Serializable {
     public String getNamespace() {
         return activeDevices.getNamespace();
     }
+    */
 
     /**
      * Returns true if deviceId is either in the list of active or inactive devices.

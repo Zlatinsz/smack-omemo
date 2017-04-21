@@ -16,12 +16,14 @@
  */
 package org.jivesoftware.smack.omemo;
 
-import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
-import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
-import org.junit.Test;
-
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
+import org.junit.Test;
 
 
 /**
@@ -47,7 +49,7 @@ public class DeviceListTest {
         cached.getInactiveDevices().add(2);
         cached.getActiveDevices().add(3);
 
-        OmemoDeviceListVAxolotlElement update = new OmemoDeviceListVAxolotlElement();
+        Set<Integer> update = new HashSet<>();
         update.add(4);
         update.add(1);
 

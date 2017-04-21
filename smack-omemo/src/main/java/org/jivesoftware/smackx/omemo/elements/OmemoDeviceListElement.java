@@ -16,22 +16,66 @@
  */
 package org.jivesoftware.smackx.omemo.elements;
 
-import org.jivesoftware.smack.packet.ExtensionElement;
-
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
+
+import org.jivesoftware.smack.packet.ExtensionElement;
+import org.jivesoftware.smack.util.Objects;
+import org.jivesoftware.smack.util.XmlStringBuilder;
 
 /**
- * Class that represents a OmemoDeviceList.
- * TODO: Move functionality to here.
+ * A OMEMO device list update containing the IDs of all active devices of a contact.
  *
  * @author Paul Schaub
  */
-public abstract class OmemoDeviceListElement extends HashSet<Integer> implements ExtensionElement {
-
-    private static final long serialVersionUID = 635212332059449259L;
+public abstract class OmemoDeviceListElement implements ExtensionElement {
 
     public static final String DEVICE = "device";
     public static final String ID = "id";
     public static final String LIST = "list";
 
+    /**
+     * Unmodifiable set of device IDs.
+     */
+    private final Set<Integer> deviceIds;
+
+    public OmemoDeviceListElement(Set<Integer> deviceIds) {
+        deviceIds = Objects.requireNonNull(deviceIds);
+        this.deviceIds = Collections.unmodifiableSet(deviceIds);
+    }
+
+    public Set<Integer> getDeviceIds() {
+        return deviceIds;
+    }
+
+    public Set<Integer> copyDeviceIds() {
+        return new HashSet<>(deviceIds);
+    }
+
+    @Override
+    public String getElementName() {
+        return LIST;
+    }
+
+    @Override
+    public final XmlStringBuilder toXML() {
+        XmlStringBuilder sb = new XmlStringBuilder(this).rightAngleBracket();
+
+        for (Integer id : deviceIds) {
+            sb.halfOpenElement(DEVICE).attribute(ID, id).closeEmptyElement();
+        }
+
+        sb.closeElement(this);
+        return sb;
+    }
+
+    @Override
+    public final String toString() {
+        String out = "OmemoDeviceListElement[";
+        for (int i : deviceIds) {
+            out += i + ",";
+        }
+        return out.substring(0, out.length() - 1) + "]";
+    }
 }

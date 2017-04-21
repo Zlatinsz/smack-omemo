@@ -34,6 +34,7 @@ import org.jivesoftware.smackx.mam.MamManager;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoVAxolotlElement;
@@ -72,11 +73,13 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -187,6 +190,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             NoSuchProviderException, InvalidKeyException {
         //Test crypto functions
         new OmemoMessageBuilder<>(getOmemoStore(), "");
+        // TODO: Every JLS compatible Java platform must support UTF-8, so I think this can be removed. -Flow
         //Test encoding
         byte[] b = "".getBytes(StringUtils.UTF8);
     }
@@ -275,7 +279,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException,
             XMPPException.XMPPErrorException, PubSubException.NotALeafNodeException {
         boolean publish = false;
-        OmemoDeviceListVAxolotlElement deviceList = null;
+        OmemoDeviceListElement deviceList = null;
 
         try {
             deviceList = fetchDeviceList(ownJid);
@@ -288,24 +292,25 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             }
         }
 
+        Set<Integer> deviceListIds;
         if (deviceList == null) {
-            deviceList = new OmemoDeviceListVAxolotlElement();
+            deviceListIds = new HashSet<>();
+        } else {
+            deviceListIds = deviceList.copyDeviceIds();
         }
 
         if (deleteOtherDevices) {
-            deviceList.clear();
+            deviceListIds.clear();
         }
 
         int ourDeviceId = omemoStore.loadOmemoDeviceId();
-        if (!deviceList.contains(ourDeviceId)) {
-            deviceList.add(ourDeviceId);
+        if (deviceListIds.add(ourDeviceId)) {
             publish = true;
         }
 
         //Clear devices that we didn't receive a message from for a while
-        Iterator<Integer> it = deviceList.iterator();
+        Iterator<Integer> it = deviceListIds.iterator();
         while(OmemoManager.getDeleteStaleDevices() && it.hasNext()) {
-
             int id = it.next();
             if(id == ourDeviceId) {
                 //Skip own id
@@ -342,7 +347,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NoResponseException   Exception
      * @throws PubSubException.NotALeafNodeException Exception
      */
-    void publishDeviceIds(OmemoDeviceListVAxolotlElement deviceList)
+    void publishDeviceIds(OmemoDeviceListElement deviceList)
             throws InterruptedException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
         PubSubManager.getInstance(omemoManager.getConnection(), ownJid)
@@ -377,7 +382,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NoResponseException   wrong
      * @throws PubSubException.NotALeafNodeException when the device lists node is not a LeafNode
      */
-    OmemoDeviceListVAxolotlElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
+    OmemoDeviceListElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
         return extractDeviceListFrom(fetchDeviceListNode(contact));
     }
 
@@ -432,7 +437,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws InterruptedException                 goes
      * @throws SmackException.NoResponseException   wrong
      */
-    OmemoDeviceListVAxolotlElement extractDeviceListFrom(LeafNode node) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+    OmemoDeviceListElement extractDeviceListFrom(LeafNode node) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         if (node == null) {
             return null;
         }
@@ -444,7 +449,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             }
             return listElement;
         }
-        return new OmemoDeviceListVAxolotlElement();
+
+        Set<Integer> emptySet = Collections.emptySet();
+        return new OmemoDeviceListVAxolotlElement(emptySet);
     }
 
     /**
@@ -558,13 +565,16 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         int ourDeviceId = omemoStore.loadOmemoDeviceId();
                         omemoStore.mergeCachedDeviceList(from, omemoDeviceListElement);
 
-                        if(from == null || !(from.equals(ownJid) && !omemoDeviceListElement.contains(ourDeviceId))) {
+                        if (from == null || !(from.equals(ownJid)
+                                        && !omemoDeviceListElement.getDeviceIds().contains(ourDeviceId))) {
                             continue;
                         }
 
                         //Our deviceId was not in our list!
                         LOGGER.log(Level.INFO, "Device Id was not on the list!");
-                        omemoDeviceListElement.add(ourDeviceId);
+                        Set<Integer> deviceListIds = omemoDeviceListElement.copyDeviceIds();
+                        deviceListIds.add(ourDeviceId);
+                        omemoDeviceListElement = new OmemoDeviceListVAxolotlElement(deviceListIds);
 
                         try {
                             publishDeviceIds(omemoDeviceListElement);

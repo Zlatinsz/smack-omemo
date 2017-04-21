@@ -16,34 +16,19 @@
  */
 package org.jivesoftware.smackx.omemo.elements;
 
-import org.jivesoftware.smack.util.XmlStringBuilder;
-
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
 
+import java.util.Set;
+
 /**
- * A OMEMO device list update containing the ids of all active devices of a contact.
+ * The OMEMO device list element with the legacy Axolotl namespace.
  *
  * @author Paul Schaub
  */
 public class OmemoDeviceListVAxolotlElement extends OmemoDeviceListElement {
 
-    private static final long serialVersionUID = 635212332059449233L;
-
-    @Override
-    public String getElementName() {
-        return LIST;
-    }
-
-    @Override
-    public XmlStringBuilder toXML() {
-        XmlStringBuilder sb = new XmlStringBuilder(this).rightAngleBracket();
-
-        for (Integer id : this) {
-            sb.halfOpenElement(DEVICE).attribute(ID, id).closeEmptyElement();
-        }
-
-        sb.closeElement(this);
-        return sb;
+    public OmemoDeviceListVAxolotlElement(Set<Integer> deviceIds) {
+        super(deviceIds);
     }
 
     @Override
@@ -51,12 +36,4 @@ public class OmemoDeviceListVAxolotlElement extends OmemoDeviceListElement {
         return OMEMO_NAMESPACE;
     }
 
-    @Override
-    public String toString() {
-        String out = "OmemoDeviceListElement[";
-        for (int i : this) {
-            out += i + ",";
-        }
-        return out.substring(0, out.length() - 1) + "]";
-    }
 }

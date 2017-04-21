@@ -26,6 +26,9 @@ import static org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement.LIST
 import static org.xmlpull.v1.XmlPullParser.END_TAG;
 import static org.xmlpull.v1.XmlPullParser.START_TAG;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Smack ExtensionProvider that parses OMEMO device list elements into OmemoDeviceListElement objects.
  *
@@ -35,7 +38,7 @@ public class OmemoDeviceListVAxolotlProvider extends ExtensionElementProvider<Om
 
     @Override
     public OmemoDeviceListVAxolotlElement parse(XmlPullParser parser, int initialDepth) throws Exception {
-        OmemoDeviceListVAxolotlElement list = new OmemoDeviceListVAxolotlElement();
+        Set<Integer> deviceListIds = new HashSet<>();
         boolean stop = false;
         while (!stop) {
             int tag = parser.next();
@@ -45,7 +48,8 @@ public class OmemoDeviceListVAxolotlProvider extends ExtensionElementProvider<Om
                     if (name.equals(DEVICE)) {
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
                             if (parser.getAttributeName(i).equals(ID)) {
-                                list.add(Integer.parseInt(parser.getAttributeValue(i)));
+                                Integer deviceId = Integer.parseInt(parser.getAttributeValue(i));
+                                deviceListIds.add(deviceId);
                             }
                         }
                     }
@@ -57,6 +61,6 @@ public class OmemoDeviceListVAxolotlProvider extends ExtensionElementProvider<Om
                     break;
             }
         }
-        return list;
+        return new OmemoDeviceListVAxolotlElement(deviceListIds);
     }
 }

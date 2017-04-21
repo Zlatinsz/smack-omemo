@@ -16,19 +16,7 @@
  */
 package org.jivesoftware.smackx.omemo;
 
-import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.roster.Roster;
-import org.jivesoftware.smack.roster.RosterEntry;
-import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
-import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListVAxolotlElement;
-import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
-import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
-import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
-import org.jivesoftware.smackx.omemo.internal.OmemoSession;
-import org.jivesoftware.smackx.omemo.util.KeyUtil;
-import org.jivesoftware.smackx.pubsub.PubSubException;
-import org.jxmpp.jid.BareJid;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.TARGET_PRE_KEY_COUNT;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +24,19 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.TARGET_PRE_KEY_COUNT;
+import org.jivesoftware.smack.SmackException;
+import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.roster.Roster;
+import org.jivesoftware.smack.roster.RosterEntry;
+import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
+import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
+import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
+import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
+import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
+import org.jivesoftware.smackx.omemo.internal.OmemoSession;
+import org.jivesoftware.smackx.omemo.util.KeyUtil;
+import org.jivesoftware.smackx.pubsub.PubSubException;
+import org.jxmpp.jid.BareJid;
 
 /**
  * Class that presents some methods that are used to load/generate/store keys and session data needed for OMEMO.
@@ -127,10 +127,10 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
         //If Id is still available, get fresh list from the server and merge with local list to check again
         try {
-            OmemoDeviceListVAxolotlElement serverDeviceList = omemoManager.getOmemoService()
+            OmemoDeviceListElement serverDeviceList = omemoManager.getOmemoService()
                     .fetchDeviceList(omemoManager.getConnection().getUser().asBareJid());
             if (serverDeviceList != null) {
-                cachedDeviceList.merge(serverDeviceList);
+                cachedDeviceList.merge(serverDeviceList.getDeviceIds());
             }
         } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException
                 | SmackException.NoResponseException e) {
@@ -220,14 +220,14 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param contact Contact we received the list from.
      * @param list    List we received.
      */
-    void mergeCachedDeviceList(BareJid contact, OmemoDeviceListVAxolotlElement list) {
+    void mergeCachedDeviceList(BareJid contact, OmemoDeviceListElement list) {
         CachedDeviceList cached = loadCachedDeviceList(contact);
 
         if (cached == null) {
             cached = new CachedDeviceList();
         }
 
-        cached.merge(list);
+        cached.merge(list.getDeviceIds());
         storeCachedDeviceList(contact, cached);
     }
 
