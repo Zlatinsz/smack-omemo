@@ -180,13 +180,13 @@ Configuration
 -------------
 smack-omemo has some configuration options that can be changed on runtime by changing values in `util.OmemoConstants`:
 
-* APPEND_AUTH_TAG_TO_MESSAGE_KEY mitigates a security vulnerability found in an independent audit of the OMEMO protocol. This SHOULD stay set to true.
-* IGNORE_STALE_DEVICES when set to true, smack-omemo will stop encrypting messages for **own** devices that have not send a message for some period of time (configurable in IGNORE_STALE_DEVICE_AFTER_HOURS)
-* DELETE_STALE_DEVICES when set to true, smack-omemo will remove own devices from the device list, if no messages were received from them for a period of time (configurable in DELETE_STALE_DEVICE_AFTER_HOURS)
-* RENEW_OLD_SIGNED_PREKEYS when set to true, smack-omemo will periodically generate and publish new signed prekeys. Via RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS you can configure, after what period of time new keys are generated and MAX_NUMBER_OF_STORED_SIGNED_PREKEYS allows configuration of how many prekeys are kept in storage for decryption of delayed messages.
-* ADD_OMEMO_HINT_BODY when set to true, a plaintext body with a hint about OMEMO encryption will be added to the message. This hint will be displayed by clients that do not support OMEMO.
-* ADD_EME_ENCRYPTION_HINT when set to true, an Explicit Message Encryption element will be added to the message. This element tells clients, that the message is encrypted with OMEMO.
-* ADD_MAM_STORAGE_HINT when set to true, a storage hint for Message Archive Management will be added to the message. This enabled servers to store messages that contain no body.
+* setCombinedMessageKeyAuthTag mitigates a security vulnerability found in an independent audit of the OMEMO protocol. This SHOULD stay set to true.
+* setIgnoreStaleDevices when set to true, smack-omemo will stop encrypting messages for **own** devices that have not send a message for some period of time (configurable in IGNORE_STALE_DEVICE_AFTER_HOURS)
+* setDeleteStaleDevices when set to true, smack-omemo will remove own devices from the device list, if no messages were received from them for a period of time (configurable in DELETE_STALE_DEVICE_AFTER_HOURS)
+* setRenewOldSignedPreKeys when set to true, smack-omemo will periodically generate and publish new signed prekeys. Via RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS you can configure, after what period of time new keys are generated and MAX_NUMBER_OF_STORED_SIGNED_PREKEYS allows configuration of how many prekeys are kept in storage for decryption of delayed messages.
+* setAddOmemoBodyHint when set to true, a plaintext body with a hint about OMEMO encryption will be added to the message. This hint will be displayed by clients that do not support OMEMO.
+* setAddEmeEncryptionHint when set to true, an Explicit Message Encryption element will be added to the message. This element tells clients, that the message is encrypted with OMEMO.
+* setAddMAMStorageProcessingHint when set to true, a storage hint for Message Archive Management will be added to the message. This enabled servers to store messages that contain no body.
 
 Features
 --------
