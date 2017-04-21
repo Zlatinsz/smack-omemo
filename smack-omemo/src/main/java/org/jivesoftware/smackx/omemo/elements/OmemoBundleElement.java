@@ -21,7 +21,7 @@ import org.jivesoftware.smack.packet.ExtensionElement;
 /**
  * Class that represents an OMEMO Bundle element.
  * TODO: Move functionality to here.
- *  
+ *
  * @author Paul Schaub
  */
 public abstract class OmemoBundleElement implements ExtensionElement {
@@ -34,6 +34,4 @@ public abstract class OmemoBundleElement implements ExtensionElement {
     public static final String PRE_KEYS = "prekeys";
     public static final String PRE_KEY_PUB = "preKeyPublic";
     public static final String PRE_KEY_ID = "preKeyId";
-
-
 }

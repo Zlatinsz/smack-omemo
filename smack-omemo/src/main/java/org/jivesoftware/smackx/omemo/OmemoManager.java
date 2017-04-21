@@ -405,6 +405,10 @@ public final class OmemoManager extends Manager {
         getOmemoService().removeOmemoMucMessageListener(listener);
     }
 
+    public void buildSessionWith(OmemoDevice device) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
+        getOmemoService().buildSessionFromOmemoBundle(device);
+    }
+
     /**
      * Rotate the signedPreKey published in our OmemoBundle. This should be done every now and then (7-14 days).
      * The old signedPreKey should be kept for some more time (a month or so) to enable decryption of messages
