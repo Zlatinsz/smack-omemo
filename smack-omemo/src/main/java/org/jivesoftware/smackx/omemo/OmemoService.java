@@ -59,6 +59,7 @@ import org.jivesoftware.smackx.pubsub.EventElement;
 import org.jivesoftware.smackx.pubsub.ItemsExtension;
 import org.jivesoftware.smackx.pubsub.LeafNode;
 import org.jivesoftware.smackx.pubsub.PayloadItem;
+import org.jivesoftware.smackx.pubsub.PubSubAssertionError;
 import org.jivesoftware.smackx.pubsub.PubSubException;
 import org.jivesoftware.smackx.pubsub.PubSubManager;
 import org.jxmpp.jid.BareJid;
@@ -284,12 +285,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         try {
             deviceList = fetchDeviceList(ownJid);
         } catch (XMPPException.XMPPErrorException e) {
-
             if(e.getXMPPError().getCondition() == XMPPError.Condition.item_not_found) {
                 publish = true;
             } else {
                 throw e;
             }
+        } catch (PubSubAssertionError.DiscoInfoNodeAssertionError e) {
+            publish = true;
         }
 
         Set<Integer> deviceListIds;
@@ -333,7 +335,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
 
         if(publish) {
-            publishDeviceIds(deviceList);
+            publishDeviceIds(new OmemoDeviceListVAxolotlElement(deviceListIds));
         }
     }
 
@@ -383,7 +385,14 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws PubSubException.NotALeafNodeException when the device lists node is not a LeafNode
      */
     OmemoDeviceListElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
-        return extractDeviceListFrom(fetchDeviceListNode(contact));
+        try {
+            return extractDeviceListFrom(fetchDeviceListNode(contact));
+        } catch (XMPPException.XMPPErrorException e) {
+            if(e.getXMPPError().getCondition() == XMPPError.Condition.item_not_found) {
+                return null;
+            }
+            throw e;
+        }
     }
 
     /**
@@ -398,7 +407,16 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws PubSubException.NotALeafNodeException when the bundles node is not a LeafNode
      */
     OmemoBundleVAxolotlElement fetchBundle(OmemoDevice contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
-        LeafNode node = PubSubManager.getInstance(omemoManager.getConnection(), contact.getJid()).getLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
+        LeafNode node = null;
+        try {
+            node = PubSubManager.getInstance(omemoManager.getConnection(), contact.getJid()).getLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
+        } catch (XMPPException.XMPPErrorException e) {
+            if(e.getXMPPError().getCondition() != XMPPError.Condition.item_not_found) {
+                throw e;
+            }
+        } catch (PubSubAssertionError.DiscoInfoNodeAssertionError e) {
+            //Nothing we can do
+        }
         if (node != null) {
             return extractBundleFrom(node);
         } else {
@@ -566,7 +584,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         omemoStore.mergeCachedDeviceList(from, omemoDeviceListElement);
 
                         if (from == null || !(from.equals(ownJid)
-                                        && !omemoDeviceListElement.getDeviceIds().contains(ourDeviceId))) {
+                                && !omemoDeviceListElement.getDeviceIds().contains(ourDeviceId))) {
                             continue;
                         }
 
