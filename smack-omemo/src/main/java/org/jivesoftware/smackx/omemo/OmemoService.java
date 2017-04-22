@@ -407,21 +407,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws PubSubException.NotALeafNodeException when the bundles node is not a LeafNode
      */
     OmemoBundleVAxolotlElement fetchBundle(OmemoDevice contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
-        LeafNode node = null;
-        try {
-            node = PubSubManager.getInstance(omemoManager.getConnection(), contact.getJid()).getLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
-        } catch (XMPPException.XMPPErrorException e) {
-            if(e.getXMPPError().getCondition() != XMPPError.Condition.item_not_found) {
-                throw e;
-            }
-        } catch (PubSubAssertionError.DiscoInfoNodeAssertionError e) {
-            //Nothing we can do
-        }
-        if (node != null) {
-            return extractBundleFrom(node);
-        } else {
-            return null;
-        }
+        LeafNode node = PubSubManager.getInstance(omemoManager.getConnection(), contact.getJid()).getLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
+        return extractBundleFrom(node);
     }
 
     /**
@@ -534,7 +521,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         try {
             bundle = fetchBundle(device);
 
-        } catch (SmackException | XMPPException.XMPPErrorException | InterruptedException e) {
+        } catch (SmackException | XMPPException.XMPPErrorException | InterruptedException | PubSubAssertionError e) {
             LOGGER.log(Level.WARNING, e.getMessage());
             throw new CannotEstablishOmemoSessionException("Can't build Session for " + device);
         }
