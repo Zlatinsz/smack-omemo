@@ -394,7 +394,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         try {
             omemoStore.mergeCachedDeviceList(contact, fetchDeviceList(contact));
         } catch (PubSubException.NotALeafNodeException | XMPPException.XMPPErrorException e) {
-            LOGGER.log(Level.WARNING, "Could not fetch device list of "+contact+".");
+            LOGGER.log(Level.WARNING, "Could not fetch device list of "+contact+": "+e.getMessage());
         }
     }
 
