@@ -387,10 +387,14 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     private void refreshOwnDeviceList() throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+        refreshDeviceList(ownJid);
+    }
+
+    void refreshDeviceList(BareJid contact) throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         try {
-            omemoStore.mergeCachedDeviceList(ownJid, fetchDeviceList(ownJid));
+            omemoStore.mergeCachedDeviceList(contact, fetchDeviceList(contact));
         } catch (PubSubException.NotALeafNodeException | XMPPException.XMPPErrorException e) {
-            LOGGER.log(Level.WARNING, "Could not fetch own device list.");
+            LOGGER.log(Level.WARNING, "Could not fetch device list of "+contact+".");
         }
     }
 

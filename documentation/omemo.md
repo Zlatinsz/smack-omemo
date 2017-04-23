@@ -167,6 +167,13 @@ String otherFingerprint = omemoStore.getFingerprint(otherDevice);
 String prettyFingerprint = omemoStore.keyUtil().prettyFingerprint(myFingerprint);
 ```
 
+It might happen, that the server you or your contact are using is not delivering devicelist updates correctly.
+In such a case smack-omemo cannot fetch bundles or send messages to devices it hasn\'t seen before. To mitigate this, it
+might help to explicitly request the latest device list from the server.
+```
+omemoManager.requestDeviceListUpdateFor(contactJid);
+```
+
 If you want to decrypt a MamQueryResult, you can do so using the following method:
 ````
 List<ClearTextMessage> decryptedMamQuery = omemoManager.decryptMamQueryResult(mamQueryResult);

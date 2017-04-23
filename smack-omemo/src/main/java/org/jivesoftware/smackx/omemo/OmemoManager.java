@@ -421,6 +421,10 @@ public final class OmemoManager extends Manager {
         getOmemoService().buildSessionFromOmemoBundle(device);
     }
 
+    public void requestDeviceListUpdateFor(BareJid contact) throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+        getOmemoService().refreshDeviceList(contact);
+    }
+
     /**
      * Rotate the signedPreKey published in our OmemoBundle. This should be done every now and then (7-14 days).
      * The old signedPreKey should be kept for some more time (a month or so) to enable decryption of messages
