@@ -117,26 +117,11 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         LOGGER.log(Level.INFO, "Check if id " + id + " is available...");
 
         //Lookup local cached device list
-        CachedDeviceList cachedDeviceList = loadCachedDeviceList(omemoManager.getConnection().getUser().asBareJid());
+        BareJid ownJid = omemoManager.getConnection().getUser().asBareJid();
+        CachedDeviceList cachedDeviceList = loadCachedDeviceList(ownJid);
+
         if (cachedDeviceList == null) {
             cachedDeviceList = new CachedDeviceList();
-        }
-        if (cachedDeviceList.contains(id)) {
-            return false;
-        }
-
-        //If Id is still available, get fresh list from the server and merge with local list to check again
-        try {
-            OmemoDeviceListElement serverDeviceList = omemoManager.getOmemoService()
-                    .fetchDeviceList(omemoManager.getConnection().getUser().asBareJid());
-            if (serverDeviceList != null) {
-                cachedDeviceList.merge(serverDeviceList.getDeviceIds());
-            }
-        } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException
-                | SmackException.NoResponseException e) {
-            LOGGER.log(Level.WARNING, "isAvailableDeviceId could not merge remote device list: "+e.getMessage());
-        } catch (PubSubException.NotALeafNodeException e) {
-            throw new AssertionError(e);
         }
         //Does the list already contain that id?
         return !cachedDeviceList.contains(id);
@@ -227,7 +212,9 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             cached = new CachedDeviceList();
         }
 
-        cached.merge(list.getDeviceIds());
+        if(list != null) {
+            cached.merge(list.getDeviceIds());
+        }
         storeCachedDeviceList(contact, cached);
     }
 

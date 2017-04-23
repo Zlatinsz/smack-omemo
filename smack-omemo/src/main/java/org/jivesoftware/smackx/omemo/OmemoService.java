@@ -159,6 +159,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             throw new SmackException.NotLoggedInException();
         }
 
+        //Get fresh device list from server
+        refreshOwnDeviceList();
+
         if (getOmemoStore().isFreshInstallation()) {
             LOGGER.log(Level.INFO, "No key material found. Looks like we have a fresh installation.");
             //Create new key material and publish it to the server
@@ -271,26 +274,15 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private void publishDeviceIdIfNeeded(boolean deleteOtherDevices)
             throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException,
             XMPPException.XMPPErrorException, PubSubException.NotALeafNodeException {
-        boolean publish = false;
-        OmemoDeviceListElement deviceList = null;
 
-        try {
-            deviceList = fetchDeviceList(ownJid);
-        } catch (XMPPException.XMPPErrorException e) {
-            if(e.getXMPPError().getCondition() == XMPPError.Condition.item_not_found) {
-                publish = true;
-            } else {
-                throw e;
-            }
-        } catch (PubSubAssertionError.DiscoInfoNodeAssertionError e) {
-            publish = true;
-        }
+        boolean publish = false;
+        CachedDeviceList deviceList = omemoStore.loadCachedDeviceList(ownJid);
 
         Set<Integer> deviceListIds;
         if (deviceList == null) {
             deviceListIds = new HashSet<>();
         } else {
-            deviceListIds = deviceList.copyDeviceIds();
+            deviceListIds = new HashSet<>(deviceList.getActiveDevices());
         }
 
         if (deleteOtherDevices) {
@@ -302,11 +294,21 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             publish = true;
         }
 
+        publish |= removeStaleDevicesIfNeeded(deviceListIds);
+
+        if(publish) {
+            publishDeviceIds(new OmemoDeviceListVAxolotlElement(deviceListIds));
+        }
+    }
+
+    boolean removeStaleDevicesIfNeeded(Set<Integer> deviceListIds) {
+        boolean publish = false;
+        int ownDeviceId = omemoStore.loadOmemoDeviceId();
         //Clear devices that we didn't receive a message from for a while
         Iterator<Integer> it = deviceListIds.iterator();
         while(OmemoManager.getDeleteStaleDevices() && it.hasNext()) {
             int id = it.next();
-            if(id == ourDeviceId) {
+            if(id == ownDeviceId) {
                 //Skip own id
                 continue;
             }
@@ -325,10 +327,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 }
             }
         }
-
-        if(publish) {
-            publishDeviceIds(new OmemoDeviceListVAxolotlElement(deviceListIds));
-        }
+        return publish;
     }
 
     /**
@@ -387,6 +386,14 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
     }
 
+    private void refreshOwnDeviceList() throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+        try {
+            omemoStore.mergeCachedDeviceList(ownJid, fetchDeviceList(ownJid));
+        } catch (PubSubException.NotALeafNodeException | XMPPException.XMPPErrorException e) {
+            LOGGER.log(Level.WARNING, "Could not fetch own device list.");
+        }
+    }
+
     /**
      * Fetch the OmemoBundleElement of the contact.
      *
@@ -438,9 +445,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         if (node == null) {
             return null;
         }
-        if(node.getItems().size() > 0) {
-            OmemoDeviceListVAxolotlElement listElement = (OmemoDeviceListVAxolotlElement) ((PayloadItem<?>) node.getItems().get(node.getItems().size() - 1)).getPayload();
-            if(node.getItems().size() > 1) {
+        List<?> items = node.getItems();
+        if(items.size() > 0) {
+            OmemoDeviceListVAxolotlElement listElement = (OmemoDeviceListVAxolotlElement) ((PayloadItem<?>) items.get(items.size() - 1)).getPayload();
+            if(items.size() > 1) {
                 node.deleteAllItems();
                 node.send(new PayloadItem<>(listElement));
             }
