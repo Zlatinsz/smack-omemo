@@ -21,9 +21,10 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.packet.StandardExtensionElement;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.eme.element.ExplicitMessageEncryptionElement;
+import org.jivesoftware.smackx.hints.element.StoreHint;
 import org.jivesoftware.smackx.mam.MamManager;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.muc.RoomInfo;
@@ -333,41 +334,14 @@ public final class OmemoManager extends Manager {
         }
 
         if(getAddMAMStorageProcessingHint()) {
-            OmemoManager.addMamStorageHint(chatMessage);
+            StoreHint.set(chatMessage);
         }
 
         if(getAddEmeEncryptionHint()) {
-            OmemoManager.addExplicitMessageEncryptionHint(chatMessage);
+            chatMessage.addExtension(new ExplicitMessageEncryptionElement(OMEMO_NAMESPACE, OMEMO));
         }
 
         return chatMessage;
-    }
-
-    /**
-     * Add a storage hint for MAM (XEP-0313). This allows the server to archive the message even though it has no
-     * body element.
-     *
-     * @param omemoMessage message
-     */
-    public static void addMamStorageHint(Message omemoMessage) {
-        //Tell server to store message despite possibly empty body
-        if(omemoMessage != null) {
-            omemoMessage.addExtension(new StandardExtensionElement("store", "urn:xmpp:hints"));
-        }
-    }
-
-    /**
-     * Add an EME (XEP-0380) hint about OMEMO encryption. This indicates the recipient that the message is encrypted.
-     *
-     * @param omemoMessage message
-     */
-    public static void addExplicitMessageEncryptionHint(Message omemoMessage) {
-        //Explicit Message Encryption
-        if (omemoMessage != null) {
-            StandardExtensionElement.Builder b = StandardExtensionElement.builder("encryption", "urn:xmpp:eme:0");
-            b.addAttribute("name", OMEMO).addAttribute("namespace", OMEMO_NAMESPACE);
-            omemoMessage.addExtension(b.build());
-        }
     }
 
     /**
