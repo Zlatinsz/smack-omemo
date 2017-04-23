@@ -676,8 +676,9 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             String[] ids = a.split(",");
 
             for (String id : ids) {
-                if(!id.isEmpty())
+                if(!id.trim().equals("")) {
                     cachedDeviceList.addDevice(Integer.parseInt(id));
+                }
             }
 
             String i = s.substring(s.indexOf("i:") + 2);

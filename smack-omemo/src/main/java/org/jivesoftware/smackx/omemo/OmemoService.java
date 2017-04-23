@@ -24,7 +24,6 @@ import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.packet.XMPPError;
-import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.carbons.CarbonCopyReceivedListener;
 import org.jivesoftware.smackx.carbons.CarbonManager;
 import org.jivesoftware.smackx.carbons.packet.CarbonExtension;
@@ -163,11 +162,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         if (getOmemoStore().isFreshInstallation()) {
             LOGGER.log(Level.INFO, "No key material found. Looks like we have a fresh installation.");
             //Create new key material and publish it to the server
-            publishInformationIfNeeded(true, false);
-        } else {
-            //Publish our device list and bundle
-            publishInformationIfNeeded(false,false);
+            regenerate();
         }
+
+        publishInformationIfNeeded(false);
 
         subscribeToDeviceLists();
         registerOmemoMessageStanzaListeners();  //Wait for new OMEMO messages
@@ -191,15 +189,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             NoSuchProviderException, InvalidKeyException {
         //Test crypto functions
         new OmemoMessageBuilder<>(getOmemoStore(), "");
-        // TODO: Every JLS compatible Java platform must support UTF-8, so I think this can be removed. -Flow
-        //Test encoding
-        byte[] b = "".getBytes(StringUtils.UTF8);
     }
 
     /**
      * Publish our deviceId and a fresh bundle to the server.
      *
-     * @param regenerate         Do we want to generate a new Identity?
      * @param deleteOtherDevices Do we want to delete other devices from our deviceList?
      * @throws InterruptedException
      * @throws XMPPException.XMPPErrorException
@@ -208,12 +202,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CorruptedOmemoKeyException
      * @throws PubSubException.NotALeafNodeException
      */
-    void publishInformationIfNeeded(boolean regenerate, boolean deleteOtherDevices) throws InterruptedException,
+    void publishInformationIfNeeded(boolean deleteOtherDevices) throws InterruptedException,
             XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException,
             CorruptedOmemoKeyException, PubSubException.NotALeafNodeException {
-        if (regenerate) {
-            regenerate();
-        }
+
         publishDeviceIdIfNeeded(deleteOtherDevices);
         publishBundle();
     }
@@ -224,7 +216,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CorruptedOmemoKeyException when freshly generated identityKey is invalid
      *                                  (should never ever happen *crosses fingers*)
      */
-    private void regenerate() throws CorruptedOmemoKeyException {
+    void regenerate() throws CorruptedOmemoKeyException {
         //Generate unique ID that is not already taken
 
         int deviceIdCandidate;
