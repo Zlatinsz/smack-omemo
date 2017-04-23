@@ -316,13 +316,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
             if(date == -1) {
                 omemoStore.setDateOfLastReceivedMessage(d);
-            }
-
-            if(System.currentTimeMillis() - date > 1000L * 60 * 60 * OmemoManager.getDeleteStaleDevicesAfterHours()) {
-                LOGGER.log(Level.INFO, "Remove device "+id+" because of more than " +
-                        OmemoManager.getDeleteStaleDevicesAfterHours() + " hours of inactivity.");
-                it.remove();
-                publish = true;
+            } else {
+                if (System.currentTimeMillis() - date > 1000L * 60 * 60 * OmemoManager.getDeleteStaleDevicesAfterHours()) {
+                    LOGGER.log(Level.INFO, "Remove device " + id + " because of more than " +
+                            OmemoManager.getDeleteStaleDevicesAfterHours() + " hours of inactivity.");
+                    it.remove();
+                    publish = true;
+                }
             }
         }
 
