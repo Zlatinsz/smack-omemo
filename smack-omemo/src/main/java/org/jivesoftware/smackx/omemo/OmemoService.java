@@ -364,14 +364,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws PubSubException.NotALeafNodeException when the device lists node is not a LeafNode
      */
     OmemoDeviceListElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
-        try {
-            return extractDeviceListFrom(fetchDeviceListNode(contact));
-        } catch (XMPPException.XMPPErrorException e) {
-            if(e.getXMPPError().getCondition() == XMPPError.Condition.item_not_found) {
-                return null;
-            }
-            throw e;
-        }
+        return extractDeviceListFrom(fetchDeviceListNode(contact));
     }
 
     private boolean refreshOwnDeviceList() throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
@@ -385,6 +378,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         } catch (PubSubException.NotALeafNodeException e) {
             LOGGER.log(Level.WARNING, "Could not refresh own deviceList, because the Node is not a LeafNode: "+e.getMessage());
         }
+        catch (PubSubAssertionError.DiscoInfoNodeAssertionError bug) {
+            LOGGER.log(Level.WARNING,"This is a bug. will be fixed soon.");
+            return true;
+        }
         return false;
     }
 
@@ -393,6 +390,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             omemoStore.mergeCachedDeviceList(contact, fetchDeviceList(contact));
         } catch (PubSubException.NotALeafNodeException | XMPPException.XMPPErrorException e) {
             LOGGER.log(Level.WARNING, "Could not fetch device list of "+contact+": "+e.getMessage());
+        }
+
+        catch (PubSubAssertionError.DiscoInfoNodeAssertionError bug) {
+            LOGGER.log(Level.WARNING, "this is a bug. will be fixed soon");
         }
     }
 
