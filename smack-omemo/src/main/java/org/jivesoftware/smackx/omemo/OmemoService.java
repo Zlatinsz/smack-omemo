@@ -83,7 +83,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE_V_AXOLOTL;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST_NOTIFY;
@@ -615,7 +615,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws XMPPException.XMPPErrorException
      * @throws CorruptedOmemoKeyException
      */
-    private Message processReceivingMessage(BareJid sender, OmemoVAxolotlElement message, final OmemoMessageInformation information)
+    private Message processReceivingMessage(BareJid sender, OmemoElement message, final OmemoMessageInformation information)
             throws NoRawSessionException, InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException,
             CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
 
@@ -657,7 +657,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     ClearTextMessage processLocalMessage(BareJid sender, Message message) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException, NoRawSessionException {
         if(OmemoManager.stanzaContainsOmemoElement(message)) {
-            OmemoVAxolotlElement omemoMessageElement = message.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE);
+            OmemoElement omemoMessageElement = message.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE_V_AXOLOTL);
             OmemoMessageInformation info = new OmemoMessageInformation();
             Message decrypted = processReceivingMessage(sender, omemoMessageElement, info);
             return new ClearTextMessage(decrypted != null ? decrypted.getBody() : null, message, info);
@@ -756,7 +756,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NoResponseException
      * @throws NoRawSessionException
      */
-    private Message decryptOmemoMessageElement(OmemoDevice from, OmemoVAxolotlElement message, final OmemoMessageInformation information)
+    private Message decryptOmemoMessageElement(OmemoDevice from, OmemoElement message, final OmemoMessageInformation information)
             throws CryptoFailedException, InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException, NoRawSessionException {
         int preKeyCountBefore = getOmemoStore().loadOmemoPreKeys().size();
@@ -765,10 +765,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         //Get the session that will decrypt the message. If we have no such session, create a new one.
         OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> session = omemoStore.getOmemoSessionOf(from);
         if (session != null) {
-            decrypted = message.decrypt(session, omemoStore.loadOmemoDeviceId());
+            decrypted = session.decryptMessageElement(message, omemoStore.loadOmemoDeviceId());
         } else {
             session = omemoStore.keyUtil().createOmemoSession(omemoStore, from);
-            decrypted = message.decrypt(session, omemoStore.loadOmemoDeviceId());
+            decrypted = session.decryptMessageElement(message, omemoStore.loadOmemoDeviceId());
         }
 
         information.setSenderDevice(from);
@@ -976,7 +976,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         public void processStanza(Stanza packet) throws SmackException.NotConnectedException, InterruptedException {
             Message decrypted;
             BareJid sender = getSenderBareJidFromMucMessage(packet);
-            OmemoVAxolotlElement omemoMessage = packet.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE);
+            OmemoVAxolotlElement omemoMessage = packet.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE_V_AXOLOTL);
             OmemoMessageInformation messageInfo = new OmemoMessageInformation();
             MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
 
@@ -1027,7 +1027,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 BareJid sender = getSenderBareJidFromMucMessage(carbonCopy);
                 Message decrypted;
                 MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
-                OmemoVAxolotlElement omemoMessageElement = carbonCopy.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE);
+                OmemoVAxolotlElement omemoMessageElement = carbonCopy.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE_V_AXOLOTL);
                 OmemoMessageInformation messageInfo = new OmemoMessageInformation();
 
                 if (CarbonExtension.Direction.received.equals(direction)) {

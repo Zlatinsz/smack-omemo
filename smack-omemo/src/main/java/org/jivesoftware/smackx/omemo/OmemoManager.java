@@ -55,7 +55,7 @@ import java.util.logging.Logger;
 
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.BODY_OMEMO_HINT;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE_V_AXOLOTL;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_LIST_NOTIFY;
 
 /**
@@ -337,7 +337,7 @@ public final class OmemoManager extends Manager {
         }
 
         if(getAddEmeEncryptionHint()) {
-            chatMessage.addExtension(new ExplicitMessageEncryptionElement(OMEMO_NAMESPACE, OMEMO));
+            chatMessage.addExtension(new ExplicitMessageEncryptionElement(OMEMO_NAMESPACE_V_AXOLOTL, OMEMO));
         }
 
         return chatMessage;
@@ -451,7 +451,7 @@ public final class OmemoManager extends Manager {
      * @return true if stanza has extension 'encrypted'
      */
     public static boolean stanzaContainsOmemoElement(Stanza stanza) {
-        return stanza.hasExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE);
+        return stanza.hasExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE_V_AXOLOTL);
     }
 
     /**

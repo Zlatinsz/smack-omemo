@@ -16,9 +16,29 @@
  */
 package org.jivesoftware.smackx.omemo.internal;
 
+import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.omemo.OmemoStore;
+import org.jivesoftware.smackx.omemo.elements.OmemoElement;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.CIPHERMODE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.KEYTYPE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.PROVIDER;
 
 /**
  * This class represents a OMEMO session between us and another device.
@@ -35,6 +55,8 @@ import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
  * @author Paul Schaub
  */
 public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
+    private static final Logger LOGGER = Logger.getLogger(OmemoSession.class.getName());
+
     protected final T_Ciph cipher;
     protected final OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore;
     protected final OmemoDevice remoteDevice;
@@ -65,6 +87,107 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         this.omemoStore = omemoStore;
         this.remoteDevice = remoteDevice;
         this.cipher = createCipher(omemoStore, remoteDevice);
+    }
+
+    /**
+     * Try to decrypt the transported message key using the double ratchet session.
+     * @param element omemoElement
+     * @param keyId our keyId
+     * @return tuple of cipher generated from the unpacked message key and the authtag
+     * @throws CryptoFailedException if decryption using the double ratchet fails
+     * @throws NoRawSessionException if we have no session, but the element was NOT a PreKeyMessage
+     */
+    public CipherAndAuthTag decryptTransportedKey(OmemoElement element, int keyId) throws CryptoFailedException,
+            NoRawSessionException {
+        byte[] unpackedKey = null;
+        //Find key with our id
+        for (OmemoElement.OmemoHeader.Key k : element.getHeader().getKeys()) {
+            if (k.getId() == keyId) {
+                try {
+                    unpackedKey = decryptMessageKey(k.getData());
+                    break;
+                } catch (CryptoFailedException e) {
+                    LOGGER.log(Level.SEVERE, "decryptMessageElement failed: " + e.getMessage());
+                    //TODO: Wise to ignore the exception?
+                    //The issue is, there might be multiple keys with our id, but we can only decrypt one.
+                    //So we can't throw the exception, when decrypting the first duplicate which is not for us.
+                    //Just print the exception for now.
+                }
+            }
+        }
+
+        if (unpackedKey == null) {
+            throw new CryptoFailedException("Transported key could not be decrypted, since the message key could not be unpacked.");
+        }
+
+        byte[] messageKey = new byte[16];
+        byte[] authTag = new byte[16];
+        if (unpackedKey.length == 32) {
+            //copy key part into messageKey
+            System.arraycopy(unpackedKey, 0, messageKey, 0, 16);
+            //copy tag part into authTag
+            System.arraycopy(unpackedKey, 16, authTag, 0,16);
+        } else {
+            throw new AssertionError("Invalid key length: "+unpackedKey.length);
+        }
+
+        // Create and initialize cipher from transported key
+        Cipher transportedCipher;
+        try {
+            transportedCipher = Cipher.getInstance(CIPHERMODE, PROVIDER);
+            SecretKeySpec keySpec = new SecretKeySpec(messageKey, KEYTYPE);
+            IvParameterSpec ivSpec = new IvParameterSpec(element.getHeader().getIv());
+            transportedCipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+        } catch (NoSuchAlgorithmException | java.security.InvalidKeyException |
+                InvalidAlgorithmParameterException |
+                NoSuchPaddingException | NoSuchProviderException e) {
+            throw new CryptoFailedException(e);
+        }
+
+        return new CipherAndAuthTag(transportedCipher, authTag);
+    }
+
+    public Message decryptMessageElement(OmemoElement element, CipherAndAuthTag cipherAndAuthTag) throws CryptoFailedException {
+        if(!element.isMessageElement()) {
+            throw new IllegalArgumentException("decryptMessageElement cannot decrypt OmemoElement which is no MessageElement!");
+        }
+
+        byte[] encryptedBody = new byte[element.getPayload().length + 16];
+        byte[] payload = element.getPayload();
+        System.arraycopy(payload, 0, encryptedBody, 0, payload.length);
+        System.arraycopy(cipherAndAuthTag.getAuthTag(), 0, encryptedBody, payload.length, 16);
+
+        try {
+            String plaintext = new String(cipherAndAuthTag.getCipher().doFinal(encryptedBody), StringUtils.UTF8);
+            Message decrypted = new Message();
+            decrypted.setBody(plaintext);
+            return decrypted;
+
+        } catch (UnsupportedEncodingException | IllegalBlockSizeException | BadPaddingException e) {
+            throw new CryptoFailedException("decryptMessageElement could not decipher message body: "+e.getMessage());
+        }
+    }
+
+    /**
+     * Try to decrypt the message.
+     * First decrypt the message key using our session with the sender.
+     * Second use the decrypted key to decrypt the message.
+     * The decrypted content of the 'encrypted'-element becomes the body of the clear text message.
+     *
+     * @param element OmemoElement
+     * @param keyId   the key we want to decrypt (usually our own device id)
+     * @return message as plaintext
+     * @throws CryptoFailedException
+     * @throws NoRawSessionException
+     */
+    // TODO find solution for what we actually want to decrypt (String, Message, List<ExtensionElements>...)
+    public Message decryptMessageElement(OmemoElement element, int keyId) throws CryptoFailedException, NoRawSessionException {
+        if(!element.isMessageElement()) {
+            throw new IllegalArgumentException("OmemoElement is not a messageElement!");
+        }
+
+        CipherAndAuthTag cipherAndAuthTag = decryptTransportedKey(element, keyId);
+        return decryptMessageElement(element, cipherAndAuthTag);
     }
 
     /**

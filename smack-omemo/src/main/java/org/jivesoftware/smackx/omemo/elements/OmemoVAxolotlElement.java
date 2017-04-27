@@ -16,34 +16,13 @@
  */
 package org.jivesoftware.smackx.omemo.elements;
 
-import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.util.Objects;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smack.util.XmlStringBuilder;
 import org.jivesoftware.smack.util.stringencoder.Base64;
-import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
-import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
-import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.CIPHERMODE;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.KEYTYPE;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.PROVIDER;
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE_V_AXOLOTL;
 
 /**
  * An OMEMO (PreKey)WhisperMessage element.
@@ -51,9 +30,6 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
  * @author Paul Schaub
  */
 public class OmemoVAxolotlElement extends OmemoElement {
-    private static final Logger LOGGER = Logger.getLogger(OmemoVAxolotlElement.class.getName());
-    private final OmemoHeader header;
-    private final byte[] payload;
 
     /**
      * Create a new OmemoMessageElement from a header and a payload.
@@ -62,102 +38,7 @@ public class OmemoVAxolotlElement extends OmemoElement {
      * @param payload payload
      */
     public OmemoVAxolotlElement(OmemoHeader header, byte[] payload) {
-        this.header = Objects.requireNonNull(header);
-        this.payload = payload;
-    }
-
-    public OmemoHeader getHeader() {
-        return header;
-    }
-
-    /**
-     * Return the payload of the message.
-     *
-     * @return payload
-     */
-    public byte[] getPayload() {
-        if (payload == null) {
-            return null;
-        }
-        return payload.clone();
-    }
-
-    public boolean isKeyTransportElement() {
-        return payload == null;
-    }
-
-    public boolean isMessageElement() {
-        return payload != null;
-    }
-
-    /**
-     * Header element of the message. The header contains information about the sender and the encrypted keys for
-     * the recipients, as well as the iv element for AES.
-     */
-    public static class OmemoHeader {
-        private final int sid;
-        private final ArrayList<OmemoHeader.Key> keys;
-        private final byte[] iv;
-
-        public OmemoHeader(int sid, ArrayList<OmemoHeader.Key> keys, byte[] iv) {
-            this.sid = sid;
-            this.keys = keys;
-            this.iv = iv;
-        }
-
-        /**
-         * Return the deviceId of the sender of the message.
-         *
-         * @return senders id
-         */
-        public int getSid() {
-            return sid;
-        }
-
-        public ArrayList<OmemoHeader.Key> getKeys() {
-            ArrayList<OmemoHeader.Key> copy = new ArrayList<>();
-            for (OmemoHeader.Key k : keys) {
-                copy.add(new OmemoHeader.Key(k.getData(), k.getId()));
-            }
-            return copy;
-        }
-
-        public byte[] getIv() {
-            return iv != null ? iv.clone() : null;
-        }
-
-        /**
-         * Small class to collect key (byte[]), its id and whether its a prekey or not.
-         */
-        public static class Key {
-            final byte[] data;
-            final int id;
-            final boolean preKey;
-
-            public Key(byte[] data, int id) {
-                this.data = data;
-                this.id = id;
-                this.preKey = false;
-            }
-
-            public Key(byte[] data, int id, boolean preKey) {
-                this.data = data;
-                this.id = id;
-                this.preKey = preKey;
-            }
-
-            public int getId() {
-                return this.id;
-            }
-
-            public byte[] getData() {
-                return this.data;
-            }
-
-            public boolean isPreKey() {
-                return this.preKey;
-            }
-        }
+        super(header, payload);
     }
 
     @Override
@@ -169,7 +50,7 @@ public class OmemoVAxolotlElement extends OmemoElement {
     public XmlStringBuilder toXML() {
         XmlStringBuilder sb = new XmlStringBuilder(this).rightAngleBracket();
 
-        sb.halfOpenElement(HEADER).attribute(SID, header.sid).rightAngleBracket();
+        sb.halfOpenElement(HEADER).attribute(SID, header.getSid()).rightAngleBracket();
 
         for (OmemoHeader.Key k : getHeader().getKeys()) {
             if (k.isPreKey()) {
@@ -181,7 +62,7 @@ public class OmemoVAxolotlElement extends OmemoElement {
             sb.closeElement(KEY);
         }
 
-        sb.openElement(IV).append(Base64.encodeToString(header.iv)).closeElement(IV);
+        sb.openElement(IV).append(Base64.encodeToString(header.getIv())).closeElement(IV);
 
         sb.closeElement(HEADER);
 
@@ -195,94 +76,25 @@ public class OmemoVAxolotlElement extends OmemoElement {
 
     @Override
     public String getNamespace() {
-        return OMEMO_NAMESPACE;
+        return OMEMO_NAMESPACE_V_AXOLOTL;
     }
 
     @Override
     public String toString() {
         try {
-            String s = "Encrypted:\n" +
-                    "   header: sid: " + getHeader().getSid() + "\n";
+            StringBuilder s = new StringBuilder("Encrypted:\n")
+                    .append("   header: sid: ").append(getHeader().getSid()).append('\n');
             for (OmemoHeader.Key k : getHeader().getKeys()) {
-                s += "      key: prekey: " + k.isPreKey() + " rid: " + k.getId() + " " + new String(k.getData(), StringUtils.UTF8) + "\n";
+                s.append("      key: prekey: ").append(k.isPreKey()).append(" rid: ")
+                        .append(k.getId()).append(' ')
+                        .append(new String(k.getData(), StringUtils.UTF8)).append('\n');
             }
-            s += "      iv: " + new String(getHeader().getIv(), StringUtils.UTF8) + "\n";
-            s += "  payload: " + new String(getPayload(), StringUtils.UTF8);
-            return s;
+            s.append("      iv: ").append(new String(getHeader().getIv(), StringUtils.UTF8)).append('\n');
+            s.append("  payload: ").append(new String(getPayload(), StringUtils.UTF8));
+            return s.toString();
         } catch (UnsupportedEncodingException e) {
             // UTF-8 must be supported on all platforms claiming to be java compatible.
             throw new AssertionError(e);
-        }
-    }
-
-    /**
-     * Try to decrypt the message.
-     * First decrypt the message key using our session with the sender.
-     * Second use the decrypted key to decrypt the message.
-     * The decrypted content of the 'encrypted'-element becomes the body of the clear text message.
-     *
-     * @param session OmemoSession with the sender device
-     * @param keyId   the key we want to decrypt (usually our own device id)
-     * @return message as plaintext
-     * @throws CryptoFailedException
-     * @throws NoRawSessionException
-     */
-    // TODO Move this method into OmemoSession. Not sure if it should/must be public? -Flow
-    public Message decrypt(OmemoSession<?, ?, ?, ?, ?, ?, ?, ?, ?> session, int keyId) throws CryptoFailedException, NoRawSessionException {
-        String plain;
-        byte[] cipherText = getPayload();
-        byte[] messageKey = new byte[16];
-        byte[] unpackedKey = null;
-
-        for (OmemoHeader.Key k : getHeader().getKeys()) {
-            if (k.getId() == keyId) {
-                try {
-                    unpackedKey = session.decryptMessageKey(k.getData());
-                    break;
-                } catch (CryptoFailedException ignored) {
-                    LOGGER.log(Level.SEVERE, ignored.getMessage());
-                    //TODO: Wise to ignore the exception?
-                    //The issue is, there might be multiple keys with our id, but we can only decrypt one.
-                    //So we can't throw the exception, when decrypting the first duplicate which is not for us.
-                    //Just print the exception for now.
-                }
-            }
-        }
-
-        if (unpackedKey == null) {
-            throw new CryptoFailedException("OmemoMessageElement could not be decrypted, since the message key could not be unpacked.");
-        }
-
-        // Check, if key includes the auth-tag
-        // See https://github.com/ChatSecure/ChatSecure-iOS/issues/647
-        if (unpackedKey.length == 32) {
-            System.arraycopy(unpackedKey, 0, messageKey, 0, 16);
-            byte[] newCiphertext = new byte[cipherText.length + 16];
-            System.arraycopy(cipherText, 0, newCiphertext, 0, cipherText.length);
-            System.arraycopy(unpackedKey, 16, newCiphertext, cipherText.length, 16);
-            cipherText = newCiphertext;
-        } else {
-            messageKey = unpackedKey;
-        }
-
-        // Create cipher with message key
-        try {
-            Cipher cipher = Cipher.getInstance(CIPHERMODE, PROVIDER);
-            SecretKeySpec keySpec = new SecretKeySpec(messageKey, KEYTYPE);
-            IvParameterSpec ivSpec = new IvParameterSpec(header.getIv());
-
-            cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
-
-            // Decrypt the message and store it in the body of a new Message object
-            plain = new String(cipher.doFinal(cipherText), StringUtils.UTF8);
-            Message cleartext = new Message();
-            cleartext.setBody(plain);
-            return cleartext;
-        } catch (NoSuchAlgorithmException | InvalidKeyException |
-                InvalidAlgorithmParameterException | BadPaddingException |
-                NoSuchPaddingException | NoSuchProviderException |
-                IllegalBlockSizeException | UnsupportedEncodingException e) {
-            throw new CryptoFailedException(e);
         }
     }
 }

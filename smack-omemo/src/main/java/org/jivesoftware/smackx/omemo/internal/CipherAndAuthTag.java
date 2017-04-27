@@ -14,26 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jivesoftware.smackx.omemo.elements;
+package org.jivesoftware.smackx.omemo.internal;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE_V_AXOLOTL;
-
-import java.util.Set;
+import javax.crypto.Cipher;
 
 /**
- * The OMEMO device list element with the legacy Axolotl namespace.
+ * Encapsulate Cipher and AuthTag.
  *
  * @author Paul Schaub
  */
-public class OmemoDeviceListVAxolotlElement extends OmemoDeviceListElement {
+public class CipherAndAuthTag {
+    private final Cipher cipher;
+    private final byte[] authTag;
 
-    public OmemoDeviceListVAxolotlElement(Set<Integer> deviceIds) {
-        super(deviceIds);
+    public CipherAndAuthTag(Cipher cipher, byte[] authTag) {
+        this.cipher = cipher;
+        this.authTag = authTag;
     }
 
-    @Override
-    public String getNamespace() {
-        return OMEMO_NAMESPACE_V_AXOLOTL;
+    public Cipher getCipher() {
+        return cipher;
     }
 
+    public byte[] getAuthTag() {
+        return authTag;
+    }
 }

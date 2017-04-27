@@ -26,13 +26,13 @@ public class OmemoConstants {
     /**
      * Omemo related namespace.
      */
-    public static final String OMEMO_NAMESPACE = "eu.siacs.conversations.axolotl";
+    public static final String OMEMO_NAMESPACE_V_AXOLOTL = "eu.siacs.conversations.axolotl";
     public static final String OMEMO = "OMEMO";
 
     //PubSub Node names
-    public static final String PEP_NODE_DEVICE_LIST = OMEMO_NAMESPACE + ".devicelist";
+    public static final String PEP_NODE_DEVICE_LIST = OMEMO_NAMESPACE_V_AXOLOTL + ".devicelist";
     public static final String PEP_NODE_DEVICE_LIST_NOTIFY = PEP_NODE_DEVICE_LIST + "+notify";
-    public static final String PEP_NODE_BUNDLES = OMEMO_NAMESPACE + ".bundles";
+    public static final String PEP_NODE_BUNDLES = OMEMO_NAMESPACE_V_AXOLOTL + ".bundles";
 
     /**
      * How many preKeys do we want to publish?

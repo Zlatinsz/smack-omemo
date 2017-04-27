@@ -22,7 +22,7 @@ import org.jivesoftware.smack.util.stringencoder.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE;
+import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE_V_AXOLOTL;
 
 /**
  * OMEMO device bundle as described here:
@@ -133,7 +133,7 @@ public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
 
     @Override
     public String getNamespace() {
-        return OMEMO_NAMESPACE;
+        return OMEMO_NAMESPACE_V_AXOLOTL;
     }
 
     @Override
