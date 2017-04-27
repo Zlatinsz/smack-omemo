@@ -11,6 +11,5 @@
   * [Provider Architecture](providers.md)
   * [DNSSEC and DANE](dnssec.md)
   * [Debugging with Smack](debugging.md)
-  * [OMEMO Encryption](omemo.md)
 
   * [Smack Extensions Manual](extensions/index.md)
