@@ -161,7 +161,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
 
         //Get fresh device list from server
-        refreshOwnDeviceList();
+        boolean mustPublishId = refreshOwnDeviceList();
 
         if (getOmemoStore().isFreshInstallation()) {
             LOGGER.log(Level.INFO, "No key material found. Looks like we have a fresh installation.");
@@ -169,7 +169,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             regenerate();
         }
 
-        publishInformationIfNeeded(false);
+        publishDeviceIdIfNeeded(false, mustPublishId);
+        publishBundle();
 
         subscribeToDeviceLists();
         registerOmemoMessageStanzaListeners();  //Wait for new OMEMO messages
@@ -193,25 +194,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             NoSuchProviderException, InvalidKeyException {
         //Test crypto functions
         new OmemoMessageBuilder<>(getOmemoStore(), "");
-    }
-
-    /**
-     * Publish our deviceId and a fresh bundle to the server.
-     *
-     * @param deleteOtherDevices Do we want to delete other devices from our deviceList?
-     * @throws InterruptedException
-     * @throws XMPPException.XMPPErrorException
-     * @throws SmackException.NotConnectedException
-     * @throws SmackException.NoResponseException
-     * @throws CorruptedOmemoKeyException
-     * @throws PubSubException.NotALeafNodeException
-     */
-    void publishInformationIfNeeded(boolean deleteOtherDevices) throws InterruptedException,
-            XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException,
-            CorruptedOmemoKeyException, PubSubException.NotALeafNodeException {
-
-        publishDeviceIdIfNeeded(deleteOtherDevices);
-        publishBundle();
     }
 
     /**
@@ -240,7 +222,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CorruptedOmemoKeyException
      * @throws XMPPException.XMPPErrorException
      */
-    private void publishBundle()
+    void publishBundle()
             throws SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException {
         Date lastSignedPreKeyRenewal = omemoStore.getDateOfLastSignedPreKeyRenewal();
@@ -260,6 +242,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         new PayloadItem<>(omemoStore.packOmemoBundle()));
     }
 
+    void publishDeviceIdIfNeeded(boolean deleteOtherDevices) throws InterruptedException,
+            PubSubException.NotALeafNodeException, XMPPException.XMPPErrorException,
+            SmackException.NotConnectedException, SmackException.NoResponseException {
+        publishDeviceIdIfNeeded(deleteOtherDevices, false);
+    }
+
     /**
      * Publish our deviceId in case it is not on the list already.
      *
@@ -272,11 +260,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws XMPPException.XMPPErrorException
      * @throws PubSubException.NotALeafNodeException
      */
-    private void publishDeviceIdIfNeeded(boolean deleteOtherDevices)
+    void publishDeviceIdIfNeeded(boolean deleteOtherDevices, boolean publish)
             throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException,
             XMPPException.XMPPErrorException, PubSubException.NotALeafNodeException {
 
-        boolean publish = false;
         CachedDeviceList deviceList = omemoStore.loadCachedDeviceList(ownJid);
 
         Set<Integer> deviceListIds;
@@ -387,8 +374,18 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
     }
 
-    private void refreshOwnDeviceList() throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
-        refreshDeviceList(ownJid);
+    private boolean refreshOwnDeviceList() throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+        try {
+            omemoStore.mergeCachedDeviceList(ownJid, fetchDeviceList(ownJid));
+        } catch (XMPPException.XMPPErrorException e) {
+            if(e.getXMPPError().getCondition() == XMPPError.Condition.item_not_found) {
+                LOGGER.log(Level.WARNING, "Could not refresh own deviceList, because the node did not exist: "+e.getMessage());
+                return true;
+            }
+        } catch (PubSubException.NotALeafNodeException e) {
+            LOGGER.log(Level.WARNING, "Could not refresh own deviceList, because the Node is not a LeafNode: "+e.getMessage());
+        }
+        return false;
     }
 
     void refreshDeviceList(BareJid contact) throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {

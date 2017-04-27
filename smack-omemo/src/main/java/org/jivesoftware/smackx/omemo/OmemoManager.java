@@ -185,7 +185,8 @@ public final class OmemoManager extends Manager {
      */
     public void purgeDevices() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
         throwIfNoServiceSet();
-        service.publishInformationIfNeeded(true);
+        service.publishDeviceIdIfNeeded(true);
+        service.publishBundle();
     }
 
     /**
@@ -199,7 +200,8 @@ public final class OmemoManager extends Manager {
         throwIfNoServiceSet();
         //create a new identity and publish new keys to the server
         getOmemoService().regenerate();
-        getOmemoService().publishInformationIfNeeded(false);
+        getOmemoService().publishDeviceIdIfNeeded(false);
+        getOmemoService().publishBundle();
     }
 
     /**
@@ -442,7 +444,8 @@ public final class OmemoManager extends Manager {
         //generate key
         getOmemoService().getOmemoStore().changeSignedPreKey();
         //publish
-        getOmemoService().publishInformationIfNeeded(false);
+        getOmemoService().publishDeviceIdIfNeeded(false);
+        getOmemoService().publishBundle();
     }
 
     /**
