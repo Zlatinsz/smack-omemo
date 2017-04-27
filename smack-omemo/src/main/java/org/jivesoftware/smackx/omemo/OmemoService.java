@@ -74,6 +74,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -242,9 +243,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private void publishBundle()
             throws SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException {
-        long lastSignedPreKeyRenewal = omemoStore.getDateOfLastSignedPreKeyRenewal();
-        if(OmemoManager.getRenewOldSignedPreKeys() && lastSignedPreKeyRenewal != -1) {
-            if(System.currentTimeMillis() - lastSignedPreKeyRenewal
+        Date lastSignedPreKeyRenewal = omemoStore.getDateOfLastSignedPreKeyRenewal();
+        if(OmemoManager.getRenewOldSignedPreKeys() && lastSignedPreKeyRenewal != null) {
+            if(System.currentTimeMillis() - lastSignedPreKeyRenewal.getTime()
                     > 1000L * 60 * 60 * OmemoManager.getRenewOldSignedPreKeysAfterHours()) {
                 LOGGER.log(Level.INFO, "Renewing signedPreKey");
                 omemoStore.changeSignedPreKey();
@@ -314,12 +315,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             }
 
             OmemoDevice d = new OmemoDevice(ownJid, id);
-            long date = omemoStore.getDateOfLastReceivedMessage(d);
+            Date date = omemoStore.getDateOfLastReceivedMessage(d);
 
-            if(date == -1) {
+            if(date == null) {
                 omemoStore.setDateOfLastReceivedMessage(d);
             } else {
-                if (System.currentTimeMillis() - date > 1000L * 60 * 60 * OmemoManager.getDeleteStaleDevicesAfterHours()) {
+                if (System.currentTimeMillis() - date.getTime() > 1000L * 60 * 60 * OmemoManager.getDeleteStaleDevicesAfterHours()) {
                     LOGGER.log(Level.INFO, "Remove device " + id + " because of more than " +
                             OmemoManager.getDeleteStaleDevicesAfterHours() + " hours of inactivity.");
                     it.remove();
@@ -574,14 +575,25 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         int ourDeviceId = omemoStore.loadOmemoDeviceId();
                         omemoStore.mergeCachedDeviceList(from, omemoDeviceListElement);
 
-                        if (from == null || !(from.equals(ownJid)
-                                && !omemoDeviceListElement.getDeviceIds().contains(ourDeviceId))) {
+                        if(from == null) {
+                            //Unknown sender, no more work to do. TODO: When does this happen?
                             continue;
                         }
 
-                        //Our deviceId was not in our list!
-                        LOGGER.log(Level.INFO, "Device Id was not on the list!");
+                        if (!from.equals(ownJid)) {
+                            //Not our deviceList, so nothing more to do
+                            continue;
+                        }
+
+                        if(omemoDeviceListElement.getDeviceIds().contains(ourDeviceId)) {
+                            //We are on the list. Nothing more to do
+                            continue;
+                        }
+
+                        //Our deviceList and we are not on it! We don't want to miss all the action!!!
+                        LOGGER.log(Level.INFO, "Our deviceId was not on the list!");
                         Set<Integer> deviceListIds = omemoDeviceListElement.copyDeviceIds();
+                        //enroll at the deviceList
                         deviceListIds.add(ourDeviceId);
                         omemoDeviceListElement = new OmemoDeviceListVAxolotlElement(deviceListIds);
 
@@ -728,8 +740,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 continue;
             }
 
-            final long now = System.currentTimeMillis();
-            if (OmemoManager.getIgnoreStaleDevices() && now - omemoStore.getDateOfLastReceivedMessage(d)
+            Date lastReceived = omemoStore.getDateOfLastReceivedMessage(d);
+            if(lastReceived == null) {
+                omemoStore.setDateOfLastReceivedMessage(d);
+                lastReceived = new Date();
+            }
+
+            if (OmemoManager.getIgnoreStaleDevices() && System.currentTimeMillis() - lastReceived.getTime()
                     > 1000L * 60 * 60 * OmemoManager.getIgnoreStaleDevicesAfterHours()) {
                 LOGGER.log(Level.WARNING, "Refusing to encrypt message for stale device " + d +
                         " which was inactive for at least " + OmemoManager.getIgnoreStaleDevicesAfterHours() +" hours.");

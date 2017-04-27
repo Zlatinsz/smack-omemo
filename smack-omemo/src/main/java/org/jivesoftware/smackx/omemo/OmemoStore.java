@@ -27,6 +27,7 @@ import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.util.KeyUtil;
 import org.jxmpp.jid.BareJid;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -420,9 +421,9 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Set the date in millis of the last message that was received from device 'from' to 'date'.
      *
      * @param from device in question
-     * @param date date of the last received message in millis
+     * @param date date of the last received message
      */
-    public abstract void setDateOfLastReceivedMessage(OmemoDevice from, long date);
+    public abstract void setDateOfLastReceivedMessage(OmemoDevice from, Date date);
 
     /**
      * Set the date in millis of the last message that was received from device 'from' to now.
@@ -430,7 +431,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param from device in question
      */
     public void setDateOfLastReceivedMessage(OmemoDevice from) {
-        this.setDateOfLastReceivedMessage(from, System.currentTimeMillis());
+        this.setDateOfLastReceivedMessage(from, new Date());
     }
 
     /**
@@ -439,24 +440,24 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param from device in question
      * @return date if existent as long, otherwise -1
      */
-    public abstract long getDateOfLastReceivedMessage(OmemoDevice from);
+    public abstract Date getDateOfLastReceivedMessage(OmemoDevice from);
 
     /**
      * Set the date in millis of the last time the signed preKey was renewed.
      *
      * @param date date
      */
-    public abstract void setDateOfLastSignedPreKeyRenewal(long date);
+    public abstract void setDateOfLastSignedPreKeyRenewal(Date date);
 
     public void setDateOfLastSignedPreKeyRenewal() {
-        setDateOfLastSignedPreKeyRenewal(System.currentTimeMillis());
+        setDateOfLastSignedPreKeyRenewal(new Date());
     }
 
     /**
      * Get the date in millis of the last time the signed preKey was renewed.
-     * @return date if existent as long, otherwise -1
+     * @return date if existent, otherwise null
      */
-    public abstract long getDateOfLastSignedPreKeyRenewal();
+    public abstract Date getDateOfLastSignedPreKeyRenewal();
 
     /**
      * Generate 'count' new PreKeys beginning with id 'startId'.

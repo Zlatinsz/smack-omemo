@@ -28,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -556,7 +557,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void setDateOfLastReceivedMessage(OmemoDevice from, long date) {
+    public void setDateOfLastReceivedMessage(OmemoDevice from, Date date) {
         File dir = getContactDevicePath(from);
         if(dir == null) {
             return;
@@ -565,40 +566,40 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         File f = new File(dir.getAbsolutePath() + "/" + LAST_MESSAGE_RECEIVED);
 
         try {
-            writeBytes(Long.toString(date).getBytes(StringUtils.UTF8), f);
+            writeBytes(Long.toString(date.getTime()).getBytes(StringUtils.UTF8), f);
         } catch (UnsupportedEncodingException e) {
             LOGGER.log(Level.SEVERE, "setDateOfLastReceivedMessage has failed: "+e.getMessage());
         }
     }
 
     @Override
-    public long getDateOfLastReceivedMessage(OmemoDevice from) {
+    public Date getDateOfLastReceivedMessage(OmemoDevice from) {
         File dir = getContactDevicePath(from);
         if(dir == null) {
-            return -1;
+            return null;
         }
 
         File f = new File(dir.getAbsolutePath() + "/" + LAST_MESSAGE_RECEIVED);
         if(!f.exists() || !f.isFile()) {
-            return -1;
+            return null;
         }
 
         try {
             byte[] b = readBytes(f);
 
             if(b == null) {
-                return -1;
+                return null;
             }
 
-            return Long.valueOf(new String(b, StringUtils.UTF8).trim().replace("\n",""));
+            return new Date(Long.valueOf(new String(b, StringUtils.UTF8).trim().replace("\n","")));
         } catch (UnsupportedEncodingException e) {
             LOGGER.log(Level.SEVERE, "getDateOfLastReceivedMessage failed: "+e.getMessage());
-            return -1;
+            return null;
         }
     }
 
     @Override
-    public void setDateOfLastSignedPreKeyRenewal(long date) {
+    public void setDateOfLastSignedPreKeyRenewal(Date date) {
         File dir = getDevicePath();
         if(dir == null) {
             return;
@@ -606,7 +607,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
 
         File f = new File(dir.getAbsolutePath() + "/" + LAST_SIGNED_PREKEY_RENEWAL);
         try {
-            writeBytes(Long.toString(date).getBytes(StringUtils.UTF8), f);
+            writeBytes(Long.toString(date.getTime()).getBytes(StringUtils.UTF8), f);
         } catch (UnsupportedEncodingException e) {
             LOGGER.log(Level.SEVERE, "setDateOfLastSignedPreKeyRenewal has failed: "+e.getMessage());
         }
@@ -621,26 +622,26 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public long getDateOfLastSignedPreKeyRenewal() {
+    public Date getDateOfLastSignedPreKeyRenewal() {
         File dir = getDevicePath();
         if(dir == null) {
-            return -1;
+            return null;
         }
 
         File f = new File(dir.getAbsolutePath() + "/" + LAST_SIGNED_PREKEY_RENEWAL);
         if(!f.exists() || !f.isFile()) {
-            return -1;
+            return null;
         }
 
         try {
             byte[] b = readBytes(f);
             if(b != null) {
-                return Long.valueOf(new String(b, StringUtils.UTF8).trim());
+                return new Date(Long.valueOf(new String(b, StringUtils.UTF8).trim()));
             }
-            return -1;
+            return null;
         } catch (UnsupportedEncodingException e) {
             LOGGER.log(Level.SEVERE, "getDateOfLastSignedPreKeyRenewal has failed: "+e.getMessage());
-            return -1;
+            return null;
         }
     }
 
