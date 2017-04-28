@@ -98,24 +98,6 @@ public class CachedDeviceList implements Serializable {
         activeDevices.add(deviceId);
     }
 
-    // TODO why is/was this needed? -Flow
-    /*
-    @Override
-    public String getElementName() {
-        return activeDevices.getElementName();
-    }
-
-    @Override
-    public CharSequence toXML() {
-        return activeDevices.toXML();
-    }
-
-    @Override
-    public String getNamespace() {
-        return activeDevices.getNamespace();
-    }
-    */
-
     /**
      * Returns true if deviceId is either in the list of active or inactive devices.
      *
