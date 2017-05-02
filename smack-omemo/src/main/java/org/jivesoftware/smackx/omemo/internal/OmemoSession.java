@@ -128,7 +128,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             //copy tag part into authTag
             System.arraycopy(unpackedKey, 16, authTag, 0,16);
         } else {
-            throw new AssertionError("Invalid key length: "+unpackedKey.length);
+            throw new CryptoFailedException("MessageKey has wrong length: "+unpackedKey.length+". Probably legacy auth tag format.");
         }
 
         // Create and initialize cipher from transported key
