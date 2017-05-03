@@ -59,17 +59,18 @@ import java.util.logging.Level;
  */
 public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
 
-    public SignalOmemoService(OmemoManager manager,
-                              OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> store)
+    public SignalOmemoService()
             throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException,
             NoSuchPaddingException, InvalidAlgorithmParameterException, UnsupportedEncodingException,
             IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchProviderException,
             java.security.InvalidKeyException {
-        super(manager, store);
+        super();
     }
 
     @Override
-    protected void processBundle(PreKeyBundle preKeyBundle, OmemoDevice contact) throws CorruptedOmemoKeyException {
+    protected void processBundle(OmemoManager manager, PreKeyBundle preKeyBundle, OmemoDevice contact) throws CorruptedOmemoKeyException {
+        OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
+                omemoStore = getOmemoStore(manager);
         SessionBuilder builder = new SessionBuilder(
                 (SessionStore) omemoStore,
                 (PreKeyStore) omemoStore,

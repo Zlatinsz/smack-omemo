@@ -62,7 +62,6 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     private static final Logger LOGGER = Logger.getLogger(FileBasedOmemoStore.class.getName());
 
     private final File base;
-    private final BareJid userJid;
 
     /**
      * Constructor.
@@ -76,33 +75,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
             base.mkdirs();
         }
         this.base = base;
-        this.userJid = manager.getConnection().getUser().asBareJid();
     }
 
     @Override
     public boolean isFreshInstallation() {
-        File[] list = getUserPath().listFiles();
-        return list == null || list.length == 0;
-    }
-
-    @Override
-    public int loadOmemoDeviceId() {
-        File[] devIDs = getUserPath().listFiles();
-        return devIDs != null && devIDs.length > 0 ? Integer.parseInt(devIDs[0].getName()) : 0;
-    }
-
-    @Override
-    public void storeOmemoDeviceId(int deviceId) {
-        if (loadOmemoDeviceId() == deviceId) {
-            return;
-        }
-        File[] list = getUserPath().listFiles();
-        if (list != null) {
-            for (File f : list) {
-                f.delete();
-            }
-        }
-        create(new File(getUserPath().getAbsolutePath() + "/" + deviceId));
+        File userPath = getUserPath();
+        return !new File(getUserPath() + "/" + omemoManager.getDeviceId()).exists();
     }
 
     @Override
@@ -752,7 +730,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      * @return path
      */
     private File getUserPath() {
-        return create(new File(getOmemoPath().getAbsolutePath() + "/" + userJid.toString() + "/"));
+        return create(new File(getOmemoPath().getAbsolutePath() + "/" + omemoManager.getOwnJid().toString() + "/"));
     }
 
     /**
@@ -761,13 +739,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      * @return path
      */
     private File getDevicePath() {
-        File[] content = getUserPath().listFiles();
-        if (content != null && content.length == 1) {
-            int devId = Integer.parseInt(content[0].getName());
-            return create(new File(getUserPath() + "/" + devId));
-        } else {
-            return null;
-        }
+        return create(new File(getUserPath() + "/" + omemoManager.getDeviceId()));
     }
 
     /**

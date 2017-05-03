@@ -48,8 +48,6 @@ import org.jivesoftware.smackx.omemo.internal.IdentityKeyWrapper;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
 import org.jivesoftware.smackx.omemo.internal.OmemoSession;
-import org.jivesoftware.smackx.omemo.listener.OmemoMessageListener;
-import org.jivesoftware.smackx.omemo.listener.OmemoMucMessageListener;
 import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.omemo.util.OmemoMessageBuilder;
 import org.jivesoftware.smackx.pep.PEPListener;
@@ -104,23 +102,13 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_
  * @author Paul Schaub
  */
 public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
+
     protected static final Logger LOGGER = Logger.getLogger(OmemoService.class.getName());
-
-    protected final OmemoManager omemoManager;
-    protected final OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore;
-
-    private final HashSet<OmemoMessageListener> omemoMessageListeners = new HashSet<>();
-    private final HashSet<OmemoMucMessageListener> omemoMucMessageListeners = new HashSet<>();
-
-    protected final BareJid ownJid;
-
     /**
      * Create a new OmemoService object. This should only happen once.
      * When the service gets created, it tries a placeholder crypto function in order to test, if all necessary
      * algorithms are available on the system.
      *
-     * @param manager The OmemoManager we want to provide this service to
-     * @param store   The OmemoStore implementation that holds the key material
      * @throws NoSuchPaddingException               When no Cipher could be instantiated.
      * @throws NoSuchAlgorithmException             when no Cipher could be instantiated.
      * @throws NoSuchProviderException              when BouncyCastle could not be found.
@@ -130,19 +118,16 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws BadPaddingException                  when cipher.doFinal gets wrong padding
      * @throws IllegalBlockSizeException            when cipher.doFinal gets wrong Block size.
      */
-    public OmemoService(OmemoManager manager,
-                        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> store)
+    public OmemoService()
             throws NoSuchPaddingException, InvalidKeyException, UnsupportedEncodingException, IllegalBlockSizeException,
             BadPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
+
         //Check availability of algorithms and encodings needed for crypto
         checkAvailableAlgorithms();
-
-        this.omemoManager = manager;
-        this.omemoStore = store;
-        store.setOmemoService(this); //Tell the store about us
-        this.ownJid = manager.getConnection().getUser().asBareJid();
-        omemoManager.setOmemoService(this);     //Let the manager know we are ready
     }
+
+    protected HashMap<OmemoManager, OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
+    omemoStores = new HashMap<>();
 
     /**
      * Initialize OMEMO functionality. Should be called once after the service has been created.
@@ -155,26 +140,26 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NotLoggedInException
      * @throws PubSubException.NotALeafNodeException
      */
-    void initialize() throws InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException, SmackException.NotLoggedInException, PubSubException.NotALeafNodeException {
+    void initialize(OmemoManager omemoManager) throws InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException, SmackException.NotLoggedInException, PubSubException.NotALeafNodeException {
         if (!omemoManager.getConnection().isAuthenticated()) {
             throw new SmackException.NotLoggedInException();
         }
 
-        //Get fresh device list from server
-        boolean mustPublishId = refreshOwnDeviceList();
-
-        if (getOmemoStore().isFreshInstallation()) {
+        if (getOmemoStore(omemoManager).isFreshInstallation()) {
             LOGGER.log(Level.INFO, "No key material found. Looks like we have a fresh installation.");
             //Create new key material and publish it to the server
-            regenerate();
+            regenerate(omemoManager, omemoManager.getDeviceId());
         }
 
-        publishDeviceIdIfNeeded(false, mustPublishId);
-        publishBundle();
+        //Get fresh device list from server
+        boolean mustPublishId = refreshOwnDeviceList(omemoManager);
 
-        subscribeToDeviceLists();
-        registerOmemoMessageStanzaListeners();  //Wait for new OMEMO messages
-        omemoStore.initializeOmemoSessions();   //Preload existing OMEMO sessions
+        publishDeviceIdIfNeeded(omemoManager, false, mustPublishId);
+        publishBundle(omemoManager);
+
+        subscribeToDeviceLists(omemoManager);
+        registerOmemoMessageStanzaListeners(omemoManager);  //Wait for new OMEMO messages
+        getOmemoStore(omemoManager).initializeOmemoSessions();   //Preload existing OMEMO sessions
     }
 
     /**
@@ -193,7 +178,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             InvalidAlgorithmParameterException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             NoSuchProviderException, InvalidKeyException {
         //Test crypto functions
-        new OmemoMessageBuilder<>(getOmemoStore(), "");
+        new OmemoMessageBuilder<>(null, null, "");
     }
 
     /**
@@ -202,15 +187,16 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CorruptedOmemoKeyException when freshly generated identityKey is invalid
      *                                  (should never ever happen *crosses fingers*)
      */
-    void regenerate() throws CorruptedOmemoKeyException {
+    void regenerate(OmemoManager manager, Integer nDeviceId) throws CorruptedOmemoKeyException {
         //Generate unique ID that is not already taken
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
 
-        int deviceIdCandidate;
-        do {
-            deviceIdCandidate = omemoStore.generateOmemoDeviceId();
-        } while (!omemoStore.isAvailableDeviceId(deviceIdCandidate));
+        while (nDeviceId == null || !omemoStore.isAvailableDeviceId(nDeviceId)) {
+            nDeviceId = OmemoManager.randomDeviceId();
+        }
+
         omemoStore.purgeOwnDeviceKeys();
-        omemoStore.storeOmemoDeviceId(deviceIdCandidate);
+        manager.setDeviceId(nDeviceId);
         omemoStore.regenerate();
     }
 
@@ -222,9 +208,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CorruptedOmemoKeyException
      * @throws XMPPException.XMPPErrorException
      */
-    void publishBundle()
+    void publishBundle(OmemoManager manager)
             throws SmackException.NotConnectedException, InterruptedException,
             SmackException.NoResponseException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException {
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
         Date lastSignedPreKeyRenewal = omemoStore.getDateOfLastSignedPreKeyRenewal();
         if(OmemoManager.getRenewOldSignedPreKeys() && lastSignedPreKeyRenewal != null) {
             if(System.currentTimeMillis() - lastSignedPreKeyRenewal.getTime()
@@ -237,15 +224,15 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
 
         //publish
-        PubSubManager.getInstance(omemoManager.getConnection(), ownJid)
-                .tryToPublishAndPossibleAutoCreate(OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID(omemoStore.loadOmemoDeviceId()),
+        PubSubManager.getInstance(manager.getConnection(), manager.getOwnJid())
+                .tryToPublishAndPossibleAutoCreate(OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID(manager.getDeviceId()),
                         new PayloadItem<>(omemoStore.packOmemoBundle()));
     }
 
-    void publishDeviceIdIfNeeded(boolean deleteOtherDevices) throws InterruptedException,
+    void publishDeviceIdIfNeeded(OmemoManager manager, boolean deleteOtherDevices) throws InterruptedException,
             PubSubException.NotALeafNodeException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException {
-        publishDeviceIdIfNeeded(deleteOtherDevices, false);
+        publishDeviceIdIfNeeded(manager, deleteOtherDevices, false);
     }
 
     /**
@@ -260,11 +247,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws XMPPException.XMPPErrorException
      * @throws PubSubException.NotALeafNodeException
      */
-    void publishDeviceIdIfNeeded(boolean deleteOtherDevices, boolean publish)
+    void publishDeviceIdIfNeeded(OmemoManager manager, boolean deleteOtherDevices, boolean publish)
             throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException,
             XMPPException.XMPPErrorException, PubSubException.NotALeafNodeException {
 
-        CachedDeviceList deviceList = omemoStore.loadCachedDeviceList(ownJid);
+        CachedDeviceList deviceList = getOmemoStore(manager).loadCachedDeviceList(manager.getOwnJid());
 
         Set<Integer> deviceListIds;
         if (deviceList == null) {
@@ -277,21 +264,22 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             deviceListIds.clear();
         }
 
-        int ourDeviceId = omemoStore.loadOmemoDeviceId();
+        int ourDeviceId = manager.getDeviceId();
         if (deviceListIds.add(ourDeviceId)) {
             publish = true;
         }
 
-        publish |= removeStaleDevicesIfNeeded(deviceListIds);
+        publish |= removeStaleDevicesIfNeeded(manager, deviceListIds);
 
         if(publish) {
-            publishDeviceIds(new OmemoDeviceListVAxolotlElement(deviceListIds));
+            publishDeviceIds(manager, new OmemoDeviceListVAxolotlElement(deviceListIds));
         }
     }
 
-    boolean removeStaleDevicesIfNeeded(Set<Integer> deviceListIds) {
+    boolean removeStaleDevicesIfNeeded(OmemoManager manager, Set<Integer> deviceListIds) {
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
         boolean publish = false;
-        int ownDeviceId = omemoStore.loadOmemoDeviceId();
+        int ownDeviceId = manager.getDeviceId();
         //Clear devices that we didn't receive a message from for a while
         Iterator<Integer> it = deviceListIds.iterator();
         while(OmemoManager.getDeleteStaleDevices() && it.hasNext()) {
@@ -301,7 +289,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 continue;
             }
 
-            OmemoDevice d = new OmemoDevice(ownJid, id);
+            OmemoDevice d = new OmemoDevice(manager.getOwnJid(), id);
             Date date = omemoStore.getDateOfLastReceivedMessage(d);
 
             if(date == null) {
@@ -328,10 +316,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NoResponseException   Exception
      * @throws PubSubException.NotALeafNodeException Exception
      */
-    void publishDeviceIds(OmemoDeviceListElement deviceList)
+    void publishDeviceIds(OmemoManager manager, OmemoDeviceListElement deviceList)
             throws InterruptedException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
-        PubSubManager.getInstance(omemoManager.getConnection(), ownJid)
+        PubSubManager.getInstance(manager.getConnection(), manager.getOwnJid())
                 .tryToPublishAndPossibleAutoCreate(OmemoConstants.PEP_NODE_DEVICE_LIST, new PayloadItem<>(deviceList));
     }
 
@@ -346,10 +334,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NotConnectedException
      * @throws SmackException.NoResponseException
      */
-    LeafNode fetchDeviceListNode(BareJid contact)
+    LeafNode fetchDeviceListNode(OmemoManager manager, BareJid contact)
             throws InterruptedException, PubSubException.NotALeafNodeException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException {
-        return PubSubManager.getInstance(omemoManager.getConnection(), contact).getLeafNode(PEP_NODE_DEVICE_LIST);
+        return PubSubManager.getInstance(manager.getConnection(), contact).getLeafNode(PEP_NODE_DEVICE_LIST);
     }
 
     /**
@@ -363,31 +351,36 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NoResponseException   wrong
      * @throws PubSubException.NotALeafNodeException when the device lists node is not a LeafNode
      */
-    OmemoDeviceListElement fetchDeviceList(BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
-        return extractDeviceListFrom(fetchDeviceListNode(contact));
+    OmemoDeviceListElement fetchDeviceList(OmemoManager manager, BareJid contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
+        return extractDeviceListFrom(fetchDeviceListNode(manager, contact));
     }
 
-    private boolean refreshOwnDeviceList() throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+    private boolean refreshOwnDeviceList(OmemoManager manager) throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         try {
-            omemoStore.mergeCachedDeviceList(ownJid, fetchDeviceList(ownJid));
+            getOmemoStore(manager).mergeCachedDeviceList(manager.getOwnJid(), fetchDeviceList(manager, manager.getOwnJid()));
+
         } catch (XMPPException.XMPPErrorException e) {
+
             if(e.getXMPPError().getCondition() == XMPPError.Condition.item_not_found) {
                 LOGGER.log(Level.WARNING, "Could not refresh own deviceList, because the node did not exist: "+e.getMessage());
                 return true;
             }
+
         } catch (PubSubException.NotALeafNodeException e) {
             LOGGER.log(Level.WARNING, "Could not refresh own deviceList, because the Node is not a LeafNode: "+e.getMessage());
         }
+
         catch (PubSubAssertionError.DiscoInfoNodeAssertionError bug) {
             LOGGER.log(Level.WARNING,"This is a bug. will be fixed soon.");
+            //TODO: Remove when fixed
             return true;
         }
         return false;
     }
 
-    void refreshDeviceList(BareJid contact) throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+    void refreshDeviceList(OmemoManager manager, BareJid contact) throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         try {
-            omemoStore.mergeCachedDeviceList(contact, fetchDeviceList(contact));
+            getOmemoStore(manager).mergeCachedDeviceList(contact, fetchDeviceList(manager, contact));
         } catch (PubSubException.NotALeafNodeException | XMPPException.XMPPErrorException e) {
             LOGGER.log(Level.WARNING, "Could not fetch device list of "+contact+": "+e.getMessage());
         }
@@ -408,8 +401,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NoResponseException   wrong
      * @throws PubSubException.NotALeafNodeException when the bundles node is not a LeafNode
      */
-    OmemoBundleVAxolotlElement fetchBundle(OmemoDevice contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
-        LeafNode node = PubSubManager.getInstance(omemoManager.getConnection(), contact.getJid()).getLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
+    OmemoBundleVAxolotlElement fetchBundle(OmemoManager manager, OmemoDevice contact) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
+        LeafNode node = PubSubManager.getInstance(manager.getConnection(), contact.getJid()).getLeafNode(PEP_NODE_BUNDLE_FROM_DEVICE_ID(contact.getDeviceId()));
         return extractBundleFrom(node);
     }
 
@@ -446,6 +439,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     OmemoDeviceListElement extractDeviceListFrom(LeafNode node) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         if (node == null) {
+            LOGGER.log(Level.WARNING, "DeviceListNode is null.");
             return null;
         }
         List<?> items = node.getItems();
@@ -465,9 +459,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Subscribe to the device lists of our contacts using PEP.
      */
-    private void subscribeToDeviceLists() {
-        registerDeviceListListener();
-        ServiceDiscoveryManager.getInstanceFor(omemoManager.getConnection()).addFeature(PEP_NODE_DEVICE_LIST_NOTIFY);
+    private void subscribeToDeviceLists(OmemoManager manager) {
+        registerDeviceListListener(manager);
+        ServiceDiscoveryManager.getInstanceFor(manager.getConnection()).addFeature(PEP_NODE_DEVICE_LIST_NOTIFY);
     }
 
     /**
@@ -475,11 +469,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      *
      * @param jid the BareJid of the contact
      */
-    private void buildSessionsFromOmemoBundles(BareJid jid) {
+    private void buildSessionsFromOmemoBundles(OmemoManager manager, BareJid jid) {
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
         CachedDeviceList devices = omemoStore.loadCachedDeviceList(jid);
         if (devices == null) {
             try {
-                omemoStore.mergeCachedDeviceList(jid, fetchDeviceList(jid));
+                omemoStore.mergeCachedDeviceList(jid, fetchDeviceList(manager, jid));
             } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException | SmackException.NoResponseException | PubSubException.NotALeafNodeException e) {
                 LOGGER.log(Level.WARNING, e.getMessage());
             }
@@ -499,7 +494,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
             //Build missing session
             try {
-                buildSessionFromOmemoBundle(device);
+                buildSessionFromOmemoBundle(manager, device);
             } catch (CannotEstablishOmemoSessionException | CorruptedOmemoKeyException e) {
                 LOGGER.log(Level.WARNING, e.getMessage());
                 //Skip
@@ -514,15 +509,15 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CannotEstablishOmemoSessionException when no session could be established
      * @throws CorruptedOmemoKeyException when the bundle contained an invalid OMEMO identityKey
      */
-    public void buildSessionFromOmemoBundle(OmemoDevice device) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
-        if (device.equals(new OmemoDevice(ownJid, omemoStore.loadOmemoDeviceId()))) {
+    public void buildSessionFromOmemoBundle(OmemoManager manager, OmemoDevice device) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
+        if (device.equals(new OmemoDevice(manager.getOwnJid(), manager.getDeviceId()))) {
             LOGGER.log(Level.WARNING, "Do not build a session with yourself!");
             return;
         }
 
         OmemoBundleVAxolotlElement bundle;
         try {
-            bundle = fetchBundle(device);
+            bundle = fetchBundle(manager, device);
 
         } catch (SmackException | XMPPException.XMPPErrorException | InterruptedException | PubSubAssertionError e) {
             LOGGER.log(Level.WARNING, e.getMessage());
@@ -530,10 +525,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
 
         HashMap<Integer, T_Bundle> bundles;
-        bundles = getOmemoStore().keyUtil().BUNDLE.bundles(bundle, device);
+        bundles = getOmemoStore(manager).keyUtil().BUNDLE.bundles(bundle, device);
         int randomIndex = new Random().nextInt(bundles.size());
         T_Bundle randomPreKeyBundle = new ArrayList<>(bundles.values()).get(randomIndex);
-        processBundle(randomPreKeyBundle, device);
+        processBundle(manager, randomPreKeyBundle, device);
     }
 
     /**
@@ -543,13 +538,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @param device OmemoDevice
      * @throws CorruptedOmemoKeyException
      */
-    protected abstract void processBundle(T_Bundle bundle, OmemoDevice device) throws CorruptedOmemoKeyException;
+    protected abstract void processBundle(OmemoManager manager, T_Bundle bundle, OmemoDevice device) throws CorruptedOmemoKeyException;
 
     /**
      * Register a PEPListener that listens for deviceList updates.
      */
-    private void registerDeviceListListener() {
-        PEPManager.getInstanceFor(omemoManager.getConnection()).addPEPListener(new PEPListener() {
+    private void registerDeviceListListener(final OmemoManager manager) {
+        PEPManager.getInstanceFor(manager.getConnection()).addPEPListener(new PEPListener() {
             @Override
             public void eventReceived(EntityBareJid from, EventElement event, Message message) {
                 for (ExtensionElement items : event.getExtensions()) {
@@ -570,15 +565,16 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
                         //Device List <list>
                         OmemoDeviceListVAxolotlElement omemoDeviceListElement = (OmemoDeviceListVAxolotlElement) payloadItem.getPayload();
-                        int ourDeviceId = omemoStore.loadOmemoDeviceId();
-                        omemoStore.mergeCachedDeviceList(from, omemoDeviceListElement);
+                        int ourDeviceId = manager.getDeviceId();
+                        getOmemoStore(manager).mergeCachedDeviceList(from, omemoDeviceListElement);
 
                         if(from == null) {
-                            //Unknown sender, no more work to do. TODO: When does this happen?
+                            //Unknown sender, no more work to do.
+                            //TODO: This DOES happen for some reason. Figure out when...
                             continue;
                         }
 
-                        if (!from.equals(ownJid)) {
+                        if (!from.equals(manager.getOwnJid())) {
                             //Not our deviceList, so nothing more to do
                             continue;
                         }
@@ -596,7 +592,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         omemoDeviceListElement = new OmemoDeviceListVAxolotlElement(deviceListIds);
 
                         try {
-                            publishDeviceIds(omemoDeviceListElement);
+                            publishDeviceIds(manager, omemoDeviceListElement);
                         } catch (SmackException | InterruptedException | XMPPException.XMPPErrorException e) {
                             //TODO: It might be dangerous NOT to retry publishing our deviceId
                             LOGGER.log(Level.SEVERE,
@@ -625,22 +621,22 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws XMPPException.XMPPErrorException
      * @throws CorruptedOmemoKeyException
      */
-    private Message processReceivingMessage(BareJid sender, OmemoElement message, final OmemoMessageInformation information)
+    private Message processReceivingMessage(OmemoManager manager, BareJid sender, OmemoElement message, final OmemoMessageInformation information)
             throws NoRawSessionException, InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException,
             CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
-
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
         ArrayList<OmemoVAxolotlElement.OmemoHeader.Key> messageRecipientKeys = message.getHeader().getKeys();
 
         //Do we have a key with our ID in the message?
         for (OmemoVAxolotlElement.OmemoHeader.Key k : messageRecipientKeys) {
 
-            if (k.getId() != omemoStore.loadOmemoDeviceId()) {
+            if (k.getId() != manager.getDeviceId()) {
                 continue;
             }
 
             OmemoDevice d = new OmemoDevice(sender, message.getHeader().getSid());
-            Message decrypted = decryptOmemoMessageElement(d, message, information);
-            if(sender.equals(ownJid) && decrypted != null) {
+            Message decrypted = decryptOmemoMessageElement(manager, d, message, information);
+            if(sender.equals(manager.getOwnJid()) && decrypted != null) {
                 omemoStore.setDateOfLastReceivedMessage(d);
             }
             return decrypted;
@@ -665,11 +661,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws NoRawSessionException                When there is no session to decrypt the message with in the double
      *                                              ratchet library
      */
-    ClearTextMessage processLocalMessage(BareJid sender, Message message) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException, NoRawSessionException {
+    ClearTextMessage processLocalMessage(OmemoManager manager, BareJid sender, Message message) throws InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, CryptoFailedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException, NoRawSessionException {
         if(OmemoManager.stanzaContainsOmemoElement(message)) {
             OmemoElement omemoMessageElement = message.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE_V_AXOLOTL);
             OmemoMessageInformation info = new OmemoMessageInformation();
-            Message decrypted = processReceivingMessage(sender, omemoMessageElement, info);
+            Message decrypted = processReceivingMessage(manager, sender, omemoMessageElement, info);
             return new ClearTextMessage(decrypted != null ? decrypted.getBody() : null, message, info);
         } else {
             LOGGER.log(Level.WARNING, "Stanza does not contain an OMEMO message.");
@@ -688,11 +684,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws UndecidedOmemoIdentityException
      * @throws NoSuchAlgorithmException
      */
-    OmemoVAxolotlElement processSendingMessage(BareJid recipient, Message message)
+    OmemoVAxolotlElement processSendingMessage(OmemoManager manager, BareJid recipient, Message message)
             throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         ArrayList<BareJid> recipients = new ArrayList<>();
         recipients.add(recipient);
-        return processSendingMessage(recipients, message);
+        return processSendingMessage(manager, recipients, message);
     }
 
     /**
@@ -706,17 +702,18 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws UndecidedOmemoIdentityException
      * @throws NoSuchAlgorithmException
      */
-    OmemoVAxolotlElement processSendingMessage(List<BareJid> recipients, Message message)
+    OmemoVAxolotlElement processSendingMessage(OmemoManager manager, List<BareJid> recipients, Message message)
             throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         //Them - The contact wants to read the message on all their devices.
         //Fetch a fresh list in case we had none before.
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
         List<OmemoDevice> receivers = new ArrayList<>();
         for (BareJid recipient : recipients) {
-            if (recipient.equals(ownJid)) {
+            if (recipient.equals(manager.getOwnJid())) {
                 //Skip our jid
                 continue;
             }
-            buildSessionsFromOmemoBundles(recipient);
+            buildSessionsFromOmemoBundles(manager, recipient);
             CachedDeviceList theirDevices = omemoStore.loadCachedDeviceList(recipient);
             for (int id : theirDevices.getActiveDevices()) {
                 receivers.add(new OmemoDevice(recipient, id));
@@ -726,15 +723,15 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         //TODO: What if the recipients list does not exist/not contain any of their keys (they do not support OMEMO)?
 
         //Us - We want to read the message on all of our devices
-        CachedDeviceList ourDevices = omemoStore.loadCachedDeviceList(ownJid);
+        CachedDeviceList ourDevices = omemoStore.loadCachedDeviceList(manager.getOwnJid());
         if (ourDevices == null) {
             ourDevices = new CachedDeviceList();
         }
 
         for (int id : ourDevices.getActiveDevices()) {
 
-            OmemoDevice d = new OmemoDevice(ownJid, id);
-            if(id == omemoStore.loadOmemoDeviceId()) {
+            OmemoDevice d = new OmemoDevice(manager.getOwnJid(), id);
+            if(id == manager.getDeviceId()) {
                 continue;
             }
 
@@ -749,11 +746,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 LOGGER.log(Level.WARNING, "Refusing to encrypt message for stale device " + d +
                         " which was inactive for at least " + OmemoManager.getIgnoreStaleDevicesAfterHours() +" hours.");
             } else {
-                receivers.add(new OmemoDevice(ownJid, id));
+                receivers.add(new OmemoDevice(manager.getOwnJid(), id));
             }
         }
 
-        return encryptOmemoMessage(receivers, message);
+        return encryptOmemoMessage(manager, receivers, message);
     }
 
     /**
@@ -771,19 +768,20 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NoResponseException
      * @throws NoRawSessionException
      */
-    private Message decryptOmemoMessageElement(OmemoDevice from, OmemoElement message, final OmemoMessageInformation information)
+    private Message decryptOmemoMessageElement(OmemoManager manager, OmemoDevice from, OmemoElement message, final OmemoMessageInformation information)
             throws CryptoFailedException, InterruptedException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException, NoRawSessionException {
-        int preKeyCountBefore = getOmemoStore().loadOmemoPreKeys().size();
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
+        int preKeyCountBefore = omemoStore.loadOmemoPreKeys().size();
         Message decrypted;
 
         //Get the session that will decrypt the message. If we have no such session, create a new one.
         OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> session = omemoStore.getOmemoSessionOf(from);
         if (session != null) {
-            decrypted = session.decryptMessageElement(message, omemoStore.loadOmemoDeviceId());
+            decrypted = session.decryptMessageElement(message, manager.getDeviceId());
         } else {
             session = omemoStore.keyUtil().createOmemoSession(omemoStore, from);
-            decrypted = session.decryptMessageElement(message, omemoStore.loadOmemoDeviceId());
+            decrypted = session.decryptMessageElement(message, manager.getDeviceId());
         }
 
         information.setSenderDevice(from);
@@ -792,9 +790,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         // Check, if we use up a preKey (the message was a PreKeyMessage)
         // If we did, republish a bundle with the used keys replaced with fresh keys
         // TODO: Do this AFTER returning the message?
-        if (getOmemoStore().loadOmemoPreKeys().size() != preKeyCountBefore) {
+        if (omemoStore.loadOmemoPreKeys().size() != preKeyCountBefore) {
             LOGGER.log(Level.INFO, "We used up a preKey. Publish new Bundle.");
-            publishBundle();
+            publishBundle(manager);
         }
         return decrypted;
     }
@@ -810,12 +808,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      *
      * @return OmemoMessageElement
      */
-    private OmemoVAxolotlElement encryptOmemoMessage(List<OmemoDevice> recipients, Message message)
+    private OmemoVAxolotlElement encryptOmemoMessage(OmemoManager manager, List<OmemoDevice> recipients, Message message)
             throws CryptoFailedException, UndecidedOmemoIdentityException {
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
         OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
                 builder;
         try {
-            builder = new OmemoMessageBuilder<>(omemoStore, message.getBody());
+            builder = new OmemoMessageBuilder<>(manager, omemoStore, message.getBody());
         } catch (UnsupportedEncodingException | BadPaddingException | IllegalBlockSizeException | NoSuchProviderException |
                 NoSuchPaddingException | InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException e) {
             throw new CryptoFailedException(e);
@@ -857,13 +856,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CorruptedOmemoKeyException
      * @throws CannotEstablishOmemoSessionException
      */
-    OmemoVAxolotlElement prepareOmemoKeyTransportElement(OmemoDevice... recipients) throws CryptoFailedException,
+    OmemoVAxolotlElement prepareOmemoKeyTransportElement(OmemoManager manager, OmemoDevice... recipients) throws CryptoFailedException,
             UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CannotEstablishOmemoSessionException {
-
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
         OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
                 builder;
         try {
-            builder = new OmemoMessageBuilder<>(omemoStore, null);
+            builder = new OmemoMessageBuilder<>(manager, omemoStore, null);
 
         } catch (UnsupportedEncodingException | BadPaddingException | IllegalBlockSizeException | NoSuchProviderException |
                 NoSuchPaddingException | InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException e) {
@@ -889,12 +888,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CorruptedOmemoKeyException
      * @throws CannotEstablishOmemoSessionException
      */
-    OmemoVAxolotlElement prepareOmemoKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice... recipients) throws CryptoFailedException,
+    OmemoVAxolotlElement prepareOmemoKeyTransportElement(OmemoManager manager, byte[] aesKey, byte[] iv, OmemoDevice... recipients) throws CryptoFailedException,
             UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CannotEstablishOmemoSessionException {
+        OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
         OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
                 builder;
         try {
-            builder = new OmemoMessageBuilder<>(omemoStore, aesKey, iv);
+            builder = new OmemoMessageBuilder<>(manager, omemoStore, aesKey, iv);
 
         } catch (UnsupportedEncodingException | BadPaddingException | IllegalBlockSizeException | NoSuchProviderException |
                 NoSuchPaddingException | InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException e) {
@@ -919,13 +919,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CryptoFailedException
      * @throws UndecidedOmemoIdentityException
      */
-    protected Message getOmemoRatchetUpdateMessage(OmemoDevice recipient, boolean preKeyMessage) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException, CryptoFailedException, UndecidedOmemoIdentityException {
+    protected Message getOmemoRatchetUpdateMessage(OmemoManager manager, OmemoDevice recipient, boolean preKeyMessage) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException, CryptoFailedException, UndecidedOmemoIdentityException {
         if(preKeyMessage) {
-            buildSessionFromOmemoBundle(recipient);
+            buildSessionFromOmemoBundle(manager, recipient);
         }
 
-        OmemoVAxolotlElement keyTransportElement = prepareOmemoKeyTransportElement(recipient);
-        Message ratchetUpdateMessage = omemoManager.finishMessage(keyTransportElement);
+        OmemoVAxolotlElement keyTransportElement = prepareOmemoKeyTransportElement(manager, recipient);
+        Message ratchetUpdateMessage = manager.finishMessage(keyTransportElement);
         ratchetUpdateMessage.setTo(recipient.getJid());
 
         return ratchetUpdateMessage;
@@ -941,11 +941,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CryptoFailedException
      * @throws CannotEstablishOmemoSessionException
      */
-    protected void sendOmemoRatchetUpdateMessage(OmemoDevice recipient, boolean preKeyMessage) throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException, CannotEstablishOmemoSessionException {
-        Message ratchetUpdateMessage = getOmemoRatchetUpdateMessage(recipient, preKeyMessage);
+    protected void sendOmemoRatchetUpdateMessage(OmemoManager manager, OmemoDevice recipient, boolean preKeyMessage) throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException, CannotEstablishOmemoSessionException {
+        Message ratchetUpdateMessage = getOmemoRatchetUpdateMessage(manager, recipient, preKeyMessage);
 
         try {
-            omemoManager.getConnection().sendStanza(ratchetUpdateMessage);
+            manager.getConnection().sendStanza(ratchetUpdateMessage);
 
         } catch (SmackException.NotConnectedException | InterruptedException e) {
             LOGGER.log(Level.WARNING, "sendOmemoRatchetUpdateMessage failed: "+e.getMessage());
@@ -957,137 +957,34 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      *
      * @return our store
      */
-    OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
-    getOmemoStore() {
-        return this.omemoStore;
+    public OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
+    getOmemoStore(OmemoManager manager) {
+        return omemoStores.get(manager);
+    }
+
+    public void setOmemoStore(OmemoManager manager,
+                              OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> store) {
+        omemoStores.put(manager, store);
     }
 
     /**
      * Listen for incoming messages and carbons, decrypt them and pass the cleartext messages to the registered
      * OmemoMessageListeners.
      */
-    private void registerOmemoMessageStanzaListeners() {
-        omemoManager.getConnection().addAsyncStanzaListener(omemoMessageListener, omemoMessageFilter);
+    private void registerOmemoMessageStanzaListeners(OmemoManager manager) {
+        manager.getConnection().addAsyncStanzaListener(new OmemoStanzaListener(manager, this), omemoStanzaFilter);
         //Carbons
-        CarbonManager.getInstanceFor(omemoManager.getConnection())
-                .addCarbonCopyReceivedListener(omemoCarbonMessageListener);
+        CarbonManager.getInstanceFor(manager.getConnection())
+                .addCarbonCopyReceivedListener(new OmemoCarbonCopyListener(manager, this, omemoStanzaFilter));
     }
 
     /**
      * StanzaFilter that filters messages containing a OMEMO message element.
      */
-    private final StanzaFilter omemoMessageFilter = new StanzaFilter() {
+    private final StanzaFilter omemoStanzaFilter = new StanzaFilter() {
         @Override
         public boolean accept(Stanza stanza) {
             return stanza instanceof Message && OmemoManager.stanzaContainsOmemoElement(stanza);
-        }
-    };
-
-    /**
-     * StanzaListener that listens for incoming OMEMO messages.
-     */
-    private final StanzaListener omemoMessageListener = new StanzaListener() {
-        @Override
-        public void processStanza(Stanza packet) throws SmackException.NotConnectedException, InterruptedException {
-            Message decrypted;
-            BareJid sender = getSenderBareJidFromMucMessage(packet);
-            OmemoVAxolotlElement omemoMessage = packet.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE_V_AXOLOTL);
-            OmemoMessageInformation messageInfo = new OmemoMessageInformation();
-            MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
-
-            try {
-                //Is it a MUC message...
-                if (sender != null) {
-                    MultiUserChat muc = mucm.getMultiUserChat(packet.getFrom().asEntityBareJidIfPossible());
-                    decrypted = processReceivingMessage(sender, omemoMessage, messageInfo);
-                    if (decrypted != null) {
-                        notifyOmemoMucMessageReceived(muc, sender, decrypted.getBody(), (Message) packet, null, messageInfo);
-                    }
-                }
-                //... or a normal chat message...
-                else {
-                    sender = packet.getFrom().asBareJid();
-                    decrypted = processReceivingMessage(sender, omemoMessage, messageInfo);
-                    if (decrypted != null) {
-                        notifyOmemoMessageReceived(decrypted.getBody(), (Message) packet, null, messageInfo);
-                    }
-                }
-
-            } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
-                LOGGER.log(Level.WARNING, "internal omemoMessageListener failed to decrypt incoming OMEMO message: "
-                        +e.getMessage());
-
-            } catch (NoRawSessionException e) {
-                try {
-                    OmemoDevice device = new OmemoDevice(sender, omemoMessage.getHeader().getSid());
-                    LOGGER.log(Level.INFO, "Received message with invalid session from " +
-                            device + ". Send RatchetUpdateMessage.");
-                    sendOmemoRatchetUpdateMessage(device, true);
-
-                } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
-                    LOGGER.log(Level.WARNING, "internal omemoMessageListener failed to establish a session for incoming OMEMO message: "
-                            +e.getMessage());
-                }
-            }
-        }
-    };
-
-    /**
-     * CarbonCopyListener that listens for incoming OMEMO message carbon copies.
-     */
-    private final CarbonCopyReceivedListener omemoCarbonMessageListener = new CarbonCopyReceivedListener() {
-        @Override
-        public void onCarbonCopyReceived(CarbonExtension.Direction direction, Message carbonCopy, Message wrappingMessage) {
-            if (omemoMessageFilter.accept(carbonCopy)) {
-                BareJid sender = getSenderBareJidFromMucMessage(carbonCopy);
-                Message decrypted;
-                MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
-                OmemoVAxolotlElement omemoMessageElement = carbonCopy.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE_V_AXOLOTL);
-                OmemoMessageInformation messageInfo = new OmemoMessageInformation();
-
-                if (CarbonExtension.Direction.received.equals(direction)) {
-                    messageInfo.setCarbon(OmemoMessageInformation.CARBON.RECV);
-                } else {
-                    messageInfo.setCarbon(OmemoMessageInformation.CARBON.SENT);
-                }
-
-                try {
-                    //Is it a MUC message...
-                    if (sender != null) {
-                        MultiUserChat muc = mucm.getMultiUserChat(carbonCopy.getFrom().asEntityBareJidIfPossible());
-                        decrypted = processReceivingMessage(sender, omemoMessageElement, messageInfo);
-
-                        if (decrypted != null) {
-                            notifyOmemoMucMessageReceived(muc, sender, decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
-                        }
-                    }
-                    //... or a normal chat message...
-                    else {
-                        sender = carbonCopy.getFrom().asBareJid();
-                        decrypted = processReceivingMessage(sender, omemoMessageElement, messageInfo);
-
-                        if (decrypted != null) {
-                            notifyOmemoMessageReceived(decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
-                        }
-
-                    }
-                } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
-                    LOGGER.log(Level.WARNING, "internal omemoCarbonMessageListener failed to decrypt incoming OMEMO carbon copy: "
-                            +e.getMessage());
-
-                } catch (NoRawSessionException e) {
-                    try {
-                        OmemoDevice device = new OmemoDevice(sender, omemoMessageElement.getHeader().getSid());
-                        LOGGER.log(Level.INFO, "Received message with invalid session from " +
-                                device + ". Send RatchetUpdateMessage.");
-                        sendOmemoRatchetUpdateMessage(device, true);
-
-                    } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
-                        LOGGER.log(Level.WARNING, "internal omemoCarbonMessageListener failed to establish a session for incoming OMEMO carbon copy: "
-                                +e.getMessage());
-                    }
-                }
-            }
         }
     };
 
@@ -1103,14 +1000,14 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws SmackException.NotConnectedException
      * @throws SmackException.NoResponseException
      */
-    List<ClearTextMessage> decryptMamQueryResult(MamManager.MamQueryResult mamQueryResult)
+    List<ClearTextMessage> decryptMamQueryResult(OmemoManager manager, MamManager.MamQueryResult mamQueryResult)
             throws InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException {
         List<ClearTextMessage> result = new ArrayList<>();
         for(Forwarded f : mamQueryResult.forwardedMessages) {
             if(OmemoManager.stanzaContainsOmemoElement(f.getForwardedStanza())) {
                 //Decrypt OMEMO messages
                 try {
-                    result.add(processLocalMessage(f.getForwardedStanza().getFrom().asBareJid(), (Message) f.getForwardedStanza()));
+                    result.add(processLocalMessage(manager, f.getForwardedStanza().getFrom().asBareJid(), (Message) f.getForwardedStanza()));
                 } catch (NoRawSessionException | CorruptedOmemoKeyException | CryptoFailedException e) {
                     LOGGER.log(Level.WARNING, "decryptMamQueryResult failed to decrypt message from "
                             +f.getForwardedStanza().getFrom()+" due to corrupted session/key: "+e.getMessage());
@@ -1126,93 +1023,143 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * Add an OmemoMessageListener, which the client can use to get updated when OmemoMessages are received in normal chat
-     * sessions.
-     *
-     * @param listener OmemoMessageListener
-     */
-    @SuppressWarnings("unused")
-    void addOmemoMessageListener(OmemoMessageListener listener) {
-        this.omemoMessageListeners.add(listener);
-    }
-
-    /**
-     * Add an OmemoMucMessageListener, which the client can use to get updated when an OmemoMessageElement is received in a
-     * MUC.
-     *
-     * @param listener OmemoMucMessageListener
-     */
-    @SuppressWarnings("unused")
-    void addOmemoMucMessageListener(OmemoMucMessageListener listener) {
-        this.omemoMucMessageListeners.add(listener);
-    }
-
-    /**
-     * Remove an OmemoMessageListener.
-     *
-     * @param listener OmemoMessageListener
-     */
-    @SuppressWarnings("unused")
-    void removeOmemoMessageListener(OmemoMessageListener listener) {
-        this.omemoMessageListeners.remove(listener);
-    }
-
-    /**
-     * Remove an OmemoMucMessageListener.
-     *
-     * @param listener OmemoMucMessageListener
-     */
-    @SuppressWarnings("unused")
-    void removeOmemoMucMessageListener(OmemoMucMessageListener listener) {
-        this.omemoMucMessageListeners.remove(listener);
-    }
-
-    /**
-     * Notify all registered OmemoMessageListeners about a received OmemoMessage.
-     *
-     * @param decryptedBody      decrypted Body element of the message
-     * @param encryptedMessage   unmodified message as it was received
-     * @param wrappingMessage    message that wrapped the incoming message
-     * @param messageInformation information about the messages encryption (used identityKey, carbon...)
-     */
-    private void notifyOmemoMessageReceived(String decryptedBody, Message encryptedMessage, Message wrappingMessage, OmemoMessageInformation messageInformation) {
-        for (OmemoMessageListener l : omemoMessageListeners) {
-            l.onOmemoMessageReceived(decryptedBody, encryptedMessage, wrappingMessage, messageInformation);
-        }
-    }
-
-    /**
-     * Notify all registered OmemoMucMessageListeners of an incoming OmemoMessageElement in a MUC.
-     *
-     * @param muc              MultiUserChat the message was received in
-     * @param from             BareJid of the user that sent the message
-     * @param decryptedBody    decrypted body
-     * @param message          original message with encrypted content
-     * @param wrappingMessage  wrapping message (in case of carbon copy)
-     * @param omemoInformation information about the encryption of the message
-     */
-    private void notifyOmemoMucMessageReceived(MultiUserChat muc, BareJid from, String decryptedBody, Message message,
-                                               Message wrappingMessage, OmemoMessageInformation omemoInformation) {
-        for (OmemoMucMessageListener l : omemoMucMessageListeners) {
-            l.onOmemoMucMessageReceived(muc, from, decryptedBody, message,
-                    wrappingMessage, omemoInformation);
-        }
-    }
-
-    /**
      * Return the barejid of the user that sent the message inside the MUC. If the message wasn't sent in a MUC,
      * return null;
      * @param stanza message
      * @return BareJid of the sender.
      */
-    private BareJid getSenderBareJidFromMucMessage(Stanza stanza) {
+    private BareJid getSenderBareJidFromMucMessage(OmemoManager manager, Stanza stanza) {
         BareJid sender = stanza.getFrom().asBareJid();
-        MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
+        MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(manager.getConnection());
         //MultiUserChat
         if(mucm.getJoinedRooms().contains(sender.asEntityBareJidIfPossible())) {
             MultiUserChat muc = mucm.getMultiUserChat(sender.asEntityBareJidIfPossible());
             return muc.getOccupant(sender.asEntityFullJidIfPossible()).getJid().asBareJid();
         }
         return null;
+    }
+
+    private class OmemoStanzaListener implements StanzaListener {
+        private OmemoManager manager;
+        private OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> service;
+
+        public OmemoStanzaListener(OmemoManager manager,
+                                   OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> service) {
+            this.manager = manager;
+            this.service = service;
+        }
+
+        @Override
+        public void processStanza(Stanza packet) throws SmackException.NotConnectedException, InterruptedException {
+            Message decrypted;
+            BareJid sender = service.getSenderBareJidFromMucMessage(manager, packet);
+            OmemoVAxolotlElement omemoMessage = packet.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE_V_AXOLOTL);
+            OmemoMessageInformation messageInfo = new OmemoMessageInformation();
+            MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(manager.getConnection());
+
+            try {
+                //Is it a MUC message...
+                if (sender != null) {
+                    MultiUserChat muc = mucm.getMultiUserChat(packet.getFrom().asEntityBareJidIfPossible());
+                    decrypted = service.processReceivingMessage(manager, sender, omemoMessage, messageInfo);
+                    if (decrypted != null) {
+                        manager.notifyOmemoMucMessageReceived(muc, sender, decrypted.getBody(), (Message) packet, null, messageInfo);
+                    }
+                }
+                //... or a normal chat message...
+                else {
+                    sender = packet.getFrom().asBareJid();
+                    decrypted = service.processReceivingMessage(manager, sender, omemoMessage, messageInfo);
+                    if (decrypted != null) {
+                        manager.notifyOmemoMessageReceived(decrypted.getBody(), (Message) packet, null, messageInfo);
+                    }
+                }
+
+            } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
+                LOGGER.log(Level.WARNING, "internal omemoMessageListener failed to decrypt incoming OMEMO message: "
+                        +e.getMessage());
+
+            } catch (NoRawSessionException e) {
+                try {
+                    OmemoDevice device = new OmemoDevice(sender, omemoMessage.getHeader().getSid());
+                    LOGGER.log(Level.INFO, "Received message with invalid session from " +
+                            device + ". Send RatchetUpdateMessage.");
+                    service.sendOmemoRatchetUpdateMessage(manager, device, true);
+
+                } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
+                    LOGGER.log(Level.WARNING, "internal omemoMessageListener failed to establish a session for incoming OMEMO message: "
+                            +e.getMessage());
+                }
+            }
+        }
+    }
+
+    private class OmemoCarbonCopyListener implements CarbonCopyReceivedListener {
+
+        private OmemoManager manager;
+        private OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> service;
+        private StanzaFilter filter;
+
+        public OmemoCarbonCopyListener(OmemoManager manager,
+                                       OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> service,
+                                       StanzaFilter filter) {
+            this.manager = manager;
+            this.service = service;
+            this.filter = filter;
+        }
+
+        @Override
+        public void onCarbonCopyReceived(CarbonExtension.Direction direction, Message carbonCopy, Message wrappingMessage) {
+            if (filter.accept(carbonCopy)) {
+                BareJid sender = service.getSenderBareJidFromMucMessage(manager, carbonCopy);
+                Message decrypted;
+                MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(manager.getConnection());
+                OmemoVAxolotlElement omemoMessageElement = carbonCopy.getExtension(OmemoElement.ENCRYPTED, OMEMO_NAMESPACE_V_AXOLOTL);
+                OmemoMessageInformation messageInfo = new OmemoMessageInformation();
+
+                if (CarbonExtension.Direction.received.equals(direction)) {
+                    messageInfo.setCarbon(OmemoMessageInformation.CARBON.RECV);
+                } else {
+                    messageInfo.setCarbon(OmemoMessageInformation.CARBON.SENT);
+                }
+
+                try {
+                    //Is it a MUC message...
+                    if (sender != null) {
+                        MultiUserChat muc = mucm.getMultiUserChat(carbonCopy.getFrom().asEntityBareJidIfPossible());
+                        decrypted = service.processReceivingMessage(manager, sender, omemoMessageElement, messageInfo);
+
+                        if (decrypted != null) {
+                            manager.notifyOmemoMucMessageReceived(muc, sender, decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
+                        }
+                    }
+                    //... or a normal chat message...
+                    else {
+                        sender = carbonCopy.getFrom().asBareJid();
+                        decrypted = service.processReceivingMessage(manager, sender, omemoMessageElement, messageInfo);
+
+                        if (decrypted != null) {
+                            manager.notifyOmemoMessageReceived(decrypted.getBody(), carbonCopy, wrappingMessage, messageInfo);
+                        }
+
+                    }
+                } catch (CryptoFailedException | CorruptedOmemoKeyException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException | SmackException.NoResponseException e) {
+                    LOGGER.log(Level.WARNING, "internal omemoCarbonMessageListener failed to decrypt incoming OMEMO carbon copy: "
+                            +e.getMessage());
+
+                } catch (NoRawSessionException e) {
+                    try {
+                        OmemoDevice device = new OmemoDevice(sender, omemoMessageElement.getHeader().getSid());
+                        LOGGER.log(Level.INFO, "Received message with invalid session from " +
+                                device + ". Send RatchetUpdateMessage.");
+                        service.sendOmemoRatchetUpdateMessage(manager, device, true);
+
+                    } catch (UndecidedOmemoIdentityException | CorruptedOmemoKeyException | CannotEstablishOmemoSessionException | CryptoFailedException e1) {
+                        LOGGER.log(Level.WARNING, "internal omemoCarbonMessageListener failed to establish a session for incoming OMEMO carbon copy: "
+                                +e.getMessage());
+                    }
+                }
+            }
+        }
     }
 }

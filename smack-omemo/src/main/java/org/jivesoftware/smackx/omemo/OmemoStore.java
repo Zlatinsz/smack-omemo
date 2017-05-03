@@ -30,7 +30,6 @@ import org.jxmpp.jid.BareJid;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -96,7 +95,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     void initializeOmemoSessions() {
         BareJid ownJid = omemoManager.getConnection().getUser().asBareJid();
         HashMap<Integer, T_Sess> ourDevices = loadAllRawSessionsOf(ownJid);
-        ourDevices.remove(loadOmemoDeviceId());
+        ourDevices.remove(omemoManager.getDeviceId());
         this.omemoSessions = new HashMap<>();
         this.omemoSessions.putAll(buildOmemoSessionsFor(ownJid, ourDevices));
         for (RosterEntry rosterEntry : Roster.getInstanceFor(omemoManager.getConnection()).getEntries()) {
@@ -266,7 +265,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws CorruptedOmemoKeyException when a key could not be loaded
      */
     OmemoBundleVAxolotlElement packOmemoBundle() throws CorruptedOmemoKeyException {
-
+        LOGGER.log(Level.INFO, "packBundle: "+omemoManager.getDeviceId());
         int currentSignedPreKeyId = loadCurrentSignedPreKeyId();
         T_SigPreKey currentSignedPreKey = loadOmemoSignedPreKey(currentSignedPreKeyId);
         T_IdKeyPair identityKeyPair = loadOmemoIdentityKeyPair();
@@ -291,36 +290,6 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     }
 
     // *sigh*
-
-    /**
-     * Load our deviceId.
-     *
-     * @return the deviceId of this installation.
-     */
-    public abstract int loadOmemoDeviceId();
-
-    /**
-     * Store our deviceId.
-     *
-     * @param deviceId the deviceId of this installation.
-     */
-    public abstract void storeOmemoDeviceId(int deviceId);
-
-    /**
-     * Generate a new deviceId.
-     * This is a random integer between 1 and 2^31-1.
-     *
-     * @return random device ID.
-     */
-    int generateOmemoDeviceId() {
-        int i = new Random().nextInt(Integer.MAX_VALUE);
-
-        if(i == 0) {
-            return generateOmemoDeviceId();
-        }
-
-        return Math.abs(i);
-    }
 
     /**
      * Return the id of the last generated preKey.
@@ -650,24 +619,6 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Delete this device's IdentityKey, PreKeys, SignedPreKeys and Sessions.
      */
     public abstract void purgeOwnDeviceKeys();
-
-    /**
-     * Set the OmemoService object that we will use.
-     *
-     * @param service OmemoService
-     */
-    public void setOmemoService(OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> service) {
-        this.omemoService = service;
-    }
-
-    /**
-     * Return our OmemoService object.
-     *
-     * @return omemoService
-     */
-    public OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> getOmemoService() {
-        return this.omemoService;
-    }
 
     /**
      * Return a concrete KeyUtil object that we can use as a utility to create keys etc.

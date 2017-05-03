@@ -64,6 +64,7 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.Crypto.PROVIDER;
  */
 public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
     private final OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore;
+    private final OmemoManager omemoManager;
 
     private byte[] messageKey = generateKey();
     private byte[] initializationVector = generateIv();
@@ -85,11 +86,13 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws NoSuchProviderException
      * @throws InvalidAlgorithmParameterException
      */
-    public OmemoMessageBuilder(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
+    public OmemoMessageBuilder(OmemoManager manager,
+            OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
                                byte[] aesKey, byte[] iv)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
             UnsupportedEncodingException, NoSuchProviderException, InvalidAlgorithmParameterException {
         this.omemoStore = omemoStore;
+        this.omemoManager = manager;
         this.messageKey = aesKey;
         this.initializationVector = iv;
     }
@@ -108,9 +111,11 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws NoSuchProviderException
      * @throws InvalidAlgorithmParameterException
      */
-    public OmemoMessageBuilder(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore, String message)
+    public OmemoMessageBuilder(OmemoManager manager,
+            OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore, String message)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
             UnsupportedEncodingException, NoSuchProviderException, InvalidAlgorithmParameterException {
+        this.omemoManager = manager;
         this.omemoStore = omemoStore;
         this.setMessage(message);
     }
@@ -186,7 +191,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             CryptoFailedException, UndecidedOmemoIdentityException, CorruptedOmemoKeyException {
         //For each recipient device: Encrypt message key with session key
         if (!omemoStore.containsRawSession(device)) {
-            omemoStore.getOmemoService().buildSessionFromOmemoBundle(device);
+            omemoManager.getOmemoService().buildSessionFromOmemoBundle(omemoManager, device);
         }
 
         OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> session =
@@ -215,7 +220,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      */
     public OmemoVAxolotlElement finish() {
         OmemoVAxolotlElement.OmemoHeader header = new OmemoVAxolotlElement.OmemoHeader(
-                omemoStore.loadOmemoDeviceId(),
+                omemoManager.getDeviceId(),
                 keys,
                 initializationVector
         );
