@@ -64,40 +64,34 @@ Setup
 -----
 
 On first start, you have to set a security provider like bouncycastle.
-Also the client has to initialize the providers.
 
 ```
 Security.addProvider(new BouncyCastleProvider());
-new OmemoInitializer().initialize();
 ```
 
-Next you can get an OmemoManager object, which can be used to execute OMEMO
-related actions like sending a message etc.
+Next you need to create an OmemoService object. In general, you only need one 
+OmemoService object in your client. This object can handle multiple OMEMO 
+devices. In this example, we'll create a SignalOmemoService.
+
+For each device you need an OmemoManager and an OmemoStore to store keys etc.
+In this example, we use a SignalFileBasedOmemoStore as OmemoStore, but you could 
+also implement your own (eg. SQL-based) store.
+The OmemoManager must be initialized with either a deviceId (of an existing 
+device), or null in case you want to generate a fresh device.
+The OmemoManager can be used to execute OMEMO related actions like sending a 
+message etc.
 
 ```
-OmemoManager omemoManager = OmemoManager.getInstanceFor(connection);
+SignalOmemoService omemoService = new SignalOmemoService();
+OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
+SignalFileBasedOmemoStore omemoStore = new 
+SignalFileBasedOmemoStore(omemoManager, new File("omemoStore"));
+omemoService.setOmemoStore(omemoManager, omemoStore);
+omemoManager.setOmemoService(omemoService);
 ```
 
-You also need an OmemoStore implementation that will be responsible for storing
-and accessing persistent data. You can either use a FileBasedOmemoStore, or
-implement your own (eg. using an SQL database etc). Last but not least, you need
-an implementation of the OmemoService that handles events. Note, that the store
-and service are dependent on the library used for the double ratchet, so in this
-example, I assume, that you use smack-omemo together with smack-omemo-signal.
-
-```
-SignalOmemoStore omemoStore = new SignalFileBasedOmemoStore(omemoManager, path);
-SignalOmemoService omemoService = new SignalOmemoService(omemoManager, omemoStore);
-```
-
-The next step is to start the setup method of the service. This will subscribe the service to OMEMO device lists, upload the bundle and so on.
-Note, that this method does some heavy work on the network.
-
-```
-omemoManager.initialize();
-```
-
-At this point, the module has already generated some keys and announced OMEMO support.
+As soon as the connection is authenticated, the module generates some keys and 
+announces OMEMO support.
 To get updated with new OMEMO messages, you should register message listeners.
 
 ```
@@ -205,5 +199,6 @@ Features
 * removes stale devices from device list after period of inactivity
 * automatic repair of broken sessions through ratchet update messages
 * automatic renewal of signed preKeys
+* multiple devices per connection possible
 
 Copyright (C) Jive Software 2002-2008
