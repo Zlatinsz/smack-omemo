@@ -121,13 +121,19 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
 
         byte[] messageKey = new byte[16];
-        byte[] authTag = new byte[16];
+        byte[] authTag = null;
         if (unpackedKey.length == 32) {
             //copy key part into messageKey
             System.arraycopy(unpackedKey, 0, messageKey, 0, 16);
             //copy tag part into authTag
+            authTag = new byte[16];
             System.arraycopy(unpackedKey, 16, authTag, 0,16);
-        } else {
+        } else if(unpackedKey.length == 16) {
+            LOGGER.log(Level.WARNING, "Received OMEMO element uses deprecated legacy key format!" +
+                    "Please ask your contact to update their client " +
+                    "or annoy their clients project maintainer to adopt the new format!");
+            messageKey = unpackedKey.clone();
+        } else{
             throw new CryptoFailedException("MessageKey has wrong length: "+unpackedKey.length+". Probably legacy auth tag format.");
         }
 
@@ -145,6 +151,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
 
         return new CipherAndAuthTag(transportedCipher, authTag);
+
     }
 
     public Message decryptMessageElement(OmemoElement element, CipherAndAuthTag cipherAndAuthTag) throws CryptoFailedException {
@@ -152,10 +159,16 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             throw new IllegalArgumentException("decryptMessageElement cannot decrypt OmemoElement which is no MessageElement!");
         }
 
-        byte[] encryptedBody = new byte[element.getPayload().length + 16];
         byte[] payload = element.getPayload();
-        System.arraycopy(payload, 0, encryptedBody, 0, payload.length);
-        System.arraycopy(cipherAndAuthTag.getAuthTag(), 0, encryptedBody, payload.length, 16);
+        byte[] encryptedBody;
+
+        if(cipherAndAuthTag.getAuthTag() != null) {
+            encryptedBody = new byte[element.getPayload().length + 16];
+            System.arraycopy(payload, 0, encryptedBody, 0, payload.length);
+            System.arraycopy(cipherAndAuthTag.getAuthTag(), 0, encryptedBody, payload.length, 16);
+        } else {
+            encryptedBody = payload.clone();
+        }
 
         try {
             String plaintext = new String(cipherAndAuthTag.getCipher().doFinal(encryptedBody), StringUtils.UTF8);
