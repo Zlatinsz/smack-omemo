@@ -17,7 +17,6 @@
 package org.jivesoftware.smackx.omemo.provider;
 
 import org.jivesoftware.smack.provider.ExtensionElementProvider;
-import org.jivesoftware.smack.util.stringencoder.Base64;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
 import org.xmlpull.v1.XmlPullParser;
 
@@ -46,10 +45,10 @@ public class OmemoBundleVAxolotlProvider extends ExtensionElementProvider<OmemoB
         boolean inPreKeys = false;
 
         int signedPreKeyId = -1;
-        byte[] signedPreKey = null;
-        byte[] signedPreKeySignature = null;
-        byte[] identityKey = null;
-        HashMap<Integer, byte[]> preKeys = new HashMap<>();
+        String signedPreKey = null;
+        String signedPreKeySignature = null;
+        String identityKey = null;
+        HashMap<Integer, String> preKeys = new HashMap<>();
 
         while (!stop) {
             int tag = parser.next();
@@ -61,18 +60,18 @@ public class OmemoBundleVAxolotlProvider extends ExtensionElementProvider<OmemoB
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
                             if (parser.getAttributeName(i).equals(SIGNED_PRE_KEY_ID)) {
                                 int id = Integer.parseInt(parser.getAttributeValue(i));
-                                signedPreKey = Base64.decode(parser.nextText());
+                                signedPreKey = parser.nextText();
                                 signedPreKeyId = id;
                             }
                         }
                     }
                     // <bundleGetSignedPreKeySignature>
                     else if (name.equals(SIGNED_PRE_KEY_SIG)) {
-                        signedPreKeySignature = Base64.decode(parser.nextText());
+                        signedPreKeySignature = parser.nextText();
                     }
                     // <deserializeIdentityKey>
                     else if (name.equals(IDENTITY_KEY)) {
-                        identityKey = Base64.decode(parser.nextText());
+                        identityKey = parser.nextText();
                     }
                     // <deserializeECPublicKeys>
                     else if (name.equals(PRE_KEYS)) {
@@ -83,7 +82,7 @@ public class OmemoBundleVAxolotlProvider extends ExtensionElementProvider<OmemoB
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
                             if (parser.getAttributeName(i).equals(PRE_KEY_ID)) {
                                 preKeys.put(Integer.parseInt(parser.getAttributeValue(i)),
-                                        Base64.decode(parser.nextText()));
+                                        parser.nextText());
                             }
                         }
                     }
