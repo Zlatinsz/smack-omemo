@@ -241,7 +241,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Remove the oldest signedPreKey until there are only MAX_NUMBER_OF_STORED_SIGNED_PREKEYS left.
      */
     private void removeOldSignedPreKeys() {
-        if(OmemoManager.getMaxNumberOfStoredSignedPreKeys() <= 0) {
+        if(OmemoConfiguration.getInstance().getMaxNumberOfStoredSignedPreKeys() <= 0) {
             return;
         }
 
@@ -249,7 +249,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         HashMap<Integer, T_SigPreKey> signedPreKeys = loadOmemoSignedPreKeys();
 
         for (int i : signedPreKeys.keySet()) {
-            if (i <= currentId - OmemoManager.getMaxNumberOfStoredSignedPreKeys()) {
+            if (i <= currentId - OmemoConfiguration.getInstance().getMaxNumberOfStoredSignedPreKeys()) {
                 LOGGER.log(Level.INFO, "Remove signedPreKey " + i + ".");
                 removeOmemoSignedPreKey(i);
             }

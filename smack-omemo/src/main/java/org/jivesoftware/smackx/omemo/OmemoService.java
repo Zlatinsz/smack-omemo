@@ -230,9 +230,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             SmackException.NoResponseException, CorruptedOmemoKeyException, XMPPException.XMPPErrorException {
         OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore = getOmemoStore(manager);
         Date lastSignedPreKeyRenewal = omemoStore.getDateOfLastSignedPreKeyRenewal();
-        if(OmemoManager.getRenewOldSignedPreKeys() && lastSignedPreKeyRenewal != null) {
+        if(OmemoConfiguration.getInstance().getRenewOldSignedPreKeys() && lastSignedPreKeyRenewal != null) {
             if(System.currentTimeMillis() - lastSignedPreKeyRenewal.getTime()
-                    > 1000L * 60 * 60 * OmemoManager.getRenewOldSignedPreKeysAfterHours()) {
+                    > 1000L * 60 * 60 * OmemoConfiguration.getInstance().getRenewOldSignedPreKeysAfterHours()) {
                 LOGGER.log(Level.INFO, "Renewing signedPreKey");
                 omemoStore.changeSignedPreKey();
             }
@@ -299,7 +299,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         int ownDeviceId = manager.getDeviceId();
         //Clear devices that we didn't receive a message from for a while
         Iterator<Integer> it = deviceListIds.iterator();
-        while(OmemoManager.getDeleteStaleDevices() && it.hasNext()) {
+        while(OmemoConfiguration.getInstance().getDeleteStaleDevices() && it.hasNext()) {
             int id = it.next();
             if(id == ownDeviceId) {
                 //Skip own id
@@ -312,9 +312,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             if(date == null) {
                 omemoStore.setDateOfLastReceivedMessage(d);
             } else {
-                if (System.currentTimeMillis() - date.getTime() > 1000L * 60 * 60 * OmemoManager.getDeleteStaleDevicesAfterHours()) {
+                if (System.currentTimeMillis() - date.getTime() > 1000L * 60 * 60 * OmemoConfiguration.getInstance().getDeleteStaleDevicesAfterHours()) {
                     LOGGER.log(Level.INFO, "Remove device " + id + " because of more than " +
-                            OmemoManager.getDeleteStaleDevicesAfterHours() + " hours of inactivity.");
+                            OmemoConfiguration.getInstance().getDeleteStaleDevicesAfterHours() + " hours of inactivity.");
                     it.remove();
                     publish = true;
                 }
@@ -758,10 +758,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 lastReceived = new Date();
             }
 
-            if (OmemoManager.getIgnoreStaleDevices() && System.currentTimeMillis() - lastReceived.getTime()
-                    > 1000L * 60 * 60 * OmemoManager.getIgnoreStaleDevicesAfterHours()) {
+            if (OmemoConfiguration.getInstance().getIgnoreStaleDevices() && System.currentTimeMillis() - lastReceived.getTime()
+                    > 1000L * 60 * 60 * OmemoConfiguration.getInstance().getIgnoreStaleDevicesAfterHours()) {
                 LOGGER.log(Level.WARNING, "Refusing to encrypt message for stale device " + d +
-                        " which was inactive for at least " + OmemoManager.getIgnoreStaleDevicesAfterHours() +" hours.");
+                        " which was inactive for at least " + OmemoConfiguration.getInstance().getIgnoreStaleDevicesAfterHours() +" hours.");
             } else {
                 receivers.add(new OmemoDevice(manager.getOwnJid(), id));
             }

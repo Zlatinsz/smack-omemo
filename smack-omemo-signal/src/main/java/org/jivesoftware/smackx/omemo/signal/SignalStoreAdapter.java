@@ -69,6 +69,10 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
         }
     }
 
+    /**
+     * We don't use this
+     * @return dummy
+     */
     @Override
     public int getLocalRegistrationId() {
         return 0;
