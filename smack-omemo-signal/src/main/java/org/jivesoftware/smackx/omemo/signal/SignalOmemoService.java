@@ -48,6 +48,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.logging.Level;
@@ -58,8 +59,16 @@ import java.util.logging.Level;
  * @author Paul Schaub
  */
 public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
+    private static SignalOmemoService INSTANCE;
 
-    public SignalOmemoService()
+    public static SignalOmemoService getInstance() throws InvalidAlgorithmParameterException, BadPaddingException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException, InterruptedException, XMPPException.XMPPErrorException, NoSuchPaddingException, SmackException, CorruptedOmemoKeyException, NoSuchProviderException, IllegalBlockSizeException {
+        if(INSTANCE == null) {
+            INSTANCE = new SignalOmemoService();
+        }
+        return INSTANCE;
+    }
+
+    private SignalOmemoService()
             throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException,
             NoSuchPaddingException, InvalidAlgorithmParameterException, UnsupportedEncodingException,
             IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchProviderException,
@@ -87,5 +96,10 @@ public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKe
             // This should never happen.
             throw new AssertionError(e);
         }
+    }
+
+    @Override
+    protected OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> defaultStoreImplementation(OmemoManager manager) {
+        return new SignalFileBasedOmemoStore(manager);
     }
 }

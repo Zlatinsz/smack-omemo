@@ -52,6 +52,10 @@ public class SignalFileBasedOmemoStore
 
     private final SignalStoreAdapter signalStoreAdapter = new SignalStoreAdapter(this);
 
+    public SignalFileBasedOmemoStore(OmemoManager manager) {
+        super(manager);
+    }
+
     public SignalFileBasedOmemoStore(OmemoManager manager, File base) {
         super(manager, base);
     }

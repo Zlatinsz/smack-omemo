@@ -130,7 +130,24 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     omemoStores = new HashMap<>();
 
     /**
-     * Initialize OMEMO functionality. Should be called once after the service has been created.
+     * Register an OmemoManager along with an OmemoStore.
+     *
+     * @param manager OmemoManager
+     * @param store OmemoStore
+     */
+    public void registerDevice(OmemoManager manager,
+                              OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> store) {
+        omemoStores.put(manager, store);
+        manager.setOmemoService(this);
+    }
+
+
+    public void registerDevice(OmemoManager manager) {
+        registerDevice(manager, defaultStoreImplementation(manager));
+    }
+
+    /**
+     * Initialize OMEMO functionality for OmemoManager omemoManager.
      *
      * @throws InterruptedException
      * @throws CorruptedOmemoKeyException
@@ -962,11 +979,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return omemoStores.get(manager);
     }
 
-    public void setOmemoStore(OmemoManager manager,
-                              OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> store) {
-        omemoStores.put(manager, store);
-    }
-
     /**
      * Listen for incoming messages and carbons, decrypt them and pass the cleartext messages to the registered
      * OmemoMessageListeners.
@@ -1038,6 +1050,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
         return null;
     }
+
+    protected abstract OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
+    defaultStoreImplementation(OmemoManager manager);
 
     private class OmemoStanzaListener implements StanzaListener {
         private OmemoManager manager;

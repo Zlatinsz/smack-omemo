@@ -61,7 +61,12 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
 
     private static final Logger LOGGER = Logger.getLogger(FileBasedOmemoStore.class.getName());
 
+    public static File DEFAULT_PATH;
     private final File base;
+
+    public FileBasedOmemoStore(OmemoManager manager) {
+        this(manager, DEFAULT_PATH);
+    }
 
     /**
      * Constructor.
@@ -71,9 +76,15 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      */
     public FileBasedOmemoStore(OmemoManager manager, File base) {
         super(manager);
+
+        if(base == null) {
+            throw new IllegalStateException("Either the given path was null, or DEFAULT_PATH has not been set.");
+        }
+
         if (!base.exists()) {
             base.mkdirs();
         }
+
         this.base = base;
     }
 

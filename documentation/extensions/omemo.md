@@ -42,24 +42,6 @@ Optionally your server should support Message Carbons ([XEP-0280](http://xmpp.or
 and Message Archive Management ([XEP-0313](http://xmpp.org/extensions/xep-0313.html))
 to achieve message synchronization across all (on- and offline) devices.
 
-Dependencies
-------------
-
-If you want to use smack-omemo-signal in your project, make sure to include the following dependencies:
-
-- bcprov-jdk15on-156.jar
-- curve25519-java-0.3.0.jar
-- protobuf-java-2.5.0.jar
-- signal-protocol-java-2.4.0.jar
-
-You also need to include the following smack-modules in your project:
-
-- smack-core
-- smack-experimental
-- smack-extensions
-- smack-im
-- smack-java7
-
 Setup
 -----
 
@@ -69,25 +51,32 @@ On first start, you have to set a security provider like bouncycastle.
 Security.addProvider(new BouncyCastleProvider());
 ```
 
-Next you need to create an OmemoService object. In general, you only need one 
-OmemoService object in your client. This object can handle multiple OMEMO 
-devices. In this example, we'll create a SignalOmemoService.
-
 For each device you need an OmemoManager and an OmemoStore to store keys etc.
-In this example, we use a SignalFileBasedOmemoStore as OmemoStore, but you could 
-also implement your own (eg. SQL-based) store.
+In this example, we use the smack-omemo-signal 
+implementation, so we use the SignalOmemoService as 
+OmemoService, as well as a SignalFileBasedOmemoStore 
+as OmemoStore, but you could also implement your own (eg. SQL-based) store.
+
 The OmemoManager must be initialized with either a deviceId (of an existing 
 device), or null in case you want to generate a fresh device.
 The OmemoManager can be used to execute OMEMO related actions like sending a 
 message etc.
 
 ```
-SignalOmemoService omemoService = new SignalOmemoService();
+SignalFileBasedOmemoStore.DEFAULT_PATH = new File("path/to/store");
 OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
-SignalFileBasedOmemoStore omemoStore = new 
-SignalFileBasedOmemoStore(omemoManager, new File("omemoStore"));
-omemoService.setOmemoStore(omemoManager, omemoStore);
-omemoManager.setOmemoService(omemoService);
+//registerDevice(OmemoManager) defaults to a SignalFileBasedOmemoStore in this 
+case
+SignalOmemoService.getInstance().registerDevice(omemoManager);
+```
+
+Alternatively you can create your own instance of the OmemoStore and register 
+that.
+
+```
+OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
+SignalOmemoStore omemoStore = new MySignalOmemoStore();
+SignalOmemoService.getInstance().registerDevice(omemoManager, omemoStore);
 ```
 
 As soon as the connection is authenticated, the module generates some keys and 
