@@ -20,6 +20,7 @@ import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
 import org.jivesoftware.smackx.omemo.elements.OmemoDeviceListElement;
+import org.jivesoftware.smackx.omemo.exceptions.CannotEstablishOmemoSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
@@ -265,7 +266,6 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws CorruptedOmemoKeyException when a key could not be loaded
      */
     OmemoBundleVAxolotlElement packOmemoBundle() throws CorruptedOmemoKeyException {
-        LOGGER.log(Level.INFO, "packBundle: "+omemoManager.getDeviceId());
         int currentSignedPreKeyId = loadCurrentSignedPreKeyId();
         T_SigPreKey currentSignedPreKey = loadOmemoSignedPreKey(currentSignedPreKeyId);
         T_IdKeyPair identityKeyPair = loadOmemoIdentityKeyPair();
@@ -648,13 +648,19 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param device device
      * @return fingerprint of the identityKey
      */
-    public String getFingerprint(OmemoDevice device) {
-        try {
-            return keyUtil().getFingerprint(loadOmemoIdentityKey(device));
+    public String getFingerprint(OmemoDevice device) throws CannotEstablishOmemoSessionException {
+        T_IdKey idKey;
 
+        try {
+            idKey = loadOmemoIdentityKey(device);
+            if(idKey == null) {
+                omemoService.buildSessionFromOmemoBundle(omemoManager, device);
+            }
+            idKey = loadOmemoIdentityKey(device);
         } catch (CorruptedOmemoKeyException e) {
             LOGGER.log(Level.WARNING, "getFingerprint failed due to corrupted identityKey: "+e.getMessage());
             return null;
         }
+        return keyUtil().getFingerprint(idKey);
     }
 }

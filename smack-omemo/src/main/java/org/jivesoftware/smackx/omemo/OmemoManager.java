@@ -37,6 +37,7 @@ import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
+import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
 import org.jivesoftware.smackx.omemo.internal.ClearTextMessage;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
@@ -51,6 +52,7 @@ import org.jxmpp.jid.FullJid;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -393,6 +395,27 @@ public final class OmemoManager extends Manager {
      */
     public String getOurFingerprint() {
         return getOmemoService().getOmemoStore(this).getFingerprint();
+    }
+
+    public String getFingerprint(OmemoDevice device) throws CannotEstablishOmemoSessionException {
+        if(device.equals(new OmemoDevice(getOwnJid(), getDeviceId()))) {
+            return getOurFingerprint();
+        }
+
+        return getOmemoService().getOmemoStore(this).getFingerprint(device);
+    }
+
+    public HashMap<Integer, String> getActiveFingerprints(BareJid contact) {
+        HashMap<Integer, String> fingerprints = new HashMap<>();
+        CachedDeviceList deviceList = getOmemoService().getOmemoStore(this).loadCachedDeviceList(contact);
+        for(int id : deviceList.getActiveDevices()) {
+            try {
+                fingerprints.put(id, getFingerprint(new OmemoDevice(contact, id)));
+            } catch (CannotEstablishOmemoSessionException e) {
+                LOGGER.log(Level.WARNING, "Could not build session with device "+id+" of user "+contact+": "+e.getMessage());
+            }
+        }
+        return fingerprints;
     }
 
     public void addOmemoMessageListener(OmemoMessageListener listener) {
