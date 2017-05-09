@@ -104,6 +104,7 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_
 public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
 
     protected static final Logger LOGGER = Logger.getLogger(OmemoService.class.getName());
+
     /**
      * Create a new OmemoService object. This should only happen once.
      * When the service gets created, it tries a placeholder crypto function in order to test, if all necessary
@@ -141,10 +142,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         manager.setOmemoService(this);
     }
 
-
     public void registerDevice(OmemoManager manager) {
         registerDevice(manager, createOmemoStoreConnector(manager));
     }
+
+    public abstract void setOmemoStoreBackend(
+            OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> backend);
 
     /**
      * Initialize OMEMO functionality for OmemoManager omemoManager.

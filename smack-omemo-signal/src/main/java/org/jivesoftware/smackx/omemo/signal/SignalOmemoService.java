@@ -81,6 +81,14 @@ public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKe
     }
 
     @Override
+    public void setOmemoStoreBackend(OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> backend) {
+        if(STORE != null) {
+            throw new IllegalStateException("The OmemoStore backend has already been set.");
+        }
+        STORE = backend;
+    }
+
+    @Override
     protected void processBundle(OmemoManager manager, PreKeyBundle preKeyBundle, OmemoDevice contact) throws CorruptedOmemoKeyException {
         OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
                 omemoStoreConnector = getOmemoStoreConnectorFor(manager);
@@ -109,13 +117,5 @@ public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKe
             STORE =  new SignalFileBasedOmemoStore(manager);
         }
         return new SignalOmemoStoreConnector(manager, STORE);
-    }
-
-    public void setOmemoStoreBackend(
-            OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> store) {
-        if(STORE != null) {
-            throw new IllegalStateException("OmemoStore cannot be set more than once!");
-        }
-        STORE = store;
     }
 }

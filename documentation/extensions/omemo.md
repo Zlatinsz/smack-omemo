@@ -51,32 +51,29 @@ On first start, you have to set a security provider like bouncycastle.
 Security.addProvider(new BouncyCastleProvider());
 ```
 
-For each device you need an OmemoManager and an OmemoStore to store keys etc.
-In this example, we use the smack-omemo-signal 
-implementation, so we use the SignalOmemoService as 
-OmemoService, as well as a SignalFileBasedOmemoStore 
-as OmemoStore, but you could also implement your own (eg. SQL-based) store.
+As a first step you have to prepare the OmemoStore.
+You can either use your own implementation, or use the builtin FileBasedOmemoStore (default).
+If you do not want to use your own store, the implementation uses a file based store, so you HAVE to set the default path.
 
-The OmemoManager must be initialized with either a deviceId (of an existing 
+```
+//set path in case we want to use a file-based store (default)
+OmemoConfiguration.getInstance().setFileBasedOmemoStoreDefaultPath(new File("path/to/your/store"));
+
+//Otherwise, you can set your own OmemoStore implementation as backend.
+SignalOmemoService.getInstance().setOmemoStoreBackend(mySQLOmemoStore);
+```
+
+For each device you need an OmemoManager.
+In this example, we use the smack-omemo-signal
+implementation, so we use the SignalOmemoService as 
+OmemoService. The OmemoManager must be initialized with either a deviceId (of an existing
 device), or null in case you want to generate a fresh device.
 The OmemoManager can be used to execute OMEMO related actions like sending a 
 message etc.
 
 ```
-SignalFileBasedOmemoStore.DEFAULT_PATH = new File("path/to/store");
 OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
-//registerDevice(OmemoManager) defaults to a SignalFileBasedOmemoStore in this 
-case
 SignalOmemoService.getInstance().registerDevice(omemoManager);
-```
-
-Alternatively you can create your own instance of the OmemoStore and register 
-that.
-
-```
-OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
-SignalOmemoStore omemoStoreConnector = new MySignalOmemoStore();
-SignalOmemoService.getInstance().registerDevice(omemoManager, omemoStoreConnector);
 ```
 
 As soon as the connection is authenticated, the module generates some keys and 
@@ -135,6 +132,8 @@ To decide about whether a device is trusted or not, you'll have to store some in
 in the OmemoStore.
 
 ```
+SignalOmemoStoreConnector omemoStoreConnector = SignalOmemoService.getInstance()
+        .getOmemoStoreConnectorFor(omemoManager);
 omemoStoreConnector.trustOmemoIdentity(trustedDevice, trustedIdentityKey);
 omemoStoreConnector.distrustOmemoIdentity(untrustedDevice, untrustedIdentityKey);
 ```
@@ -170,6 +169,7 @@ Configuration
 -------------
 smack-omemo has some configuration options that can be changed on runtime via the `OmemoConfiguration` class:
 
+* setFileBasedOmemoStoreDefaultPath sets the default directory for the FileBasedOmemoStore implementations.
 * setHardenMessageEncryption mitigates a security vulnerability found in an independent audit of the OMEMO protocol. This SHOULD stay set to true.
 * setIgnoreStaleDevices when set to true, smack-omemo will stop encrypting messages for **own** devices that have not send a message for some period of time (configurable in setIgnoreStaleDevicesAfterHours)
 * setDeleteStaleDevices when set to true, smack-omemo will remove own devices from the device list, if no messages were received from them for a period of time (configurable in setDeleteStaleDevicesAfterHours)
