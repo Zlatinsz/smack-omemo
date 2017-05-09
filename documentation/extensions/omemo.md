@@ -75,8 +75,8 @@ that.
 
 ```
 OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
-SignalOmemoStore omemoStore = new MySignalOmemoStore();
-SignalOmemoService.getInstance().registerDevice(omemoManager, omemoStore);
+SignalOmemoStore omemoStoreConnector = new MySignalOmemoStore();
+SignalOmemoService.getInstance().registerDevice(omemoManager, omemoStoreConnector);
 ```
 
 As soon as the connection is authenticated, the module generates some keys and 
@@ -135,8 +135,8 @@ To decide about whether a device is trusted or not, you'll have to store some in
 in the OmemoStore.
 
 ```
-omemoStore.trustOmemoIdentity(trustedDevice, trustedIdentityKey);
-omemoStore.distrustOmemoIdentity(untrustedDevice, untrustedIdentityKey);
+omemoStoreConnector.trustOmemoIdentity(trustedDevice, trustedIdentityKey);
+omemoStoreConnector.distrustOmemoIdentity(untrustedDevice, untrustedIdentityKey);
 ```
 
 The trust decision should be made by the user based on comparing fingerprints.
@@ -144,10 +144,10 @@ You can get fingerprints of your own and contacts devices:
 
 ```
 String myFingerprint = omemoManager.getFingerprint();
-String otherFingerprint = omemoStore.getFingerprint(otherDevice);
+String otherFingerprint = omemoStoreConnector.getFingerprint(otherDevice);
 
 //Splits the fingerprint in blocks of 8 characters
-String prettyFingerprint = omemoStore.keyUtil().prettyFingerprint(myFingerprint);
+String prettyFingerprint = omemoStoreConnector.keyUtil().prettyFingerprint(myFingerprint);
 ```
 
 It might happen, that the server you or your contact are using is not delivering devicelist updates correctly.

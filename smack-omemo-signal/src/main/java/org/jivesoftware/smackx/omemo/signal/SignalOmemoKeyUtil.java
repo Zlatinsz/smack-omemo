@@ -20,11 +20,11 @@
  */
 package org.jivesoftware.smackx.omemo.signal;
 
-import org.jivesoftware.smackx.omemo.internal.OmemoSession;
-import org.jivesoftware.smackx.omemo.OmemoStore;
+import org.jivesoftware.smackx.omemo.OmemoStoreConnector;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
-import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
+import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
+import org.jivesoftware.smackx.omemo.internal.OmemoSession;
 import org.jivesoftware.smackx.omemo.util.KeyUtil;
 import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.stringprep.XmppStringprepException;
@@ -89,15 +89,15 @@ class SignalOmemoKeyUtil extends KeyUtil<IdentityKeyPair, IdentityKey, PreKeyRec
 
     @Override
     public OmemoSession<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
-    createOmemoSession(OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> store,
+    createOmemoSession(OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStoreConnector,
                        OmemoDevice contact, IdentityKey identityKey) {
-        return new SignalOmemoSession(store, contact, identityKey);
+        return new SignalOmemoSession(omemoStoreConnector, contact, identityKey);
     }
 
     @Override
     public OmemoSession<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
-    createOmemoSession(OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> store, OmemoDevice from) {
-        return new SignalOmemoSession(store, from);
+    createOmemoSession(OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStoreConnector, OmemoDevice from) {
+        return new SignalOmemoSession(omemoStoreConnector, from);
     }
 
     @Override

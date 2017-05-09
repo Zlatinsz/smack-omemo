@@ -394,7 +394,7 @@ public final class OmemoManager extends Manager {
      * @return fingerprint
      */
     public String getOurFingerprint() {
-        return getOmemoService().getOmemoStore(this).getFingerprint();
+        return getOmemoService().getOmemoStoreConnectorFor(this).getFingerprint();
     }
 
     public String getFingerprint(OmemoDevice device) throws CannotEstablishOmemoSessionException {
@@ -402,12 +402,12 @@ public final class OmemoManager extends Manager {
             return getOurFingerprint();
         }
 
-        return getOmemoService().getOmemoStore(this).getFingerprint(device);
+        return getOmemoService().getOmemoStoreConnectorFor(this).getFingerprint(device);
     }
 
     public HashMap<Integer, String> getActiveFingerprints(BareJid contact) {
         HashMap<Integer, String> fingerprints = new HashMap<>();
-        CachedDeviceList deviceList = getOmemoService().getOmemoStore(this).loadCachedDeviceList(contact);
+        CachedDeviceList deviceList = getOmemoService().getOmemoStoreConnectorFor(this).loadCachedDeviceList(contact);
         for(int id : deviceList.getActiveDevices()) {
             try {
                 fingerprints.put(id, getFingerprint(new OmemoDevice(contact, id)));
@@ -456,7 +456,7 @@ public final class OmemoManager extends Manager {
      */
     public void rotateSignedPreKey() throws CorruptedOmemoKeyException, InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
         //generate key
-        getOmemoService().getOmemoStore(this).changeSignedPreKey();
+        getOmemoService().getOmemoStoreConnectorFor(this).changeSignedPreKey();
         //publish
         getOmemoService().publishDeviceIdIfNeeded(this, false);
         getOmemoService().publishBundle(this);
@@ -543,6 +543,10 @@ public final class OmemoManager extends Manager {
 
     public int getDeviceId() {
         return deviceId;
+    }
+
+    public OmemoDevice getOwnDevice() {
+        return new OmemoDevice(getOwnJid(), getDeviceId());
     }
 
     public void setDeviceId(int nDeviceId) {

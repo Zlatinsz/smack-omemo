@@ -16,6 +16,8 @@
  */
 package org.jivesoftware.smackx.omemo;
 
+import java.io.File;
+
 /**
  * Contains OMEMO related configuration options.
  *
@@ -66,6 +68,8 @@ public class OmemoConfiguration {
      * Add MAM storage hint to allow the server to store messages that do not contain a body.
      */
     private boolean ADD_MAM_STORAGE_HINT = true;
+
+    private File FILE_BASED_OMEMO_STORE_DEFAULT_PATH = null;
 
     private OmemoConfiguration() {
     }
@@ -163,5 +167,13 @@ public class OmemoConfiguration {
 
     public boolean getHardenMessageEncryption() {
         return COMBINED_MESSAGE_KEY_AUTHTAG;
+    }
+
+    public void setFileBasedOmemoStoreDefaultPath(File path) {
+        FILE_BASED_OMEMO_STORE_DEFAULT_PATH = path;
+    }
+
+    public File getFileBasedOmemoStoreDefaultPath() {
+        return FILE_BASED_OMEMO_STORE_DEFAULT_PATH;
     }
 }

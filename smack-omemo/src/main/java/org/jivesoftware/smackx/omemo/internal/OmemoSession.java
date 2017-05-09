@@ -18,7 +18,7 @@ package org.jivesoftware.smackx.omemo.internal;
 
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.util.StringUtils;
-import org.jivesoftware.smackx.omemo.OmemoStore;
+import org.jivesoftware.smackx.omemo.OmemoStoreConnector;
 import org.jivesoftware.smackx.omemo.elements.OmemoElement;
 import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
@@ -58,7 +58,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     private static final Logger LOGGER = Logger.getLogger(OmemoSession.class.getName());
 
     protected final T_Ciph cipher;
-    protected final OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore;
+    protected final OmemoStoreConnector<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStoreConnector;
     protected final OmemoDevice remoteDevice;
     protected T_IdKey identityKey;
     protected int preKeyId = -1;
@@ -66,27 +66,27 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Constructor used when we establish the session.
      *
-     * @param omemoStore   OmemoStore where we want to store the session and get key information from
+     * @param omemoStoreConnector   OmemoStoreConnector where we want to store the session and get key information from
      * @param remoteDevice the OmemoDevice we want to establish the session with
      * @param identityKey  identityKey of the recipient
      */
-    public OmemoSession(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
+    public OmemoSession(OmemoStoreConnector<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStoreConnector,
                         OmemoDevice remoteDevice, T_IdKey identityKey) {
-        this(omemoStore, remoteDevice);
+        this(omemoStoreConnector, remoteDevice);
         this.identityKey = identityKey;
     }
 
     /**
      * Another constructor used when they establish the session with us.
      *
-     * @param omemoStore   OmemoStore we want to store the session and their key in
+     * @param omemoStoreConnector   OmemoStore we want to store the session and their key in
      * @param remoteDevice identityKey of the partner
      */
-    public OmemoSession(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
+    public OmemoSession(OmemoStoreConnector<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStoreConnector,
                         OmemoDevice remoteDevice) {
-        this.omemoStore = omemoStore;
+        this.omemoStoreConnector = omemoStoreConnector;
         this.remoteDevice = remoteDevice;
-        this.cipher = createCipher(omemoStore, remoteDevice);
+        this.cipher = createCipher(remoteDevice);
     }
 
     /**
@@ -193,11 +193,10 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Create a new SessionCipher used to encrypt/decrypt keys. The cipher typically implements the ratchet and KDF-chains.
      *
-     * @param omemoStore OmemoStore
      * @param contact    OmemoDevice
      * @return SessionCipher
      */
-    public abstract T_Ciph createCipher(OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore, OmemoDevice contact);
+    public abstract T_Ciph createCipher(OmemoDevice contact);
 
     /**
      * Get the id of the preKey used to establish the session.
@@ -252,6 +251,6 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @return fingerprint or null
      */
     public String getFingerprint() {
-        return (this.identityKey != null ? omemoStore.keyUtil().getFingerprint(this.identityKey) : null);
+        return (this.identityKey != null ? omemoStoreConnector.keyUtil().getFingerprint(this.identityKey) : null);
     }
 }

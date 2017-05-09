@@ -23,20 +23,20 @@ import javax.crypto.Cipher;
  *
  * @author Paul Schaub
  */
-public class CipherAndAuthTag {
+class CipherAndAuthTag {
     private final Cipher cipher;
     private final byte[] authTag;
 
-    public CipherAndAuthTag(Cipher cipher, byte[] authTag) {
+    CipherAndAuthTag(Cipher cipher, byte[] authTag) {
         this.cipher = cipher;
         this.authTag = authTag;
     }
 
-    public Cipher getCipher() {
+    Cipher getCipher() {
         return cipher;
     }
 
-    public byte[] getAuthTag() {
+    byte[] getAuthTag() {
         return authTag;
     }
 }
