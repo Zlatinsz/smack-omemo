@@ -51,32 +51,29 @@ On first start, you have to set a security provider like bouncycastle.
 Security.addProvider(new BouncyCastleProvider());
 ```
 
-For each device you need an OmemoManager and an OmemoStore to store keys etc.
-In this example, we use the smack-omemo-signal 
-implementation, so we use the SignalOmemoService as 
-OmemoService, as well as a SignalFileBasedOmemoStore 
-as OmemoStore, but you could also implement your own (eg. SQL-based) store.
+As a first step you have to prepare the OmemoStore.
+You can either use your own implementation, or use the builtin FileBasedOmemoStore (default).
+If you do not want to use your own store, the implementation uses a file based store, so you HAVE to set the default path.
 
-The OmemoManager must be initialized with either a deviceId (of an existing 
+```
+//set path in case we want to use a file-based store (default)
+OmemoConfiguration.getInstance().setFileBasedOmemoStoreDefaultPath(new File("path/to/your/store"));
+
+//Otherwise, you can set your own OmemoStore implementation as backend.
+SignalOmemoService.getInstance().setOmemoStoreBackend(mySQLOmemoStore);
+```
+
+For each device you need an OmemoManager.
+In this example, we use the smack-omemo-signal
+implementation, so we use the SignalOmemoService as 
+OmemoService. The OmemoManager must be initialized with either a deviceId (of an existing
 device), or null in case you want to generate a fresh device.
 The OmemoManager can be used to execute OMEMO related actions like sending a 
 message etc.
 
 ```
-SignalFileBasedOmemoStore.DEFAULT_PATH = new File("path/to/store");
 OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
-//registerDevice(OmemoManager) defaults to a SignalFileBasedOmemoStore in this 
-case
 SignalOmemoService.getInstance().registerDevice(omemoManager);
-```
-
-Alternatively you can create your own instance of the OmemoStore and register 
-that.
-
-```
-OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
-SignalOmemoStore omemoStore = new MySignalOmemoStore();
-SignalOmemoService.getInstance().registerDevice(omemoManager, omemoStore);
 ```
 
 As soon as the connection is authenticated, the module generates some keys and 
@@ -135,8 +132,10 @@ To decide about whether a device is trusted or not, you'll have to store some in
 in the OmemoStore.
 
 ```
-omemoStore.trustOmemoIdentity(trustedDevice, trustedIdentityKey);
-omemoStore.distrustOmemoIdentity(untrustedDevice, untrustedIdentityKey);
+SignalOmemoStoreConnector omemoStoreConnector = SignalOmemoService.getInstance()
+        .getOmemoStoreConnectorFor(omemoManager);
+omemoStoreConnector.trustOmemoIdentity(trustedDevice, trustedIdentityKey);
+omemoStoreConnector.distrustOmemoIdentity(untrustedDevice, untrustedIdentityKey);
 ```
 
 The trust decision should be made by the user based on comparing fingerprints.
@@ -144,10 +143,10 @@ You can get fingerprints of your own and contacts devices:
 
 ```
 String myFingerprint = omemoManager.getFingerprint();
-String otherFingerprint = omemoStore.getFingerprint(otherDevice);
+String otherFingerprint = omemoStoreConnector.getFingerprint(otherDevice);
 
 //Splits the fingerprint in blocks of 8 characters
-String prettyFingerprint = omemoStore.keyUtil().prettyFingerprint(myFingerprint);
+String prettyFingerprint = omemoStoreConnector.keyUtil().prettyFingerprint(myFingerprint);
 ```
 
 It might happen, that the server you or your contact are using is not delivering devicelist updates correctly.
@@ -168,13 +167,14 @@ Unfortunately due to the fact that you cannot decrypt messages twice, you have t
 
 Configuration
 -------------
-smack-omemo has some configuration options that can be changed on runtime by changing values in `util.OmemoConstants`:
+smack-omemo has some configuration options that can be changed on runtime via the `OmemoConfiguration` class:
 
-* setCombinedMessageKeyAuthTag mitigates a security vulnerability found in an independent audit of the OMEMO protocol. This SHOULD stay set to true.
-* setIgnoreStaleDevices when set to true, smack-omemo will stop encrypting messages for **own** devices that have not send a message for some period of time (configurable in IGNORE_STALE_DEVICE_AFTER_HOURS)
-* setDeleteStaleDevices when set to true, smack-omemo will remove own devices from the device list, if no messages were received from them for a period of time (configurable in DELETE_STALE_DEVICE_AFTER_HOURS)
-* setRenewOldSignedPreKeys when set to true, smack-omemo will periodically generate and publish new signed prekeys. Via RENEW_OLD_SIGNED_PREKEYS_AFTER_HOURS you can configure, after what period of time new keys are generated and MAX_NUMBER_OF_STORED_SIGNED_PREKEYS allows configuration of how many prekeys are kept in storage for decryption of delayed messages.
-* setAddOmemoBodyHint when set to true, a plaintext body with a hint about OMEMO encryption will be added to the message. This hint will be displayed by clients that do not support OMEMO.
+* setFileBasedOmemoStoreDefaultPath sets the default directory for the FileBasedOmemoStore implementations.
+* setHardenMessageEncryption mitigates a security vulnerability found in an independent audit of the OMEMO protocol. This SHOULD stay set to true.
+* setIgnoreStaleDevices when set to true, smack-omemo will stop encrypting messages for **own** devices that have not send a message for some period of time (configurable in setIgnoreStaleDevicesAfterHours)
+* setDeleteStaleDevices when set to true, smack-omemo will remove own devices from the device list, if no messages were received from them for a period of time (configurable in setDeleteStaleDevicesAfterHours)
+* setRenewOldSignedPreKeys when set to true, smack-omemo will periodically generate and publish new signed prekeys. Via setRenewOldSignedPreKeysAfterHours you can configure, after what period of time new keys are generated and setMaxNumberOfStoredSignedPreKeys allows configuration of how many signed PreKeys are kept in storage for decryption of delayed messages.
+* setAddOmemoBodyHint when set to true, a plaintext body with a hint about OMEMO encryption will be added to the message. This hint will be displayed by clients that do not support OMEMO. Note that this might not be desirable when communicating with clients that do not support EME.
 * setAddEmeEncryptionHint when set to true, an Explicit Message Encryption element will be added to the message. This element tells clients, that the message is encrypted with OMEMO.
 * setAddMAMStorageProcessingHint when set to true, a storage hint for Message Archive Management will be added to the message. This enabled servers to store messages that contain no body.
 

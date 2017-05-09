@@ -61,24 +61,23 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
 
     private static final Logger LOGGER = Logger.getLogger(FileBasedOmemoStore.class.getName());
 
-    public static File DEFAULT_PATH;
     private final File base;
 
     public FileBasedOmemoStore(OmemoManager manager) {
-        this(manager, DEFAULT_PATH);
+        this(OmemoConfiguration.getInstance().getFileBasedOmemoStoreDefaultPath());
     }
 
     /**
      * Constructor.
      *
-     * @param manager omemoManager
      * @param base    base path of the store
      */
-    public FileBasedOmemoStore(OmemoManager manager, File base) {
-        super(manager);
+    public FileBasedOmemoStore(File base) {
+        super();
 
         if(base == null) {
-            throw new IllegalStateException("Either the given path was null, or DEFAULT_PATH has not been set.");
+            throw new IllegalStateException("Either the given path was null, or FILE_BASED_OMEMO_STORE_DEFAULT_PATH" +
+                    " has not been set in OmemoConfiguration.");
         }
 
         if (!base.exists()) {
@@ -89,14 +88,14 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public boolean isFreshInstallation() {
-        File userPath = getUserPath();
-        return !new File(getUserPath() + "/" + omemoManager.getDeviceId()).exists();
+    public boolean isFreshInstallation(OmemoManager omemoManager) {
+        File userPath = getUserPath(omemoManager);
+        return !new File(userPath + "/" + omemoManager.getDeviceId()).exists();
     }
 
     @Override
-    public int loadLastPreKeyId() {
-        File dir = getDevicePath();
+    public int loadLastPreKeyId(OmemoManager omemoManager) {
+        File dir = getDevicePath(omemoManager);
         if (dir == null) {
             return 0;
         }
@@ -119,16 +118,16 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void storeLastPreKeyId(int currentPreKeyId) {
-        File dir = getDevicePath();
+    public void storeLastPreKeyId(OmemoManager omemoManager, int currentPreKeyId) {
+        File dir = getDevicePath(omemoManager);
         if (dir != null) {
             writeInt(new File(dir.getAbsolutePath() + "/" + LAST_PRE_KEY_ID), currentPreKeyId);
         }
     }
 
     @Override
-    public T_IdKeyPair loadOmemoIdentityKeyPair() throws CorruptedOmemoKeyException {
-        File dir = getDevicePath();
+    public T_IdKeyPair loadOmemoIdentityKeyPair(OmemoManager omemoManager) throws CorruptedOmemoKeyException {
+        File dir = getDevicePath(omemoManager);
         if(dir == null) {
             return null;
         }
@@ -138,16 +137,16 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void storeOmemoIdentityKeyPair(T_IdKeyPair identityKeyPair) {
-        File dir = getDevicePath();
+    public void storeOmemoIdentityKeyPair(OmemoManager omemoManager, T_IdKeyPair identityKeyPair) {
+        File dir = getDevicePath(omemoManager);
         if (dir != null) {
             writeBytes(keyUtil().identityKeyPairToBytes(identityKeyPair), new File(dir.getAbsolutePath() + "/" + IDENTITY_KEY_PAIR));
         }
     }
 
     @Override
-    public T_IdKey loadOmemoIdentityKey(OmemoDevice device) throws CorruptedOmemoKeyException {
-        File dir = getContactDevicePath(device);
+    public T_IdKey loadOmemoIdentityKey(OmemoManager omemoManager, OmemoDevice device) throws CorruptedOmemoKeyException {
+        File dir = getContactDevicePath(omemoManager, device);
         if (dir == null) {
             return null;
         }
@@ -157,16 +156,16 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void storeOmemoIdentityKey(OmemoDevice device, T_IdKey identityKey) {
-        File dir = getContactDevicePath(device);
+    public void storeOmemoIdentityKey(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+        File dir = getContactDevicePath(omemoManager, device);
         if (dir != null) {
             writeBytes(keyUtil().identityKeyToBytes(identityKey), new File(dir.getAbsolutePath() + "/" + IDENTITY_KEY));
         }
     }
 
     @Override
-    public boolean isTrustedOmemoIdentity(OmemoDevice device, T_IdKey identityKey) {
-        File dir = getContactDevicePath(device);
+    public boolean isTrustedOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+        File dir = getContactDevicePath(omemoManager, device);
         if(dir == null) {
             return false;
         }
@@ -198,8 +197,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public boolean isDecidedOmemoIdentity(OmemoDevice device, T_IdKey identityKey) {
-        File dir = getContactDevicePath(device);
+    public boolean isDecidedOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+        File dir = getContactDevicePath(omemoManager, device);
         if (dir == null) {
             return false;
         }
@@ -230,8 +229,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void trustOmemoIdentity(OmemoDevice device, T_IdKey identityKey) {
-        File dir = getContactDevicePath(device);
+    public void trustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+        File dir = getContactDevicePath(omemoManager, device);
         if(dir == null) {
             return;
         }
@@ -253,8 +252,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void distrustOmemoIdentity(OmemoDevice device, T_IdKey identityKey) {
-        File dir = getContactDevicePath(device);
+    public void distrustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+        File dir = getContactDevicePath(omemoManager, device);
         if (dir == null) {
             return;
         }
@@ -276,8 +275,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public T_PreKey loadOmemoPreKey(int preKeyId) {
-        File dir = getPreKeysPath();
+    public T_PreKey loadOmemoPreKey(OmemoManager omemoManager, int preKeyId) {
+        File dir = getPreKeysPath(omemoManager);
         if(dir == null) {
             return null;
         }
@@ -309,8 +308,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void storeOmemoPreKey(int preKeyId, T_PreKey preKeyRecord) {
-        File dir = getPreKeysPath();
+    public void storeOmemoPreKey(OmemoManager omemoManager, int preKeyId, T_PreKey preKeyRecord) {
+        File dir = getPreKeysPath(omemoManager);
         if (dir != null) {
             File f = new File(dir.getAbsolutePath() + "/" + preKeyId);
             writeBytes(keyUtil().preKeyToBytes(preKeyRecord), f);
@@ -318,8 +317,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void removeOmemoPreKey(int preKeyId) {
-        File dir = getDevicePath();
+    public void removeOmemoPreKey(OmemoManager omemoManager, int preKeyId) {
+        File dir = getDevicePath(omemoManager);
         if (dir != null) {
             File f = new File(dir.getAbsolutePath() + "/" + preKeyId);
             f.delete();
@@ -327,8 +326,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public int loadCurrentSignedPreKeyId() {
-        File dir = getDevicePath();
+    public int loadCurrentSignedPreKeyId(OmemoManager omemoManager) {
+        File dir = getDevicePath(omemoManager);
         if (dir == null) {
             return 0;
         }
@@ -340,8 +339,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void storeCurrentSignedPreKeyId(int currentSignedPreKeyId) {
-        File dir = getDevicePath();
+    public void storeCurrentSignedPreKeyId(OmemoManager omemoManager, int currentSignedPreKeyId) {
+        File dir = getDevicePath(omemoManager);
         if (dir != null) {
             File f = new File(dir.getAbsolutePath() + "/" + CURRENT_SIGNED_PRE_KEY);
             writeInt(f, currentSignedPreKeyId);
@@ -349,8 +348,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public HashMap<Integer, T_PreKey> loadOmemoPreKeys() {
-        File dir = getPreKeysPath();
+    public HashMap<Integer, T_PreKey> loadOmemoPreKeys(OmemoManager omemoManager) {
+        File dir = getPreKeysPath(omemoManager);
         HashMap<Integer, T_PreKey> preKeys = new HashMap<>();
 
         if (dir == null) {
@@ -383,8 +382,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public T_SigPreKey loadOmemoSignedPreKey(int signedPreKeyId) {
-        File dir = getSignedPreKeysPath();
+    public T_SigPreKey loadOmemoSignedPreKey(OmemoManager omemoManager, int signedPreKeyId) {
+        File dir = getSignedPreKeysPath(omemoManager);
         if (dir == null) {
             return null;
         }
@@ -405,8 +404,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public HashMap<Integer, T_SigPreKey> loadOmemoSignedPreKeys() {
-        File dir = getSignedPreKeysPath();
+    public HashMap<Integer, T_SigPreKey> loadOmemoSignedPreKeys(OmemoManager omemoManager) {
+        File dir = getSignedPreKeysPath(omemoManager);
         HashMap<Integer, T_SigPreKey> signedPreKeys = new HashMap<>();
 
         if (dir == null) {
@@ -437,8 +436,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void storeOmemoSignedPreKey(int signedPreKeyId, T_SigPreKey signedPreKey) {
-        File dir = getSignedPreKeysPath();
+    public void storeOmemoSignedPreKey(OmemoManager omemoManager, int signedPreKeyId, T_SigPreKey signedPreKey) {
+        File dir = getSignedPreKeysPath(omemoManager);
         if (dir != null) {
             File f = new File(dir.getAbsolutePath() + "/" + signedPreKeyId);
             writeBytes(keyUtil().signedPreKeyToBytes(signedPreKey), f);
@@ -446,8 +445,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void removeOmemoSignedPreKey(int signedPreKeyId) {
-        File dir = getSignedPreKeysPath();
+    public void removeOmemoSignedPreKey(OmemoManager omemoManager, int signedPreKeyId) {
+        File dir = getSignedPreKeysPath(omemoManager);
         if (dir != null) {
             File f = new File(dir.getAbsolutePath() + "/" + signedPreKeyId);
             f.delete();
@@ -455,8 +454,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public T_Sess loadRawSession(OmemoDevice device) {
-        File dir = getContactDevicePath(device);
+    public T_Sess loadRawSession(OmemoManager omemoManager, OmemoDevice device) {
+        File dir = getContactDevicePath(omemoManager, device);
         if (dir == null) {
             return null;
         }
@@ -477,8 +476,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public HashMap<Integer, T_Sess> loadAllRawSessionsOf(BareJid contact) {
-        File dir = getContactsPath();
+    public HashMap<Integer, T_Sess> loadAllRawSessionsOf(OmemoManager omemoManager, BareJid contact) {
+        File dir = getContactsPath(omemoManager);
         HashMap<Integer, T_Sess> sessions = new HashMap<>();
 
         if (dir == null) {
@@ -499,7 +498,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
 
             try {
                 int id = Integer.parseInt(f.getName());
-                T_Sess s = loadRawSession(new OmemoDevice(contact, id));
+                T_Sess s = loadRawSession(omemoManager, new OmemoDevice(contact, id));
 
                 if (s != null) {
                     sessions.put(id, s);
@@ -513,8 +512,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void storeRawSession(OmemoDevice device, T_Sess session) {
-        File dir = getContactDevicePath(device);
+    public void storeRawSession(OmemoManager omemoManager, OmemoDevice device, T_Sess session) {
+        File dir = getContactDevicePath(omemoManager, device);
         if (dir != null) {
             File f = new File(dir.getAbsolutePath() + "/" + SESSION);
             writeBytes(keyUtil().rawSessionToBytes(session), f);
@@ -522,8 +521,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void removeRawSession(OmemoDevice device) {
-        File dir = getContactDevicePath(device);
+    public void removeRawSession(OmemoManager omemoManager, OmemoDevice device) {
+        File dir = getContactDevicePath(omemoManager, device);
         if (dir != null) {
             File f = new File(dir.getAbsolutePath() + "/" + SESSION);
             f.delete();
@@ -531,8 +530,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void removeAllRawSessionsOf(BareJid contact) {
-        File dir = getContactsPath();
+    public void removeAllRawSessionsOf(OmemoManager omemoManager, BareJid contact) {
+        File dir = getContactsPath(omemoManager);
         if (dir != null) {
             File f = new File(dir.getAbsolutePath() + "/" + contact.toString());
             f.delete();
@@ -540,14 +539,14 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public boolean containsRawSession(OmemoDevice device) {
-        File dir = getContactDevicePath(device);
+    public boolean containsRawSession(OmemoManager omemoManager, OmemoDevice device) {
+        File dir = getContactDevicePath(omemoManager, device);
         return dir != null && new File(dir.getAbsolutePath() + "/" + SESSION).exists();
     }
 
     @Override
-    public void setDateOfLastReceivedMessage(OmemoDevice from, Date date) {
-        File dir = getContactDevicePath(from);
+    public void setDateOfLastReceivedMessage(OmemoManager omemoManager, OmemoDevice from, Date date) {
+        File dir = getContactDevicePath(omemoManager, from);
         if(dir == null) {
             return;
         }
@@ -562,8 +561,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public Date getDateOfLastReceivedMessage(OmemoDevice from) {
-        File dir = getContactDevicePath(from);
+    public Date getDateOfLastReceivedMessage(OmemoManager omemoManager, OmemoDevice from) {
+        File dir = getContactDevicePath(omemoManager, from);
         if(dir == null) {
             return null;
         }
@@ -588,8 +587,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void setDateOfLastSignedPreKeyRenewal(Date date) {
-        File dir = getDevicePath();
+    public void setDateOfLastSignedPreKeyRenewal(OmemoManager omemoManager, Date date) {
+        File dir = getDevicePath(omemoManager);
         if(dir == null) {
             return;
         }
@@ -603,16 +602,16 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void purgeOwnDeviceKeys() {
-        File dir = getDevicePath();
+    public void purgeOwnDeviceKeys(OmemoManager omemoManager) {
+        File dir = getDevicePath(omemoManager);
         if(dir != null) {
             deleteRecursive(dir);
         }
     }
 
     @Override
-    public Date getDateOfLastSignedPreKeyRenewal() {
-        File dir = getDevicePath();
+    public Date getDateOfLastSignedPreKeyRenewal(OmemoManager omemoManager) {
+        File dir = getDevicePath(omemoManager);
         if(dir == null) {
             return null;
         }
@@ -635,14 +634,14 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public CachedDeviceList loadCachedDeviceList(BareJid contact) {
+    public CachedDeviceList loadCachedDeviceList(OmemoManager omemoManager, BareJid contact) {
         CachedDeviceList cachedDeviceList = new CachedDeviceList();
 
         if (contact == null) {
             return null;
         }
 
-        File dir = getContactsPath();
+        File dir = getContactsPath(omemoManager);
         if (dir == null) {
             return cachedDeviceList;
         }
@@ -688,11 +687,11 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void storeCachedDeviceList(BareJid contact, CachedDeviceList deviceList) {
+    public void storeCachedDeviceList(OmemoManager omemoManager, BareJid contact, CachedDeviceList deviceList) {
         if (contact == null) {
             return;
         }
-        File dir = getContactsPath();
+        File dir = getContactsPath(omemoManager);
 
         if(dir == null) {
             return;
@@ -740,7 +739,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      *
      * @return path
      */
-    private File getUserPath() {
+    private File getUserPath(OmemoManager omemoManager) {
         return create(new File(getOmemoPath().getAbsolutePath() + "/" + omemoManager.getOwnJid().toString() + "/"));
     }
 
@@ -749,8 +748,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      *
      * @return path
      */
-    private File getDevicePath() {
-        return create(new File(getUserPath() + "/" + omemoManager.getDeviceId()));
+    private File getDevicePath(OmemoManager omemoManager) {
+        return create(new File(getUserPath(omemoManager) + "/" + omemoManager.getDeviceId()));
     }
 
     /**
@@ -758,8 +757,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      *
      * @return path
      */
-    private File getContactsPath() {
-        File f = getDevicePath();
+    private File getContactsPath(OmemoManager omemoManager) {
+        File f = getDevicePath(omemoManager);
         if (f != null) {
             return create(new File(f.getAbsolutePath() + "/contacts"));
         }
@@ -772,8 +771,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      * @param device device in question
      * @return path
      */
-    private File getContactDevicePath(OmemoDevice device) {
-        File dir = getContactsPath();
+    private File getContactDevicePath(OmemoManager omemoManager, OmemoDevice device) {
+        File dir = getContactsPath(omemoManager);
         if (dir != null) {
             return create(new File(dir.getAbsolutePath() + "/" + device.getJid().toString() + "/" + device.getDeviceId()));
         }
@@ -785,8 +784,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      *
      * @return path
      */
-    private File getSignedPreKeysPath() {
-        File f = getDevicePath();
+    private File getSignedPreKeysPath(OmemoManager omemoManager) {
+        File f = getDevicePath(omemoManager);
         if (f != null) {
             return create(new File(f.getAbsolutePath() + "/signedPreKeys"));
         }
@@ -798,8 +797,8 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
      *
      * @return path
      */
-    private File getPreKeysPath() {
-        File f = getDevicePath();
+    private File getPreKeysPath(OmemoManager omemoManager) {
+        File f = getDevicePath(omemoManager);
         if (f != null) {
             return create(new File(f.getAbsolutePath() + "/preKeys"));
         }

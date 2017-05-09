@@ -20,25 +20,17 @@
  */
 package org.jivesoftware.smackx.omemo.signal;
 
-import org.jivesoftware.smackx.omemo.OmemoManager;
 import org.jivesoftware.smackx.omemo.OmemoStore;
 import org.jivesoftware.smackx.omemo.util.KeyUtil;
 import org.whispersystems.libsignal.IdentityKey;
 import org.whispersystems.libsignal.IdentityKeyPair;
-import org.whispersystems.libsignal.InvalidKeyIdException;
 import org.whispersystems.libsignal.SessionCipher;
 import org.whispersystems.libsignal.SignalProtocolAddress;
 import org.whispersystems.libsignal.ecc.ECPublicKey;
-import org.whispersystems.libsignal.state.IdentityKeyStore;
 import org.whispersystems.libsignal.state.PreKeyBundle;
 import org.whispersystems.libsignal.state.PreKeyRecord;
-import org.whispersystems.libsignal.state.PreKeyStore;
 import org.whispersystems.libsignal.state.SessionRecord;
-import org.whispersystems.libsignal.state.SessionStore;
 import org.whispersystems.libsignal.state.SignedPreKeyRecord;
-import org.whispersystems.libsignal.state.SignedPreKeyStore;
-
-import java.util.List;
 
 /**
  * Implementation of the OmemoStore using the Signal library.
@@ -46,113 +38,12 @@ import java.util.List;
  * @author Paul Schaub
  */
 public abstract class SignalOmemoStore
-        extends OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
-        implements IdentityKeyStore, SessionStore, PreKeyStore, SignedPreKeyStore {
+        extends OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
 
     private final SignalOmemoKeyUtil signalKeyUtil = new SignalOmemoKeyUtil();
-    private final SignalStoreAdapter signalStoreAdapter = new SignalStoreAdapter(this);
-
-    public SignalOmemoStore(OmemoManager manager) {
-        super(manager);
-    }
 
     @Override
     public KeyUtil<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> keyUtil() {
         return signalKeyUtil;
-    }
-
-    @Override
-    public List<SignedPreKeyRecord> loadSignedPreKeys() {
-        return signalStoreAdapter.loadSignedPreKeys();
-    }
-
-    @Override
-    public boolean isTrustedIdentity(SignalProtocolAddress signalProtocolAddress, IdentityKey identityKey) {
-        return signalStoreAdapter.isTrustedIdentity(signalProtocolAddress, identityKey);
-    }
-
-    @Override
-    public SessionRecord loadSession(SignalProtocolAddress signalProtocolAddress) {
-        return signalStoreAdapter.loadSession(signalProtocolAddress);
-    }
-
-    @Override
-    public List<Integer> getSubDeviceSessions(String s) {
-        return signalStoreAdapter.getSubDeviceSessions(s);
-    }
-
-    @Override
-    public void deleteSession(SignalProtocolAddress signalProtocolAddress) {
-        signalStoreAdapter.deleteSession(signalProtocolAddress);
-    }
-
-    @Override
-    public boolean containsSession(SignalProtocolAddress signalProtocolAddress) {
-        return signalStoreAdapter.containsSession(signalProtocolAddress);
-    }
-
-    @Override
-    public void deleteAllSessions(String s) {
-        signalStoreAdapter.deleteAllSessions(s);
-    }
-
-    @Override
-    public void storeSession(SignalProtocolAddress signalProtocolAddress, SessionRecord sessionRecord) {
-        signalStoreAdapter.storeSession(signalProtocolAddress, sessionRecord);
-    }
-
-    @Override
-    public IdentityKeyPair getIdentityKeyPair() {
-        return signalStoreAdapter.getIdentityKeyPair();
-    }
-
-    @Override
-    public int getLocalRegistrationId() {
-        return signalStoreAdapter.getLocalRegistrationId();
-    }
-
-    @Override
-    public void saveIdentity(SignalProtocolAddress signalProtocolAddress, IdentityKey identityKey) {
-        signalStoreAdapter.saveIdentity(signalProtocolAddress, identityKey);
-    }
-
-    @Override
-    public PreKeyRecord loadPreKey(int i) throws InvalidKeyIdException {
-        return signalStoreAdapter.loadPreKey(i);
-    }
-
-    @Override
-    public void storePreKey(int i, PreKeyRecord preKeyRecord) {
-        signalStoreAdapter.storePreKey(i, preKeyRecord);
-    }
-
-    @Override
-    public boolean containsPreKey(int i) {
-        return signalStoreAdapter.containsPreKey(i);
-    }
-
-    @Override
-    public void removePreKey(int i) {
-        signalStoreAdapter.removePreKey(i);
-    }
-
-    @Override
-    public SignedPreKeyRecord loadSignedPreKey(int i) throws InvalidKeyIdException {
-        return signalStoreAdapter.loadSignedPreKey(i);
-    }
-
-    @Override
-    public void storeSignedPreKey(int i, SignedPreKeyRecord signedPreKeyRecord) {
-        signalStoreAdapter.storeSignedPreKey(i, signedPreKeyRecord);
-    }
-
-    @Override
-    public boolean containsSignedPreKey(int i) {
-        return signalStoreAdapter.containsSignedPreKey(i);
-    }
-
-    @Override
-    public void removeSignedPreKey(int i) {
-        signalStoreAdapter.removeSignedPreKey(i);
     }
 }

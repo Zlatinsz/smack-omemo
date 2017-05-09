@@ -20,7 +20,7 @@
  */
 package org.jivesoftware.smackx.omemo.signal;
 
-import org.jivesoftware.smackx.omemo.OmemoStore;
+import org.jivesoftware.smackx.omemo.OmemoStoreConnector;
 import org.jivesoftware.smackx.omemo.elements.OmemoElement;
 import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.internal.CiphertextTuple;
@@ -65,35 +65,34 @@ public class SignalOmemoSession extends OmemoSession<IdentityKeyPair, IdentityKe
     /**
      * Constructor used when the remote user initialized the session using a PreKeyOmemoMessage.
      *
-     * @param omemoStore    omemoStore that can be used to get information from
+     * @param omemoStoreConnector    omemoStoreConnector that can be used to get information from
      * @param remoteContact omemoDevice of the remote contact
      * @param identityKey   identityKey of the remote contact
      */
-    public SignalOmemoSession(OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStore,
+    SignalOmemoSession(OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStoreConnector,
                               OmemoDevice remoteContact, IdentityKey identityKey) {
-        super(omemoStore, remoteContact, identityKey);
+        super(omemoStoreConnector, remoteContact, identityKey);
     }
 
     /**
      * Constructor used when we initiate a new Session with the remote user.
      *
-     * @param omemoStore    omemoStore used to get information from
+     * @param omemoStoreConnector    omemoStore used to get information from
      * @param remoteContact omemoDevice of the remote contact
      */
-    public SignalOmemoSession(OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStore,
+    SignalOmemoSession(OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStoreConnector,
                               OmemoDevice remoteContact) {
-        super(omemoStore, remoteContact);
+        super(omemoStoreConnector, remoteContact);
     }
 
     @Override
-    public SessionCipher createCipher(OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
-                                              omemoStore, OmemoDevice contact) {
+    public SessionCipher createCipher(OmemoDevice contact) {
         return new SessionCipher(
-                (SessionStore) omemoStore,
-                (PreKeyStore) omemoStore,
-                (SignedPreKeyStore) omemoStore,
-                (IdentityKeyStore) omemoStore,
-                omemoStore.keyUtil().omemoContactAsAddress(contact));
+                (SessionStore) omemoStoreConnector,
+                (PreKeyStore) omemoStoreConnector,
+                (SignedPreKeyStore) omemoStoreConnector,
+                (IdentityKeyStore) omemoStoreConnector,
+                omemoStoreConnector.keyUtil().omemoContactAsAddress(contact));
     }
 
     @Override

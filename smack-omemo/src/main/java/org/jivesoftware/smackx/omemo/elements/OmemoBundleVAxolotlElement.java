@@ -33,17 +33,58 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.OMEMO_NAMESPACE_
 public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
 
     private final int signedPreKeyId;
-    private final byte[] signedPreKey;
-    private final byte[] signedPreKeySignature;
-    private final byte[] identityKey;
-    private final HashMap<Integer, byte[]> preKeys;
+    private final String signedPreKeyB64;
+    private byte[] signedPreKey;
+    private final String signedPreKeySignatureB64;
+    private byte[] signedPreKeySignature;
+    private final String identityKeyB64;
+    private byte[] identityKey;
+    private final HashMap<Integer, String> preKeysB64;
+    private HashMap<Integer, byte[]> preKeys;
 
+    /**
+     * Constructor to create a Bundle Element from base64 Strings.
+     *
+     * @param signedPreKeyId id
+     * @param signedPreKeyB64 base64 encoded signedPreKey
+     * @param signedPreKeySigB64 base64 encoded signedPreKeySignature
+     * @param identityKeyB64 base64 encoded identityKey
+     * @param preKeysB64 HashMap of base64 encoded preKeys
+     */
+    public OmemoBundleVAxolotlElement(int signedPreKeyId, String signedPreKeyB64, String signedPreKeySigB64, String identityKeyB64, HashMap<Integer, String> preKeysB64) {
+        this.signedPreKeyId = signedPreKeyId;
+        this.signedPreKeyB64 = signedPreKeyB64;
+        this.signedPreKeySignatureB64 = signedPreKeySigB64;
+        this.identityKeyB64 = identityKeyB64;
+        this.preKeysB64 = preKeysB64;
+    }
+
+    /**
+     * Constructor to create a Bundle Element from decoded byte arrays.
+     *
+     * @param signedPreKeyId id
+     * @param signedPreKey signedPreKey
+     * @param signedPreKeySig signedPreKeySignature
+     * @param identityKey identityKey
+     * @param preKeys HashMap of preKeys
+     */
     public OmemoBundleVAxolotlElement(int signedPreKeyId, byte[] signedPreKey, byte[] signedPreKeySig, byte[] identityKey, HashMap<Integer, byte[]> preKeys) {
         this.signedPreKeyId = signedPreKeyId;
+
         this.signedPreKey = signedPreKey;
+        this.signedPreKeyB64 = Base64.encodeToString(signedPreKey);
+
         this.signedPreKeySignature = signedPreKeySig;
+        this.signedPreKeySignatureB64 = Base64.encodeToString(signedPreKeySignature);
+
         this.identityKey = identityKey;
+        this.identityKeyB64 = Base64.encodeToString(identityKey);
+
         this.preKeys = preKeys;
+        this.preKeysB64 = new HashMap<>();
+        for(int id : preKeys.keySet()) {
+            preKeysB64.put(id, Base64.encodeToString(preKeys.get(id)));
+        }
     }
 
     /**
@@ -52,6 +93,9 @@ public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
      * @return signedPreKey as byte array
      */
     public byte[] getSignedPreKey() {
+        if(signedPreKey == null) {
+            signedPreKey = Base64.decode(signedPreKeyB64);
+        }
         return this.signedPreKey.clone();
     }
 
@@ -70,6 +114,9 @@ public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
      * @return signature as byte array
      */
     public byte[] getSignedPreKeySignature() {
+        if(signedPreKeySignature == null) {
+            signedPreKeySignature = Base64.decode(signedPreKeySignatureB64);
+        }
         return signedPreKeySignature.clone();
     }
 
@@ -81,6 +128,9 @@ public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
      * @return public identityKey as byte array
      */
     public byte[] getIdentityKey() {
+        if(identityKey == null) {
+            identityKey = Base64.decode(identityKeyB64);
+        }
         return this.identityKey.clone();
     }
 
@@ -91,6 +141,12 @@ public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
      * @return preKeys
      */
     public HashMap<Integer, byte[]> getPreKeys() {
+        if(preKeys == null) {
+            preKeys = new HashMap<>();
+            for(int id : preKeysB64.keySet()) {
+                preKeys.put(id, Base64.decode(preKeysB64.get(id)));
+            }
+        }
         return this.preKeys;
     }
 
@@ -101,7 +157,7 @@ public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
      * @return the preKey
      */
     public byte[] getPreKey(int id) {
-        return preKeys.get(id);
+        return getPreKeys().get(id);
     }
 
     @Override
@@ -114,16 +170,16 @@ public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
         XmlStringBuilder sb = new XmlStringBuilder(this).rightAngleBracket();
 
         sb.halfOpenElement(SIGNED_PRE_KEY_PUB).attribute(SIGNED_PRE_KEY_ID, signedPreKeyId).rightAngleBracket()
-                .append(Base64.encodeToString(signedPreKey)).closeElement(SIGNED_PRE_KEY_PUB);
+                .append(signedPreKeyB64).closeElement(SIGNED_PRE_KEY_PUB);
 
-        sb.openElement(SIGNED_PRE_KEY_SIG).append(Base64.encodeToString(signedPreKeySignature)).closeElement(SIGNED_PRE_KEY_SIG);
+        sb.openElement(SIGNED_PRE_KEY_SIG).append(signedPreKeySignatureB64).closeElement(SIGNED_PRE_KEY_SIG);
 
-        sb.openElement(IDENTITY_KEY).append(Base64.encodeToString(identityKey)).closeElement(IDENTITY_KEY);
+        sb.openElement(IDENTITY_KEY).append(identityKeyB64).closeElement(IDENTITY_KEY);
 
         sb.openElement(PRE_KEYS);
-        for (Map.Entry<Integer, byte[]> p : this.preKeys.entrySet()) {
+        for (Map.Entry<Integer, String> p : this.preKeysB64.entrySet()) {
             sb.halfOpenElement(PRE_KEY_PUB).attribute(PRE_KEY_ID, p.getKey()).rightAngleBracket()
-                    .append(Base64.encodeToString(p.getValue())).closeElement(PRE_KEY_PUB);
+                    .append(p.getValue()).closeElement(PRE_KEY_PUB);
         }
         sb.closeElement(PRE_KEYS);
 
@@ -139,12 +195,12 @@ public class OmemoBundleVAxolotlElement extends OmemoBundleElement {
     @Override
     public String toString() {
         String out = "OmemoBundleElement[\n";
-        out += SIGNED_PRE_KEY_PUB + " " + SIGNED_PRE_KEY_ID + "=" + signedPreKeyId + ": " + Base64.encodeToString(signedPreKey) + "\n";
-        out += SIGNED_PRE_KEY_SIG + ": " + Base64.encodeToString(signedPreKeySignature) + "\n";
-        out += IDENTITY_KEY + ": " + Base64.encodeToString(identityKey) + "\n";
-        out += PRE_KEYS + " (" + preKeys.size() + ")\n";
-        for (Map.Entry<Integer, byte[]> e : preKeys.entrySet()) {
-            out += PRE_KEY_PUB + " " + PRE_KEY_ID + "=" + e.getKey() + ": " + Base64.encodeToString(e.getValue()) + "\n";
+        out += SIGNED_PRE_KEY_PUB + " " + SIGNED_PRE_KEY_ID + "=" + signedPreKeyId + ": " + signedPreKeyB64 + "\n";
+        out += SIGNED_PRE_KEY_SIG + ": " + signedPreKeySignatureB64 + "\n";
+        out += IDENTITY_KEY + ": " + identityKeyB64 + "\n";
+        out += PRE_KEYS + " (" + preKeysB64.size() + ")\n";
+        for (Map.Entry<Integer, String> e : preKeysB64.entrySet()) {
+            out += PRE_KEY_PUB + " " + PRE_KEY_ID + "=" + e.getKey() + ": " + e.getValue() + "\n";
         }
         return out;
     }

@@ -20,7 +20,9 @@
  */
 package org.jivesoftware.smackx.omemo.signal;
 
+import org.jivesoftware.smackx.omemo.OmemoManager;
 import org.jivesoftware.smackx.omemo.OmemoStore;
+import org.jivesoftware.smackx.omemo.OmemoStoreConnector;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.stringprep.XmppStringprepException;
@@ -50,25 +52,29 @@ import java.util.logging.Logger;
  *
  * @author Paul Schaub
  */
-public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKeyStore, SignedPreKeyStore {
+public class SignalOmemoStoreConnector extends OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
+        implements IdentityKeyStore, SessionStore, PreKeyStore, SignedPreKeyStore {
 
-    private final OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStore;
-    private static final Logger LOGGER = Logger.getLogger(SignalStoreAdapter.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(SignalOmemoStoreConnector.class.getName());
 
-    public SignalStoreAdapter(OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> store) {
-        this.omemoStore = store;
+    SignalOmemoStoreConnector(OmemoManager omemoManager, OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> store) {
+        super(omemoManager, store);
     }
 
     @Override
     public IdentityKeyPair getIdentityKeyPair() {
         try {
-            return omemoStore.loadOmemoIdentityKeyPair();
+            return omemoStore.loadOmemoIdentityKeyPair(omemoManager);
         } catch (CorruptedOmemoKeyException e) {
             LOGGER.log(Level.SEVERE, "getIdentityKeyPair has failed: "+ e.getMessage());
             return null;
         }
     }
 
+    /**
+     * We don't use this
+     * @return dummy
+     */
     @Override
     public int getLocalRegistrationId() {
         return 0;
@@ -77,7 +83,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
     @Override
     public void saveIdentity(SignalProtocolAddress signalProtocolAddress, IdentityKey identityKey) {
         try {
-            omemoStore.storeOmemoIdentityKey(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress), identityKey);
+            omemoStore.storeOmemoIdentityKey(omemoManager, omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress), identityKey);
         } catch (XmppStringprepException e) {
             LOGGER.log(Level.SEVERE, "saveIdentity has failed:" +e.getMessage());
         }
@@ -92,7 +98,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
 
     @Override
     public PreKeyRecord loadPreKey(int i) throws InvalidKeyIdException {
-        PreKeyRecord pr = omemoStore.loadOmemoPreKey(i);
+        PreKeyRecord pr = omemoStore.loadOmemoPreKey(omemoManager, i);
         if (pr == null) {
             throw new InvalidKeyIdException("No PreKey with Id " + i + " found!");
         }
@@ -101,7 +107,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
 
     @Override
     public void storePreKey(int i, PreKeyRecord preKeyRecord) {
-        omemoStore.storeOmemoPreKey(i, preKeyRecord);
+        omemoStore.storeOmemoPreKey(omemoManager, i, preKeyRecord);
     }
 
     @Override
@@ -116,13 +122,13 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
 
     @Override
     public void removePreKey(int i) {
-        omemoStore.removeOmemoPreKey(i);
+        omemoStore.removeOmemoPreKey(omemoManager, i);
     }
 
     @Override
     public SessionRecord loadSession(SignalProtocolAddress signalProtocolAddress) {
         try {
-            SessionRecord s = omemoStore.loadRawSession(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress));
+            SessionRecord s = omemoStore.loadRawSession(omemoManager, omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress));
             return (s != null ? s : new SessionRecord());
         } catch (XmppStringprepException e) {
             LOGGER.log(Level.SEVERE, "loadSession has failed: "+e.getMessage());
@@ -134,7 +140,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
     public List<Integer> getSubDeviceSessions(String s) {
         HashMap<Integer, SessionRecord> contactsSessions = null;
         try {
-            contactsSessions = omemoStore.loadAllRawSessionsOf(JidCreate.bareFrom(s));
+            contactsSessions = omemoStore.loadAllRawSessionsOf(omemoManager, JidCreate.bareFrom(s));
         } catch (XmppStringprepException e) {
             LOGGER.log(Level.WARNING, "getSubDeviceSessions has failed:"+e.getMessage());
         }
@@ -147,7 +153,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
     @Override
     public void storeSession(SignalProtocolAddress signalProtocolAddress, SessionRecord sessionRecord) {
         try {
-            omemoStore.storeRawSession(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress), sessionRecord);
+            omemoStore.storeRawSession(omemoManager, omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress), sessionRecord);
         } catch (XmppStringprepException e) {
             LOGGER.log(Level.SEVERE, "storeSession has failed:"+e.getMessage());
         }
@@ -156,7 +162,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
     @Override
     public boolean containsSession(SignalProtocolAddress signalProtocolAddress) {
         try {
-            return omemoStore.containsRawSession(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress));
+            return omemoStore.containsRawSession(omemoManager, omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress));
         } catch (XmppStringprepException e) {
             LOGGER.log(Level.WARNING, "containsSession has failed: "+e.getMessage());
             return false;
@@ -166,7 +172,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
     @Override
     public void deleteSession(SignalProtocolAddress signalProtocolAddress) {
         try {
-            omemoStore.removeRawSession(omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress));
+            omemoStore.removeRawSession(omemoManager, omemoStore.keyUtil().addressAsOmemoContact(signalProtocolAddress));
         } catch (XmppStringprepException e) {
             LOGGER.log(Level.WARNING, "deleteSession has failed: "+e.getMessage());
         }
@@ -175,7 +181,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
     @Override
     public void deleteAllSessions(String s) {
         try {
-            omemoStore.removeAllRawSessionsOf(JidCreate.bareFrom(s));
+            omemoStore.removeAllRawSessionsOf(omemoManager, JidCreate.bareFrom(s));
         } catch (XmppStringprepException e) {
             LOGGER.log(Level.WARNING, "deleteAllSession has failed: "+e.getMessage());
         }
@@ -183,7 +189,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
 
     @Override
     public SignedPreKeyRecord loadSignedPreKey(int i) throws InvalidKeyIdException {
-        SignedPreKeyRecord spkr = omemoStore.loadOmemoSignedPreKey(i);
+        SignedPreKeyRecord spkr = omemoStore.loadOmemoSignedPreKey(omemoManager, i);
         if (spkr == null) {
             throw new InvalidKeyIdException("No SignedPreKey with Id " + i + " found!");
         }
@@ -192,7 +198,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
 
     @Override
     public List<SignedPreKeyRecord> loadSignedPreKeys() {
-        HashMap<Integer, SignedPreKeyRecord> signedPreKeyRecordHashMap = omemoStore.loadOmemoSignedPreKeys();
+        HashMap<Integer, SignedPreKeyRecord> signedPreKeyRecordHashMap = omemoStore.loadOmemoSignedPreKeys(omemoManager);
         List<SignedPreKeyRecord> signedPreKeyRecordList = new ArrayList<>();
         signedPreKeyRecordList.addAll(signedPreKeyRecordHashMap.values());
         return signedPreKeyRecordList;
@@ -200,7 +206,7 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
 
     @Override
     public void storeSignedPreKey(int i, SignedPreKeyRecord signedPreKeyRecord) {
-        omemoStore.storeOmemoSignedPreKey(i, signedPreKeyRecord);
+        omemoStore.storeOmemoSignedPreKey(omemoManager, i, signedPreKeyRecord);
     }
 
     @Override
@@ -215,6 +221,6 @@ public class SignalStoreAdapter implements IdentityKeyStore, SessionStore, PreKe
 
     @Override
     public void removeSignedPreKey(int i) {
-        omemoStore.removeOmemoSignedPreKey(i);
+        omemoStore.removeOmemoSignedPreKey(omemoManager, i);
     }
 }
