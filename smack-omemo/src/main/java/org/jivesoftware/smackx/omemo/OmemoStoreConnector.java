@@ -37,7 +37,7 @@ import java.util.logging.Logger;
 import static org.jivesoftware.smackx.omemo.util.OmemoConstants.TARGET_PRE_KEY_COUNT;
 
 /**
- * Adapt a library store to the OmemoStore
+ * Adapt a library store to the OmemoStore.
  */
 public class OmemoStoreConnector<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
 

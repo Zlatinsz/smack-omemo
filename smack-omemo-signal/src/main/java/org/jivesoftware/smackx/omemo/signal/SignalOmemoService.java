@@ -22,6 +22,7 @@ package org.jivesoftware.smackx.omemo.signal;
 
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.XMPPException.XMPPErrorException;
 import org.jivesoftware.smackx.omemo.OmemoManager;
 import org.jivesoftware.smackx.omemo.OmemoService;
 import org.jivesoftware.smackx.omemo.OmemoStore;
@@ -59,17 +60,18 @@ import java.util.logging.Level;
  *
  * @author Paul Schaub
  */
-public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
+public final class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
 
     private static SignalOmemoService INSTANCE;
+
     private static OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
             STORE;
 
-    public static SignalOmemoService getInstance() throws InvalidAlgorithmParameterException, BadPaddingException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException, InterruptedException, XMPPException.XMPPErrorException, NoSuchPaddingException, SmackException, CorruptedOmemoKeyException, NoSuchProviderException, IllegalBlockSizeException {
-        if(INSTANCE == null) {
+    public static void setup() throws InvalidKeyException, XMPPErrorException, NoSuchPaddingException, InvalidAlgorithmParameterException, UnsupportedEncodingException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchProviderException, SmackException, InterruptedException, CorruptedOmemoKeyException {
+        if (INSTANCE == null) {
             INSTANCE = new SignalOmemoService();
         }
-        return INSTANCE;
+        setInstance(INSTANCE);
     }
 
     private SignalOmemoService()

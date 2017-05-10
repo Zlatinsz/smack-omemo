@@ -16,6 +16,7 @@
  */
 package org.jivesoftware.smackx.omemo;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPException;
@@ -70,6 +71,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -103,7 +105,27 @@ import static org.jivesoftware.smackx.omemo.util.OmemoConstants.PEP_NODE_DEVICE_
  */
 public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
 
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
     protected static final Logger LOGGER = Logger.getLogger(OmemoService.class.getName());
+
+    private static OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> INSTANCE;
+
+    static OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> getInstance() {
+        if (INSTANCE == null) {
+            throw new IllegalStateException("No OmemoService registered");
+        }
+        return INSTANCE;
+    }
+
+    protected static void setInstance(OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> omemoService) {
+        if (INSTANCE != null) {
+            throw new IllegalStateException("A OmemoService is already registered");
+        }
+        INSTANCE = omemoService;
+    }
 
     /**
      * Create a new OmemoService object. This should only happen once.
@@ -129,22 +151,6 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     protected HashMap<OmemoManager, OmemoStoreConnector<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
             omemoStoreConnectors = new HashMap<>();
-
-    /**
-     * Register an OmemoManager along with an OmemoStoreConnector.
-     *
-     * @param manager OmemoManager
-     * @param omemoStoreConnector OmemoStoreConnector
-     */
-    public void registerDevice(OmemoManager manager,
-                               OmemoStoreConnector<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStoreConnector) {
-        omemoStoreConnectors.put(manager, omemoStoreConnector);
-        manager.setOmemoService(this);
-    }
-
-    public void registerDevice(OmemoManager manager) {
-        registerDevice(manager, createOmemoStoreConnector(manager));
-    }
 
     public abstract void setOmemoStoreBackend(
             OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> backend);

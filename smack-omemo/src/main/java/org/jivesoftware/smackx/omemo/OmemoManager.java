@@ -76,7 +76,7 @@ public final class OmemoManager extends Manager {
     private static final Logger LOGGER = Logger.getLogger(OmemoManager.class.getName());
 
     private static final WeakHashMap<XMPPConnection, WeakHashMap<Integer,OmemoManager>> INSTANCES = new WeakHashMap<>();
-    private OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> service;
+    private final OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> service;
 
     private final HashSet<OmemoMessageListener> omemoMessageListeners = new HashSet<>();
     private final HashSet<OmemoMucMessageListener> omemoMucMessageListeners = new HashSet<>();
@@ -92,6 +92,7 @@ public final class OmemoManager extends Manager {
         super(connection);
         setConnectionListener();
         this.deviceId = deviceId;
+        service = OmemoService.getInstance();
     }
 
     /**
@@ -138,19 +139,6 @@ public final class OmemoManager extends Manager {
         }
 
         return managers;
-    }
-
-    /**
-     * Set the OmemoService object containing a OmemoStore implementation.
-     *
-     * @param service OmemoService object
-     */
-    public void setOmemoService(OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> service) {
-        if(this.service == null) {
-            this.service = service;
-        } else {
-            LOGGER.log(Level.WARNING, "Setting the OmemoService multiple times is not allowed.");
-        }
     }
 
     public void initialize() throws CorruptedOmemoKeyException, InterruptedException, SmackException.NoResponseException,

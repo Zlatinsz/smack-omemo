@@ -45,12 +45,6 @@ to achieve message synchronization across all (on- and offline) devices.
 Setup
 -----
 
-On first start, you have to set a security provider like bouncycastle.
-
-```
-Security.addProvider(new BouncyCastleProvider());
-```
-
 As a first step you have to prepare the OmemoStore.
 You can either use your own implementation, or use the builtin FileBasedOmemoStore (default).
 If you do not want to use your own store, the implementation uses a file based store, so you HAVE to set the default path.
@@ -73,7 +67,6 @@ message etc.
 
 ```
 OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
-SignalOmemoService.getInstance().registerDevice(omemoManager);
 ```
 
 As soon as the connection is authenticated, the module generates some keys and 

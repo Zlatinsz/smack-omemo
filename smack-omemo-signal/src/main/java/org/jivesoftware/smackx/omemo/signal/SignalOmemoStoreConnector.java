@@ -72,7 +72,7 @@ public class SignalOmemoStoreConnector extends OmemoStoreConnector<IdentityKeyPa
     }
 
     /**
-     * We don't use this
+     * We don't use this.
      * @return dummy
      */
     @Override
