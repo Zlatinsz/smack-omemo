@@ -21,7 +21,6 @@
 package org.jivesoftware.smackx.omemo.signal;
 
 import org.jivesoftware.smackx.omemo.FileBasedOmemoStore;
-import org.jivesoftware.smackx.omemo.OmemoManager;
 import org.jivesoftware.smackx.omemo.util.KeyUtil;
 import org.whispersystems.libsignal.IdentityKey;
 import org.whispersystems.libsignal.IdentityKeyPair;
@@ -40,14 +39,15 @@ import java.io.File;
  *
  * @author Paul Schaub
  */
+@SuppressWarnings("unused")
 public class SignalFileBasedOmemoStore
         extends FileBasedOmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
 
-    public SignalFileBasedOmemoStore(OmemoManager manager) {
-        super(manager);
+    public SignalFileBasedOmemoStore() {
+        super();
     }
 
-    public SignalFileBasedOmemoStore(OmemoManager manager, File base) {
+    public SignalFileBasedOmemoStore(File base) {
         super(base);
     }
 

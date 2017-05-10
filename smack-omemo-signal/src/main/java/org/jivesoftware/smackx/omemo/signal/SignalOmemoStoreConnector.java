@@ -22,7 +22,6 @@ package org.jivesoftware.smackx.omemo.signal;
 
 import org.jivesoftware.smackx.omemo.OmemoManager;
 import org.jivesoftware.smackx.omemo.OmemoStore;
-import org.jivesoftware.smackx.omemo.OmemoStoreConnector;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.stringprep.XmppStringprepException;
@@ -52,13 +51,18 @@ import java.util.logging.Logger;
  *
  * @author Paul Schaub
  */
-public class SignalOmemoStoreConnector extends OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
+public class SignalOmemoStoreConnector
         implements IdentityKeyStore, SessionStore, PreKeyStore, SignedPreKeyStore {
 
     private static final Logger LOGGER = Logger.getLogger(SignalOmemoStoreConnector.class.getName());
 
+    private final OmemoManager omemoManager;
+    private final OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
+            omemoStore;
+
     SignalOmemoStoreConnector(OmemoManager omemoManager, OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> store) {
-        super(omemoManager, store);
+        this.omemoManager = omemoManager;
+        this.omemoStore = store;
     }
 
     @Override

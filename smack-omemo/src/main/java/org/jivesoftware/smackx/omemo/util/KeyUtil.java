@@ -16,7 +16,8 @@
  */
 package org.jivesoftware.smackx.omemo.util;
 
-import org.jivesoftware.smackx.omemo.OmemoStoreConnector;
+import org.jivesoftware.smackx.omemo.OmemoManager;
+import org.jivesoftware.smackx.omemo.OmemoStore;
 import org.jivesoftware.smackx.omemo.elements.OmemoBundleVAxolotlElement;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
@@ -354,24 +355,25 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     /**
      * Create a new crypto-specific Session object.
      *
-     * @param omemoStoreConnector    omemoStoreConnector
+     * @param omemoStore    omemoStoreConnector
      * @param from the device we want to create the session with.
      * @return a new session
      */
     public abstract OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
-    createOmemoSession(OmemoStoreConnector<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStoreConnector,
+    createOmemoSession(OmemoManager omemoManager, OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
                        OmemoDevice from);
 
     /**
      * Create a new concrete OmemoSession with a contact.
      *
-     * @param omemoStoreConnector       omemoStoreConnector
+     * @param omemoManager omemomanager
+     * @param omemoStore       omemoStore
      * @param device      device to establish the session with
      * @param identityKey identityKey of the device
      * @return concrete OmemoSession
      */
     public abstract OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
-    createOmemoSession(OmemoStoreConnector<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStoreConnector,
+    createOmemoSession(OmemoManager omemoManager, OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
                        OmemoDevice device, T_IdKey identityKey);
 
     /**

@@ -152,7 +152,7 @@ public final class OmemoManager extends Manager {
      *
      * @return the connection of this manager
      */
-    public XMPPConnection getConnection() {
+    XMPPConnection getConnection() {
         return connection();
     }
 
@@ -169,7 +169,6 @@ public final class OmemoManager extends Manager {
     /**
      * Clear all other devices except this one from our device list and republish the list.
      *
-     * @throws SmackException if something goes wrong TODO: Is this still necessary?
      * @throws InterruptedException
      * @throws XMPPException.XMPPErrorException
      * @throws CorruptedOmemoKeyException
@@ -382,7 +381,7 @@ public final class OmemoManager extends Manager {
      * @return fingerprint
      */
     public String getOurFingerprint() {
-        return getOmemoService().getOmemoStoreConnectorFor(this).getFingerprint();
+        return getOmemoService().getOmemoStoreBackend().getFingerprint(this);
     }
 
     public String getFingerprint(OmemoDevice device) throws CannotEstablishOmemoSessionException {
@@ -390,12 +389,12 @@ public final class OmemoManager extends Manager {
             return getOurFingerprint();
         }
 
-        return getOmemoService().getOmemoStoreConnectorFor(this).getFingerprint(device);
+        return getOmemoService().getOmemoStoreBackend().getFingerprint(this, device);
     }
 
     public HashMap<Integer, String> getActiveFingerprints(BareJid contact) {
         HashMap<Integer, String> fingerprints = new HashMap<>();
-        CachedDeviceList deviceList = getOmemoService().getOmemoStoreConnectorFor(this).loadCachedDeviceList(contact);
+        CachedDeviceList deviceList = getOmemoService().getOmemoStoreBackend().loadCachedDeviceList(this, contact);
         for(int id : deviceList.getActiveDevices()) {
             try {
                 fingerprints.put(id, getFingerprint(new OmemoDevice(contact, id)));
@@ -444,7 +443,7 @@ public final class OmemoManager extends Manager {
      */
     public void rotateSignedPreKey() throws CorruptedOmemoKeyException, InterruptedException, XMPPException.XMPPErrorException, SmackException.NotConnectedException, SmackException.NoResponseException, PubSubException.NotALeafNodeException {
         //generate key
-        getOmemoService().getOmemoStoreConnectorFor(this).changeSignedPreKey();
+        getOmemoService().getOmemoStoreBackend().changeSignedPreKey(this);
         //publish
         getOmemoService().publishDeviceIdIfNeeded(this, false);
         getOmemoService().publishBundle(this);
@@ -525,7 +524,7 @@ public final class OmemoManager extends Manager {
         return Math.abs(i);
     }
 
-    public BareJid getOwnJid() {
+    BareJid getOwnJid() {
         return connection().getUser().asBareJid();
     }
 
@@ -537,7 +536,7 @@ public final class OmemoManager extends Manager {
         return new OmemoDevice(getOwnJid(), getDeviceId());
     }
 
-    public void setDeviceId(int nDeviceId) {
+    void setDeviceId(int nDeviceId) {
         INSTANCES.get(connection()).remove(getDeviceId());
         INSTANCES.get(connection()).put(nDeviceId, this);
         this.deviceId = nDeviceId;
