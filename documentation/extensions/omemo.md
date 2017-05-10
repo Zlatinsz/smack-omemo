@@ -45,6 +45,12 @@ to achieve message synchronization across all (on- and offline) devices.
 Setup
 -----
 
+First you need to setup a OmemoService, for example the libsignal one:
+
+```
+SignalOmemoService.setup();
+```
+
 As a first step you have to prepare the OmemoStore.
 You can either use your own implementation, or use the builtin FileBasedOmemoStore (default).
 If you do not want to use your own store, the implementation uses a file based store, so you HAVE to set the default path.
