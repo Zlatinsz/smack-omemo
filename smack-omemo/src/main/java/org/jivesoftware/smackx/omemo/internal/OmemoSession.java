@@ -126,11 +126,14 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
         byte[] messageKey = new byte[16];
         byte[] authTag = new byte[16];
+
         if (unpackedKey.length == 32) {
             //copy key part into messageKey
             System.arraycopy(unpackedKey, 0, messageKey, 0, 16);
             //copy tag part into authTag
             System.arraycopy(unpackedKey, 16, authTag, 0,16);
+        } else if (element.isKeyTransportElement() && unpackedKey.length == 16) {
+            messageKey = unpackedKey;
         } else {
             throw new CryptoFailedException("MessageKey has wrong length: "+unpackedKey.length+". Probably legacy auth tag format.");
         }
@@ -151,7 +154,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return new CipherAndAuthTag(transportedCipher, authTag);
     }
 
-    public Message decryptMessageElement(OmemoElement element, CipherAndAuthTag cipherAndAuthTag) throws CryptoFailedException {
+    public static Message decryptMessageElement(OmemoElement element, CipherAndAuthTag cipherAndAuthTag) throws CryptoFailedException {
         if(!element.isMessageElement()) {
             throw new IllegalArgumentException("decryptMessageElement cannot decrypt OmemoElement which is no MessageElement!");
         }

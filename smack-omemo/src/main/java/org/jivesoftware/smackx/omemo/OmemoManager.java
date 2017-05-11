@@ -38,6 +38,7 @@ import org.jivesoftware.smackx.omemo.exceptions.CryptoFailedException;
 import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.exceptions.UndecidedOmemoIdentityException;
 import org.jivesoftware.smackx.omemo.internal.CachedDeviceList;
+import org.jivesoftware.smackx.omemo.internal.CipherAndAuthTag;
 import org.jivesoftware.smackx.omemo.internal.ClearTextMessage;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
@@ -556,6 +557,13 @@ public final class OmemoManager extends Manager {
         }
     }
 
+    void notifyOmemoKeyTransportMessageReceived(CipherAndAuthTag cipherAndAuthTag, Message transportingMessage,
+                                                Message wrappingMessage, OmemoMessageInformation information) {
+        for (OmemoMessageListener l : omemoMessageListeners) {
+            l.onOmemoKeyTransportReceived(cipherAndAuthTag, transportingMessage, wrappingMessage, information);
+        }
+    }
+
     /**
      * Notify all registered OmemoMucMessageListeners of an incoming OmemoMessageElement in a MUC.
      *
@@ -571,6 +579,15 @@ public final class OmemoManager extends Manager {
         for (OmemoMucMessageListener l : omemoMucMessageListeners) {
             l.onOmemoMucMessageReceived(muc, from, decryptedBody, message,
                     wrappingMessage, omemoInformation);
+        }
+    }
+
+    void notifyOmemoMucKeyTransportMessageReceived(MultiUserChat muc, BareJid from, CipherAndAuthTag cipherAndAuthTag,
+                                                   Message transportingMessage, Message wrappingMessage,
+                                                   OmemoMessageInformation messageInformation) {
+        for(OmemoMucMessageListener l : omemoMucMessageListeners) {
+            l.onOmemoKeyTransportReceived(muc, from, cipherAndAuthTag,
+                    transportingMessage, wrappingMessage, messageInformation);
         }
     }
 }
