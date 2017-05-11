@@ -20,7 +20,7 @@
  */
 package org.jivesoftware.smackx.omemo.signal;
 
-import org.jivesoftware.smackx.omemo.FileBasedOmemoStore;
+import org.jivesoftware.smackx.omemo.FileBasedOmemoStoreV2;
 import org.jivesoftware.smackx.omemo.util.KeyUtil;
 import org.whispersystems.libsignal.IdentityKey;
 import org.whispersystems.libsignal.IdentityKeyPair;
@@ -41,7 +41,7 @@ import java.io.File;
  */
 @SuppressWarnings("unused")
 public class SignalFileBasedOmemoStore
-        extends FileBasedOmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
+        extends FileBasedOmemoStoreV2<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
 
     public SignalFileBasedOmemoStore() {
         super();

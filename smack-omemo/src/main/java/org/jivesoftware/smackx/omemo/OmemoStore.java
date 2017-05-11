@@ -134,7 +134,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      */
     void changeSignedPreKey(OmemoManager omemoManager) throws CorruptedOmemoKeyException {
         int lastSignedPreKeyId = loadCurrentSignedPreKeyId(omemoManager);
-
+        if (lastSignedPreKeyId == -1) lastSignedPreKeyId = 0;
         try {
             T_SigPreKey newSignedPreKey = generateOmemoSignedPreKey(loadOmemoIdentityKeyPair(omemoManager), lastSignedPreKeyId + 1);
             storeOmemoSignedPreKey(omemoManager, lastSignedPreKeyId + 1, newSignedPreKey);
@@ -157,6 +157,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         }
 
         int currentId = loadCurrentSignedPreKeyId(omemoManager);
+        if(currentId == -1) currentId = 0;
         HashMap<Integer, T_SigPreKey> signedPreKeys = loadOmemoSignedPreKeys(omemoManager);
 
         for (int i : signedPreKeys.keySet()) {
@@ -177,6 +178,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      */
     OmemoBundleVAxolotlElement packOmemoBundle(OmemoManager omemoManager) throws CorruptedOmemoKeyException {
         int currentSignedPreKeyId = loadCurrentSignedPreKeyId(omemoManager);
+        if(currentSignedPreKeyId == -1) currentSignedPreKeyId = 0;
         T_SigPreKey currentSignedPreKey = loadOmemoSignedPreKey(omemoManager, currentSignedPreKeyId);
         T_IdKeyPair identityKeyPair = loadOmemoIdentityKeyPair(omemoManager);
 
@@ -184,10 +186,12 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         int newKeysCount = TARGET_PRE_KEY_COUNT - preKeys.size();
 
         if (newKeysCount > 0) {
-            HashMap<Integer, T_PreKey> newKeys = generateOmemoPreKeys(loadLastPreKeyId(omemoManager) + 1, newKeysCount);
+            int lastPreKeyId = loadLastPreKeyId(omemoManager);
+            if(lastPreKeyId == -1) lastPreKeyId = 0;
+            HashMap<Integer, T_PreKey> newKeys = generateOmemoPreKeys(lastPreKeyId + 1, newKeysCount);
             storeOmemoPreKeys(omemoManager, newKeys);
             preKeys.putAll(newKeys);
-            storeLastPreKeyId(omemoManager, loadLastPreKeyId(omemoManager) + newKeysCount);
+            storeLastPreKeyId(omemoManager, lastPreKeyId + newKeysCount);
         }
 
         return new OmemoBundleVAxolotlElement(
@@ -661,6 +665,24 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             return null;
         }
     }
+
+    /**
+     * Return the default deviceId for a user.
+     * The defaultDeviceId will be used when the OmemoManager gets instantiated without passing a specific deviceId.
+     * If no default id is set, return -1;
+     *
+     * @param user user
+     * @return defaultDeviceId or -1
+     */
+    public abstract int getDefaultDeviceId(BareJid user);
+
+    /**
+     * Set the default deviceId of a user.
+     *
+     * @param user user
+     * @param defaultDeviceId defaultDeviceId
+     */
+    public abstract void setDefaultDeviceId(BareJid user, int defaultDeviceId);
 
     /**
      * Return the fingerprint of the given devices announced identityKey.

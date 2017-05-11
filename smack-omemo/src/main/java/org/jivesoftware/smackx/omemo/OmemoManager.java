@@ -16,6 +16,7 @@
  */
 package org.jivesoftware.smackx.omemo;
 
+import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.Manager;
 import org.jivesoftware.smack.SmackException;
@@ -50,6 +51,8 @@ import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.DomainBareJid;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.FullJid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -112,7 +115,7 @@ public final class OmemoManager extends Manager {
 
         Integer id = deviceId;
 
-        if(id == null) {
+        if(id == null || id < 1) {
             id = randomDeviceId();
         }
 
@@ -122,6 +125,22 @@ public final class OmemoManager extends Manager {
             managersOfConnection.put(id, manager);
         }
         return manager;
+    }
+
+    public synchronized static OmemoManager getInstanceFor(AbstractXMPPConnection connection) {
+        BareJid user = null;
+        try {
+            user = JidCreate.bareFrom(connection.getConfiguration().getUsername());
+        } catch (XmppStringprepException e) {
+            throw new AssertionError("Invalid username");
+        }
+        int defaulDeviceId = OmemoService.getInstance().getOmemoStoreBackend()
+                .getDefaultDeviceId(user);
+        if (defaulDeviceId < 1) {
+            defaulDeviceId = randomDeviceId();
+            OmemoService.getInstance().getOmemoStoreBackend().setDefaultDeviceId(user, defaulDeviceId);
+        }
+        return getInstanceFor(connection, defaulDeviceId);
     }
 
     public synchronized static List<OmemoManager> getExistingManagersFor(XMPPConnection connection, List<Integer> deviceIds) {
