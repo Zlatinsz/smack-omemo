@@ -135,6 +135,10 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         INSTANCE = omemoService;
     }
 
+    public static boolean isServiceRegistered() {
+        return INSTANCE != null;
+    }
+
     /**
      * Return the used omemoStore backend.
      * If there is no store backend set yet, set the default one (typically a file-based one).

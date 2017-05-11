@@ -40,7 +40,11 @@ allprojects {
 		// build, causing unnecessary rebuilds.
 		builtDate = (new java.text.SimpleDateFormat("yyyy-MM-dd")).format(new Date())
 		oneLineDesc = 'An Open Source XMPP (Jabber) client library'
-		javadocAllProjects = subprojects - project(':smack-integration-test')
+		integrationTestProjects = [
+			':smack-integration-test',
+			':smack-omemo-signal-integration-test',
+		].collect{ project(it) }
+		javadocAllProjects = subprojects - integrationTestProjects
 		// A dirty hack used for Gradle's jacoco plugin, since is not
 		// hable to handle the case when a (sub)project has no unit
 		// tests. :-(
@@ -75,6 +79,10 @@ allprojects {
 		androidBootClasspathProjects = [
 			':smack-android',
 			':smack-android-extensions',
+		].collect{ project(it) }
+		gplLicensedProjects = [
+			':smack-omemo-signal',
+			':smack-omemo-signal-integration-test',
 		].collect{ project(it) }
 		androidBootClasspath = getAndroidRuntimeJar()
 		androidJavadocOffline = getAndroidJavadocOffline()
@@ -382,8 +390,13 @@ subprojects {
 	}
 }
 
-// No need to ever clirr smack-integration-test
-project(':smack-integration-test').clirr.enabled = false
+// There is no need to ever clirr integration test projects and the
+// smack-repl project.
+configure(integrationTestProjects + project(':smack-repl')) {
+	clirr {
+		enabled false
+	}
+}
 
 // Disable clirr on omemo modules
 project(':smack-omemo').clirr.enabled = false
@@ -395,7 +408,7 @@ subprojects*.jar {
    }
 }
 
-configure(subprojects - project(':smack-omemo-signal')) {
+configure(subprojects - gplLicensedProjects) {
 	checkstyle {
 		configProperties.checkstyleLicenseHeader = "header"
 	}
@@ -414,6 +427,28 @@ configure(subprojects - project(':smack-omemo-signal')) {
 			}
 		}
 	}
+}
+
+configure(gplLicensedProjects) {
+	checkstyle {
+		configProperties.checkstyleLicenseHeader = "${project.name}-gplv3-license-header"
+	}
+	uploadArchives {
+	repositories {
+		mavenDeployer {
+			pom.project {
+				licenses {
+					license {
+						name 'GNU General Public License, version 3 or any later version'
+						url 'https://www.gnu.org/licenses/gpl.txt'
+						distribution 'repo'
+					}
+				}
+			}
+		}
+	}
+}
+
 }
 
 configure(androidBootClasspathProjects) {
@@ -454,6 +489,10 @@ task clirrRootReport(type: org.kordamp.gradle.clirr.ClirrReportTask) {
 
 task integrationTest {
 	dependsOn project(':smack-integration-test').tasks.run
+}
+
+task omemoSignalIntTest {
+	dependsOn project(':smack-omemo-signal-integration-test').tasks.run
 }
 
 def getGitCommit() {
