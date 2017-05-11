@@ -75,6 +75,15 @@ message etc.
 OmemoManager omemoManager = OmemoManager.getInstanceFor(connection, deviceId);
 ```
 
+You can also get an OmemoManager without passing a deviceId. This will (in case it is not set)
+set the defaultDeviceId in the OmemoStore to a random ID and use that for future method calls without deviceId.
+This is useful, if you use only one device anyways. In that case, you might want to update the defaultDeviceId manually
+eg. when you use the regenerate() method.
+
+```
+OmemoManager omemoManager = OmemoManager.getInstanceFor(connection);
+```
+
 As soon as the connection is authenticated, the module generates some keys and 
 announces OMEMO support.
 To get updated with new OMEMO messages, you should register message listeners.

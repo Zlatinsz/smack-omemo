@@ -113,16 +113,14 @@ public final class OmemoManager extends Manager {
             INSTANCES.put(connection, managersOfConnection);
         }
 
-        Integer id = deviceId;
-
-        if(id == null || id < 1) {
-            id = randomDeviceId();
+        if(deviceId == null || deviceId < 1) {
+            deviceId = randomDeviceId();
         }
 
-        OmemoManager manager = managersOfConnection.get(id);
+        OmemoManager manager = managersOfConnection.get(deviceId);
         if (manager == null) {
-            manager = new OmemoManager(connection, id);
-            managersOfConnection.put(id, manager);
+            manager = new OmemoManager(connection, deviceId);
+            managersOfConnection.put(deviceId, manager);
         }
         return manager;
     }
