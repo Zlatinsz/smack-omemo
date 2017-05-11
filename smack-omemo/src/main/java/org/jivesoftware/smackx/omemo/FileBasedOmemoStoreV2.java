@@ -645,6 +645,40 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         }
     }
 
+    /**
+     * This class represents the directory structure of the FileBasedOmemoStoreV2.
+     * The directory looks as follows:
+     *
+     *  OMEMO_Store/
+     *      'romeo@montague.lit'/                           //Our bareJid
+     *          ...
+     *      'juliet@capulet.lit'/                           //Our other bareJid
+     *          defaultDeviceId
+     *          '13371234'/                                 //deviceId
+     *              identityKeyPair                         //Our identityKeyPair
+     *              lastPreKeyId                            //Id of the last preKey we generated
+     *              currentSignedPreKeyId                   //Id of the currently used signedPreKey
+     *              lastSignedPreKeyRenewal                 //Date of when the signedPreKey was last renewed.
+     *              preKeys/                                //Our preKeys
+     *                  '1'
+     *                  '2'
+     *                  ...
+     *              signedPreKeys/                          //Our signedPreKeys
+     *                  '1'
+     *                  '2'
+     *                  ...
+     *              contacts/
+     *                  'romeo@capulet.lit'/                //Juliets contact Romeo
+     *                      activeDevice                    //List of Romeos active devices
+     *                      inactiveDevices                 //List of his inactive devices
+     *                      'deviceId'/                     //Romeos deviceId
+     *                          identityKey                 //Romeos identityKey
+     *                          session                     //Our session with romeo
+     *                          trust                       //Records about the trust in romeos device
+     *                          (lastReceivedMessageDate)   //Only, for our own other devices:
+     *                                                          //date of the last received message
+     *
+     */
     public static class FileHierarchy {
 
         public static final String STORE = "OMEMO_Store";
