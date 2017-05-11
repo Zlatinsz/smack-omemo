@@ -127,19 +127,26 @@ public final class OmemoManager extends Manager {
         return manager;
     }
 
-    public synchronized static OmemoManager getInstanceFor(AbstractXMPPConnection connection) {
-        BareJid user = null;
-        try {
-            user = JidCreate.bareFrom(connection.getConfiguration().getUsername());
-        } catch (XmppStringprepException e) {
-            throw new AssertionError("Invalid username");
+    public synchronized static OmemoManager getInstanceFor(XMPPConnection connection) {
+        BareJid user;
+        if(connection.getUser() != null) {
+            user = connection.getUser().asBareJid();
+        } else {
+            //This might be dangerous
+            try {
+                user = JidCreate.bareFrom(((AbstractXMPPConnection) connection).getConfiguration().getUsername());
+            } catch (XmppStringprepException e) {
+                throw new AssertionError("Username is not a valid Jid. " +
+                        "Use OmemoManager.gerInstanceFor(Connection, deviceId) instead.");
+            }
         }
-        int defaulDeviceId = OmemoService.getInstance().getOmemoStoreBackend()
-                .getDefaultDeviceId(user);
+
+        int defaulDeviceId = OmemoService.getInstance().getOmemoStoreBackend().getDefaultDeviceId(user);
         if (defaulDeviceId < 1) {
             defaulDeviceId = randomDeviceId();
             OmemoService.getInstance().getOmemoStoreBackend().setDefaultDeviceId(user, defaulDeviceId);
         }
+
         return getInstanceFor(connection, defaulDeviceId);
     }
 
