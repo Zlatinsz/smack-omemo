@@ -20,7 +20,8 @@
  */
 package org.jivesoftware.smackx.omemo.signal;
 
-import org.jivesoftware.smackx.omemo.OmemoStoreConnector;
+import org.jivesoftware.smackx.omemo.OmemoManager;
+import org.jivesoftware.smackx.omemo.OmemoStore;
 import org.jivesoftware.smackx.omemo.elements.OmemoElement;
 import org.jivesoftware.smackx.omemo.exceptions.NoRawSessionException;
 import org.jivesoftware.smackx.omemo.internal.CiphertextTuple;
@@ -42,14 +43,10 @@ import org.whispersystems.libsignal.ecc.ECPublicKey;
 import org.whispersystems.libsignal.protocol.CiphertextMessage;
 import org.whispersystems.libsignal.protocol.PreKeySignalMessage;
 import org.whispersystems.libsignal.protocol.SignalMessage;
-import org.whispersystems.libsignal.state.IdentityKeyStore;
 import org.whispersystems.libsignal.state.PreKeyBundle;
 import org.whispersystems.libsignal.state.PreKeyRecord;
-import org.whispersystems.libsignal.state.PreKeyStore;
 import org.whispersystems.libsignal.state.SessionRecord;
-import org.whispersystems.libsignal.state.SessionStore;
 import org.whispersystems.libsignal.state.SignedPreKeyRecord;
-import org.whispersystems.libsignal.state.SignedPreKeyStore;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -65,34 +62,34 @@ public class SignalOmemoSession extends OmemoSession<IdentityKeyPair, IdentityKe
     /**
      * Constructor used when the remote user initialized the session using a PreKeyOmemoMessage.
      *
-     * @param omemoStoreConnector    omemoStoreConnector that can be used to get information from
+     * @param omemoManager  omemoManager
+     * @param omemoStore    omemoStoreConnector that can be used to get information from
      * @param remoteContact omemoDevice of the remote contact
      * @param identityKey   identityKey of the remote contact
      */
-    SignalOmemoSession(OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStoreConnector,
-                              OmemoDevice remoteContact, IdentityKey identityKey) {
-        super(omemoStoreConnector, remoteContact, identityKey);
+    SignalOmemoSession(OmemoManager omemoManager, OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStore,
+                       OmemoDevice remoteContact, IdentityKey identityKey) {
+        super(omemoManager, omemoStore, remoteContact, identityKey);
     }
 
     /**
      * Constructor used when we initiate a new Session with the remote user.
      *
-     * @param omemoStoreConnector    omemoStore used to get information from
+     * @param omemoManager  omemoManager
+     * @param omemoStore    omemoStore used to get information from
      * @param remoteContact omemoDevice of the remote contact
      */
-    SignalOmemoSession(OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStoreConnector,
-                              OmemoDevice remoteContact) {
-        super(omemoStoreConnector, remoteContact);
+    SignalOmemoSession(OmemoManager omemoManager,
+                       OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> omemoStore,
+                       OmemoDevice remoteContact) {
+        super(omemoManager, omemoStore, remoteContact);
     }
 
     @Override
     public SessionCipher createCipher(OmemoDevice contact) {
-        return new SessionCipher(
-                (SessionStore) omemoStoreConnector,
-                (PreKeyStore) omemoStoreConnector,
-                (SignedPreKeyStore) omemoStoreConnector,
-                (IdentityKeyStore) omemoStoreConnector,
-                omemoStoreConnector.keyUtil().omemoContactAsAddress(contact));
+        SignalOmemoStoreConnector connector = new SignalOmemoStoreConnector(omemoManager, omemoStore);
+        return new SessionCipher(connector, connector, connector, connector,
+                omemoStore.keyUtil().omemoContactAsAddress(contact));
     }
 
     @Override
@@ -114,11 +111,11 @@ public class SignalOmemoSession extends OmemoSession<IdentityKeyPair, IdentityKe
                     LOGGER.log(Level.WARNING, "PreKeySignalMessage did not contain a PreKeyId");
                     return null;
                 }
-                LOGGER.log(Level.INFO, "PreKeySignalMessageReceived, new session ID: " + message.getSignedPreKeyId() + "/" + message.getPreKeyId().get());
+                LOGGER.log(Level.INFO, "PreKeySignalMessage received, new session ID: " + message.getSignedPreKeyId() + "/" + message.getPreKeyId().get());
                 IdentityKey messageIdentityKey = message.getIdentityKey();
                 if (this.identityKey != null && !this.identityKey.equals(messageIdentityKey)) {
                     LOGGER.log(Level.INFO, "Had session with fingerprint " + getFingerprint() +
-                            ", received message with different fingerprint " + messageIdentityKey.getFingerprint() +
+                            ", received message with different fingerprint " + omemoStore.keyUtil().getFingerprint(messageIdentityKey) +
                             ". Silently drop the message.");
                 } else {
                     this.identityKey = messageIdentityKey;

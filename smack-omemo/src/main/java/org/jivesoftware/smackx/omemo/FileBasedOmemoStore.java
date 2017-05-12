@@ -63,7 +63,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
 
     private final File base;
 
-    public FileBasedOmemoStore(OmemoManager manager) {
+    public FileBasedOmemoStore() {
         this(OmemoConfiguration.getInstance().getFileBasedOmemoStoreDefaultPath());
     }
 

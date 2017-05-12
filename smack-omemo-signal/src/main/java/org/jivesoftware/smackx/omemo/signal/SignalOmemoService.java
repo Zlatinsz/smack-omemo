@@ -22,10 +22,10 @@ package org.jivesoftware.smackx.omemo.signal;
 
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.XMPPException.XMPPErrorException;
 import org.jivesoftware.smackx.omemo.OmemoManager;
 import org.jivesoftware.smackx.omemo.OmemoService;
 import org.jivesoftware.smackx.omemo.OmemoStore;
-import org.jivesoftware.smackx.omemo.OmemoStoreConnector;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
 import org.jivesoftware.smackx.omemo.internal.OmemoDevice;
 import org.whispersystems.libsignal.IdentityKey;
@@ -35,14 +35,10 @@ import org.whispersystems.libsignal.SessionCipher;
 import org.whispersystems.libsignal.SignalProtocolAddress;
 import org.whispersystems.libsignal.UntrustedIdentityException;
 import org.whispersystems.libsignal.ecc.ECPublicKey;
-import org.whispersystems.libsignal.state.IdentityKeyStore;
 import org.whispersystems.libsignal.state.PreKeyBundle;
 import org.whispersystems.libsignal.state.PreKeyRecord;
-import org.whispersystems.libsignal.state.PreKeyStore;
 import org.whispersystems.libsignal.state.SessionRecord;
-import org.whispersystems.libsignal.state.SessionStore;
 import org.whispersystems.libsignal.state.SignedPreKeyRecord;
-import org.whispersystems.libsignal.state.SignedPreKeyStore;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -59,17 +55,21 @@ import java.util.logging.Level;
  *
  * @author Paul Schaub
  */
-public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
+@SuppressWarnings("unused")
+public final class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
 
     private static SignalOmemoService INSTANCE;
-    private static OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
-            STORE;
 
-    public static SignalOmemoService getInstance() throws InvalidAlgorithmParameterException, BadPaddingException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException, InterruptedException, XMPPException.XMPPErrorException, NoSuchPaddingException, SmackException, CorruptedOmemoKeyException, NoSuchProviderException, IllegalBlockSizeException {
-        if(INSTANCE == null) {
+    public static void setup() throws InvalidKeyException, XMPPErrorException, NoSuchPaddingException, InvalidAlgorithmParameterException, UnsupportedEncodingException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchProviderException, SmackException, InterruptedException, CorruptedOmemoKeyException {
+        if (INSTANCE == null) {
             INSTANCE = new SignalOmemoService();
         }
-        return INSTANCE;
+        setInstance(INSTANCE);
+    }
+
+    @Override
+    public OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> createDefaultOmemoStoreBackend() {
+        return new SignalFileBasedOmemoStore();
     }
 
     private SignalOmemoService()
@@ -81,41 +81,19 @@ public class SignalOmemoService extends OmemoService<IdentityKeyPair, IdentityKe
     }
 
     @Override
-    public void setOmemoStoreBackend(OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> backend) {
-        if(STORE != null) {
-            throw new IllegalStateException("The OmemoStore backend has already been set.");
-        }
-        STORE = backend;
-    }
-
-    @Override
-    protected void processBundle(OmemoManager manager, PreKeyBundle preKeyBundle, OmemoDevice contact) throws CorruptedOmemoKeyException {
-        OmemoStoreConnector<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher>
-                omemoStoreConnector = getOmemoStoreConnectorFor(manager);
-        SessionBuilder builder = new SessionBuilder(
-                (SessionStore) omemoStoreConnector,
-                (PreKeyStore) omemoStoreConnector,
-                (SignedPreKeyStore) omemoStoreConnector,
-                (IdentityKeyStore) omemoStoreConnector,
-                omemoStoreConnector.keyUtil().omemoContactAsAddress(contact));
+    protected void processBundle(OmemoManager omemoManager, PreKeyBundle preKeyBundle, OmemoDevice contact) throws CorruptedOmemoKeyException {
+        SignalOmemoStoreConnector connector = new SignalOmemoStoreConnector(omemoManager, getOmemoStoreBackend());
+        SessionBuilder builder = new SessionBuilder(connector, connector, connector, connector,
+                getOmemoStoreBackend().keyUtil().omemoContactAsAddress(contact));
         try {
             builder.process(preKeyBundle);
             LOGGER.log(Level.INFO, "Session built with " + contact);
-            omemoStoreConnector.getOmemoSessionOf(contact); //method puts session in session map.
+            getOmemoStoreBackend().getOmemoSessionOf(omemoManager, contact); //method puts session in session map.
         } catch (org.whispersystems.libsignal.InvalidKeyException e) {
             throw new CorruptedOmemoKeyException(e.getMessage());
         } catch (UntrustedIdentityException e) {
             // This should never happen.
             throw new AssertionError(e);
         }
-    }
-
-    @Override
-    protected SignalOmemoStoreConnector
-    createOmemoStoreConnector(OmemoManager manager) {
-        if(STORE == null) {
-            STORE =  new SignalFileBasedOmemoStore(manager);
-        }
-        return new SignalOmemoStoreConnector(manager, STORE);
     }
 }

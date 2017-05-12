@@ -17,6 +17,7 @@
 package org.jivesoftware.smackx.omemo.listener;
 
 import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smackx.omemo.internal.CipherAndAuthTag;
 import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
 
 /**
@@ -34,4 +35,14 @@ public interface OmemoMessageListener {
      * @param omemoInformation Information about the messages encryption etc.
      */
     void onOmemoMessageReceived(String decryptedBody, Message encryptedMessage, Message wrappingMessage, OmemoMessageInformation omemoInformation);
+
+    /**
+     * Gets called, whenever an OmemoElement without a body (an OmemoKeyTransportElement) is received.
+     *
+     * @param cipherAndAuthTag  transported Cipher along with an optional AuthTag
+     * @param message           Message that contained the KeyTransport
+     * @param wrappingMessage   Wrapping message (eg. carbon), or null
+     * @param omemoInformation  Information about the messages encryption etc.
+     */
+    void onOmemoKeyTransportReceived(CipherAndAuthTag cipherAndAuthTag, Message message, Message wrappingMessage, OmemoMessageInformation omemoInformation);
 }

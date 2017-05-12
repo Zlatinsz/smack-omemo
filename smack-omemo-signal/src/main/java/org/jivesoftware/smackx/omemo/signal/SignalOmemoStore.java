@@ -37,6 +37,7 @@ import org.whispersystems.libsignal.state.SignedPreKeyRecord;
  *
  * @author Paul Schaub
  */
+@SuppressWarnings("unused")
 public abstract class SignalOmemoStore
         extends OmemoStore<IdentityKeyPair, IdentityKey, PreKeyRecord, SignedPreKeyRecord, SessionRecord, SignalProtocolAddress, ECPublicKey, PreKeyBundle, SessionCipher> {
 

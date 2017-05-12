@@ -18,6 +18,7 @@ package org.jivesoftware.smackx.omemo.listener;
 
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.omemo.internal.CipherAndAuthTag;
 import org.jivesoftware.smackx.omemo.internal.OmemoMessageInformation;
 import org.jxmpp.jid.BareJid;
 
@@ -38,4 +39,16 @@ public interface OmemoMucMessageListener {
      */
     void onOmemoMucMessageReceived(MultiUserChat muc, BareJid from, String decryptedBody, Message message,
                                    Message wrappingMessage, OmemoMessageInformation omemoInformation);
+
+    /**
+     * Gets called, whenever an OmemoElement without a body (an OmemoKeyTransportElement) is received.
+     *
+     * @param muc               MultiUserChat the message was sent in
+     * @param from              bareJid of the sender
+     * @param cipherAndAuthTag  transportedKey along with an optional authTag
+     * @param message           Message that contained the KeyTransport
+     * @param wrappingMessage   Wrapping message (eg. carbon), or null
+     * @param omemoInformation  Information about the messages encryption etc.
+     */
+    void onOmemoKeyTransportReceived(MultiUserChat muc, BareJid from, CipherAndAuthTag cipherAndAuthTag, Message message, Message wrappingMessage, OmemoMessageInformation omemoInformation);
 }

@@ -23,7 +23,7 @@ import java.io.File;
  *
  * @author Paul Schaub
  */
-public class OmemoConfiguration {
+public final class OmemoConfiguration {
     private static OmemoConfiguration INSTANCE;
 
     /**
