@@ -128,6 +128,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         byte[] authTag = null;
 
         if (unpackedKey.length == 32) {
+            authTag = new byte[16];
             //copy key part into messageKey
             System.arraycopy(unpackedKey, 0, messageKey, 0, 16);
             //copy tag part into authTag
