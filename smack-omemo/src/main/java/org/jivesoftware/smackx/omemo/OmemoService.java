@@ -561,7 +561,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CorruptedOmemoKeyException when the bundle contained an invalid OMEMO identityKey
      */
     public void buildSessionFromOmemoBundle(OmemoManager ommemoManager, OmemoDevice device) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
-        if (device.equals(new OmemoDevice(ommemoManager.getOwnJid(), ommemoManager.getDeviceId()))) {
+
+        if (device.equals(ommemoManager.getOwnDevice())) {
             LOGGER.log(Level.WARNING, "Do not build a session with yourself!");
             return;
         }
@@ -766,7 +767,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             buildSessionsFromOmemoBundles(omemoManager, recipient);
             CachedDeviceList theirDevices = getOmemoStoreBackend().loadCachedDeviceList(omemoManager, recipient);
             for (int id : theirDevices.getActiveDevices()) {
-                receivers.add(new OmemoDevice(recipient, id));
+                OmemoDevice recipientDevice = new OmemoDevice(recipient, id);
+
+                if(getOmemoStoreBackend().containsRawSession(omemoManager, recipientDevice)) {
+                    receivers.add(new OmemoDevice(recipient, id));
+                }
             }
         }
 

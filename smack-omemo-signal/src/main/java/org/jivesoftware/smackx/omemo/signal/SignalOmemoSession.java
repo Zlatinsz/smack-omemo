@@ -111,7 +111,7 @@ public class SignalOmemoSession extends OmemoSession<IdentityKeyPair, IdentityKe
                     LOGGER.log(Level.WARNING, "PreKeySignalMessage did not contain a PreKeyId");
                     return null;
                 }
-                LOGGER.log(Level.INFO, "PreKeySignalMessageReceived, new session ID: " + message.getSignedPreKeyId() + "/" + message.getPreKeyId().get());
+                LOGGER.log(Level.INFO, "PreKeySignalMessage received, new session ID: " + message.getSignedPreKeyId() + "/" + message.getPreKeyId().get());
                 IdentityKey messageIdentityKey = message.getIdentityKey();
                 if (this.identityKey != null && !this.identityKey.equals(messageIdentityKey)) {
                     LOGGER.log(Level.INFO, "Had session with fingerprint " + getFingerprint() +
