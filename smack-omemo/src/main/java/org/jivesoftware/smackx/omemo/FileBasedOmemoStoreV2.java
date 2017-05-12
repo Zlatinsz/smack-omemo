@@ -74,7 +74,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         try {
             return readInt(hierarchy.getDefaultDeviceIdPath(user));
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read defaultDeviceId: "+e.getMessage());
             return -1;
         }
     }
@@ -100,7 +99,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             int l = readInt(hierarchy.getLastPreKeyIdPath(omemoManager));
             return l == -1? 0 : l;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read lastPreKeyId: "+e.getMessage());
             return 0;
         }
     }
@@ -121,7 +119,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             byte[] bytes = readBytes(identityKeyPairPath);
             return bytes != null ? keyUtil().identityKeyPairFromBytes(bytes) : null;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read omemoIdentityKeyPair: "+e.getMessage());
             return null;
         }
     }
@@ -143,7 +140,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             byte[] bytes = readBytes(identityKeyPath);
             return bytes != null ? keyUtil().identityKeyFromBytes(bytes) : null;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read omemoIdentityKey of "+device+": "+e.getMessage());
             return null;
         }
     }
@@ -168,7 +164,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
                     && depositedFingerprint.charAt(0) == '1'
                     && depositedFingerprint.substring(2).equals(keyUtil().getFingerprint(identityKey));
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read trust state of "+device+": "+e.getMessage());
             return false;
         }
     }
@@ -183,7 +178,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
                     && (depositedFingerprint.charAt(0) == '1' || depositedFingerprint.charAt(0) == '2')
                     && depositedFingerprint.substring(2).equals(keyUtil().getFingerprint(identityKey));
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read trust state of "+device+": "+e.getMessage());
             return false;
         }
     }
@@ -225,7 +219,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             long date = readLong(lastMessageReceived);
             return date != -1 ? new Date(date) : null;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read date of last received message from "+from+": "+e.getMessage());
             return null;
         }
     }
@@ -249,8 +242,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             long date = readLong(lastSignedPreKeyRenewal);
             return date != -1 ? new Date(date) : null;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read date of last signedPreKey renewal for "
-                    +omemoManager.getOwnDevice()+": "+e.getMessage());
             return null;
         }
     }
@@ -262,7 +253,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             byte[] bytes = readBytes(preKeyPath);
             return bytes != null ? keyUtil().preKeyFromBytes(bytes) : null;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read preKey with id "+preKeyId+": "+e.getMessage());
             return null;
         }
     }
@@ -290,7 +280,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             int i = readInt(currentSignedPreKeyIdPath);
             return i == -1 ? 0 : i;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read currentSignedPreKeyId for "+omemoManager.getOwnDevice()+": "+e.getMessage());
             return 0;
         }
     }
@@ -328,7 +317,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
                 preKeys.put(Integer.parseInt(f.getName()), p);
 
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Could not read preKey "+f.getAbsolutePath()+": "+e.getMessage());
+                //Do nothing
             }
         }
         return preKeys;
@@ -341,7 +330,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             byte[] bytes = readBytes(signedPreKeyPath);
             return bytes != null ? keyUtil().signedPreKeyFromBytes(bytes) : null;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read signedPreKey from "+signedPreKeyPath.getAbsolutePath()+": "+e.getMessage());
             return null;
         }
     }
@@ -367,7 +355,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
                 signedPreKeys.put(Integer.parseInt(f.getName()), p);
 
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Could not read signedPreKey "+f.getAbsolutePath()+": "+e.getMessage());
+                //Do nothing
             }
         }
         return signedPreKeys;
@@ -397,7 +385,6 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             byte[] bytes = readBytes(sessionPath);
             return bytes != null ? keyUtil().rawSessionFromBytes(bytes) : null;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read session for "+device+": "+e.getMessage());
             return null;
         }
     }
@@ -427,8 +414,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
                 sessions.put(id, s);
 
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Could not read session between our device "+omemoManager.getOwnDevice()+
-                        " and their device "+device+": "+e.getMessage());
+                //Do nothing
             }
         }
         return sessions;
@@ -484,7 +470,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         try {
             cachedDeviceList.getActiveDevices().addAll(readIntegers(activeDevicesPath));
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read active devices from deviceList of "+contact+": "+e.getMessage());
+            // Don't worry...
         }
 
         //inactive
@@ -492,7 +478,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         try {
             cachedDeviceList.getInactiveDevices().addAll(readIntegers(inactiveDevicesPath));
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Could not read inactive devices from deviceList of "+contact+": "+e.getMessage());
+            //It's ok :)
         }
 
         return cachedDeviceList;

@@ -523,7 +523,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     private void buildSessionsFromOmemoBundles(OmemoManager omemoManager, BareJid jid) {
         CachedDeviceList devices = getOmemoStoreBackend().loadCachedDeviceList(omemoManager, jid);
-        if (devices == null) {
+        if (devices == null || devices.getAllDevices().isEmpty()) {
             try {
                 getOmemoStoreBackend().mergeCachedDeviceList(omemoManager, jid, fetchDeviceList(omemoManager, jid));
             } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException | SmackException.NoResponseException | PubSubException.NotALeafNodeException e) {
