@@ -123,6 +123,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return INSTANCE;
     }
 
+    /**
+     * Set singleton instance. Throws an IllegalStateException, if there is already a service set as instance.
+     *
+     * @param omemoService instance
+     */
     protected static void setInstance(OmemoService<?, ?, ?, ?, ?, ?, ?, ?, ?> omemoService) {
         if (INSTANCE != null) {
             throw new IllegalStateException("An OmemoService is already registered");
@@ -130,6 +135,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         INSTANCE = omemoService;
     }
 
+    /**
+     * Return the used omemoStore backend.
+     * If there is no store backend set yet, set the default one (typically a file-based one).
+     *
+     * @return omemoStore backend
+     */
     public OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
     getOmemoStoreBackend() {
         if(omemoStore == null) {
@@ -139,6 +150,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return omemoStore;
     }
 
+    /**
+     * Set an omemoStore as backend. Throws an IllegalStateException, if there is already a backend set.
+     *
+     * @param omemoStore store.
+     */
     public void setOmemoStoreBackend(
             OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore) {
         if(this.omemoStore != null) {
@@ -147,6 +163,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         this.omemoStore = omemoStore;
     }
 
+    /**
+     * Create a default OmemoStore object.
+     *
+     * @return default omemoStore.
+     */
     public abstract OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
     createDefaultOmemoStoreBackend();
 
@@ -175,6 +196,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Initialize OMEMO functionality for OmemoManager omemoManager.
      *
+     * @param omemoManager OmemoManager we'd like to initialize.
      * @throws InterruptedException
      * @throws CorruptedOmemoKeyException
      * @throws XMPPException.XMPPErrorException
@@ -229,6 +251,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Generate a new unique deviceId and regenerate new keys.
      *
+     * @param omemoManager  OmemoManager we want to regenerate.
+     * @param nDeviceId     new DeviceId we want to use with the newly generated keys.
      * @throws CorruptedOmemoKeyException when freshly generated identityKey is invalid
      *                                  (should never ever happen *crosses fingers*)
      */
@@ -246,6 +270,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Publish a fresh bundle to the server.
+     *
+     * @param omemoManager OmemoManager
      * @throws SmackException.NotConnectedException
      * @throws InterruptedException
      * @throws SmackException.NoResponseException
@@ -272,6 +298,17 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                         new PayloadItem<>(getOmemoStoreBackend().packOmemoBundle(omemoManager)));
     }
 
+    /**
+     * Publish our deviceId in case it is not on the list already.
+     * This method calls publishDeviceIdIfNeeded(omemoManager, deleteOtherDevices, false).
+     * @param omemoManager          OmemoManager
+     * @param deleteOtherDevices    Do we want to remove other devices from the list?
+     * @throws InterruptedException
+     * @throws PubSubException.NotALeafNodeException
+     * @throws XMPPException.XMPPErrorException
+     * @throws SmackException.NotConnectedException
+     * @throws SmackException.NoResponseException
+     */
     void publishDeviceIdIfNeeded(OmemoManager omemoManager, boolean deleteOtherDevices) throws InterruptedException,
             PubSubException.NotALeafNodeException, XMPPException.XMPPErrorException,
             SmackException.NotConnectedException, SmackException.NoResponseException {
@@ -281,9 +318,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Publish our deviceId in case it is not on the list already.
      *
+     * @param omemoManager       OmemoManager
      * @param deleteOtherDevices Do we want to remove other devices from the list?
      *                           If we do, publish the list with only our id, regardless if we were on the list
      *                           already.
+     * @param publish            Do we want to force publishing our id?
      * @throws SmackException.NotConnectedException
      * @throws InterruptedException
      * @throws SmackException.NoResponseException
@@ -319,6 +358,14 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
     }
 
+    /**
+     * Remove stale devices from our device list.
+     * This does only delete devices, if that's configured in OmemoConfiguration.
+     *
+     * @param omemoManager  OmemoManager
+     * @param deviceListIds deviceIds we plan to publish. Stale devices are deleted from that list.
+     * @return
+     */
     boolean removeStaleDevicesIfNeeded(OmemoManager omemoManager, Set<Integer> deviceListIds) {
         boolean publish = false;
         int ownDeviceId = omemoManager.getDeviceId();
@@ -351,6 +398,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Publish the given deviceList to the server.
      *
+     * @param omemoManager OmemoManager
      * @param deviceList list of deviceIDs
      * @throws InterruptedException                 Exception
      * @throws XMPPException.XMPPErrorException     Exception
@@ -368,6 +416,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Fetch the deviceList node of a contact.
      *
+     * @param omemoManager omemoManager
      * @param contact contact
      * @return LeafNode
      * @throws InterruptedException
@@ -390,6 +439,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Directly fetch the device list of a contact.
      *
+     * @param omemoManager OmemoManager
      * @param contact BareJid of the contact
      * @return The OmemoDeviceListElement of the contact
      * @throws XMPPException.XMPPErrorException     When
@@ -407,9 +457,20 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
     }
 
+    /**
+     * Refresh our deviceList from the server.
+     *
+     * @param omemoManager omemoManager
+     * @return true, if we should publish our device list again (because its broken or not existent...)
+     *
+     * @throws SmackException.NotConnectedException
+     * @throws InterruptedException
+     * @throws SmackException.NoResponseException
+     */
     private boolean refreshOwnDeviceList(OmemoManager omemoManager) throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         try {
-            getOmemoStoreBackend().mergeCachedDeviceList(omemoManager, omemoManager.getOwnJid(), fetchDeviceList(omemoManager, omemoManager.getOwnJid()));
+            getOmemoStoreBackend().mergeCachedDeviceList(omemoManager, omemoManager.getOwnJid(),
+                    fetchDeviceList(omemoManager, omemoManager.getOwnJid()));
 
         } catch (XMPPException.XMPPErrorException e) {
 
@@ -423,13 +484,21 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
 
         catch (PubSubAssertionError.DiscoInfoNodeAssertionError bug) {
-            LOGGER.log(Level.WARNING,"This is a bug. will be fixed soon.");
+            LOGGER.log(Level.WARNING,"This is a bug. will be fixed soon: "+bug.getMessage());
             //TODO: Remove when fixed
             return true;
         }
         return false;
     }
 
+    /**
+     * Refresh the deviceList of contact and merge it with the one stored locally.
+     * @param omemoManager omemoManager
+     * @param contact contact
+     * @throws SmackException.NotConnectedException
+     * @throws InterruptedException
+     * @throws SmackException.NoResponseException
+     */
     void refreshDeviceList(OmemoManager omemoManager, BareJid contact) throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         try {
             getOmemoStoreBackend().mergeCachedDeviceList(omemoManager, contact, fetchDeviceList(omemoManager, contact));
@@ -438,13 +507,15 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
 
         catch (PubSubAssertionError.DiscoInfoNodeAssertionError bug) {
-            LOGGER.log(Level.WARNING, "this is a bug. will be fixed soon");
+            LOGGER.log(Level.WARNING, "this is a bug. will be fixed soon: "+bug.getMessage());
+            //TODO: Remove later
         }
     }
 
     /**
      * Fetch the OmemoBundleElement of the contact.
      *
+     * @param omemoManager OmemoManager
      * @param contact the contacts BareJid
      * @return the OmemoBundleElement of the contact
      * @throws XMPPException.XMPPErrorException     When
@@ -510,6 +581,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Subscribe to the device lists of our contacts using PEP.
+     *
+     * @param omemoManager omemoManager we want to subscribe with
      */
     private void subscribeToDeviceLists(OmemoManager omemoManager) {
         registerDeviceListListener(omemoManager);
@@ -519,6 +592,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Build sessions for all devices of the contact that we do not have a session with yet.
      *
+     * @param omemoManager omemoManager
      * @param jid the BareJid of the contact
      */
     private void buildSessionsFromOmemoBundles(OmemoManager omemoManager, BareJid jid) {
@@ -556,20 +630,21 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Build an OmemoSession for the given OmemoDevice.
      *
+     * @param omemoManager omemoManager
      * @param device OmemoDevice
      * @throws CannotEstablishOmemoSessionException when no session could be established
      * @throws CorruptedOmemoKeyException when the bundle contained an invalid OMEMO identityKey
      */
-    public void buildSessionFromOmemoBundle(OmemoManager ommemoManager, OmemoDevice device) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
+    public void buildSessionFromOmemoBundle(OmemoManager omemoManager, OmemoDevice device) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
 
-        if (device.equals(ommemoManager.getOwnDevice())) {
+        if (device.equals(omemoManager.getOwnDevice())) {
             LOGGER.log(Level.WARNING, "Do not build a session with yourself!");
             return;
         }
 
         OmemoBundleVAxolotlElement bundle;
         try {
-            bundle = fetchBundle(ommemoManager, device);
+            bundle = fetchBundle(omemoManager, device);
 
         } catch (SmackException | XMPPException.XMPPErrorException | InterruptedException | PubSubAssertionError e) {
             LOGGER.log(Level.WARNING, e.getMessage());
@@ -580,12 +655,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         bundles = getOmemoStoreBackend().keyUtil().BUNDLE.bundles(bundle, device);
         int randomIndex = new Random().nextInt(bundles.size());
         T_Bundle randomPreKeyBundle = new ArrayList<>(bundles.values()).get(randomIndex);
-        processBundle(ommemoManager, randomPreKeyBundle, device);
+        processBundle(omemoManager, randomPreKeyBundle, device);
     }
 
     /**
      * Process a received bundle. Typically that includes saving keys and building a session.
      *
+     * @param omemoManager omemoManager that will process the bundle
      * @param bundle T_Bundle (depends on used Signal/Olm library)
      * @param device OmemoDevice
      * @throws CorruptedOmemoKeyException
@@ -594,6 +670,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Register a PEPListener that listens for deviceList updates.
+     *
+     * @param omemoManager omemoManager we want to register with.
      */
     private void registerDeviceListListener(final OmemoManager omemoManager) {
         PEPManager.getInstanceFor(omemoManager.getConnection()).addPEPListener(new PEPListener() {
@@ -699,6 +777,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Decrypt a given OMEMO encrypted message. Return null, if there is no OMEMO element in the message,
      * otherwise try to decrypt the message and return a ClearTextMessage object.
+     *
+     * @param omemoManager omemoManager of the receiving device
      * @param sender barejid of the sender
      * @param message encrypted message
      * @return decrypted message or null
@@ -729,6 +809,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * Encrypt a clear text message for the given recipient.
      * The body of the message will be encrypted.
      *
+     * @param omemoManager omemoManager of the sending device
      * @param recipient BareJid of the recipient
      * @param message   message to encrypt.
      * @return OmemoMessageElement
@@ -736,17 +817,18 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws UndecidedOmemoIdentityException
      * @throws NoSuchAlgorithmException
      */
-    OmemoVAxolotlElement processSendingMessage(OmemoManager manager, BareJid recipient, Message message)
+    OmemoVAxolotlElement processSendingMessage(OmemoManager omemoManager, BareJid recipient, Message message)
             throws CryptoFailedException, UndecidedOmemoIdentityException, NoSuchAlgorithmException {
         ArrayList<BareJid> recipients = new ArrayList<>();
         recipients.add(recipient);
-        return processSendingMessage(manager, recipients, message);
+        return processSendingMessage(omemoManager, recipients, message);
     }
 
     /**
      * Encrypt a clear text message for the given recipients.
      * The body of the message will be encrypted.
      *
+     * @param omemoManager omemoManager of the sending device.
      * @param recipients List of BareJids of all recipients
      * @param message    message to encrypt.
      * @return OmemoMessageElement
@@ -811,6 +893,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Decrypt a incoming OmemoMessageElement that was sent by the OmemoDevice 'from'.
      *
+     * @param omemoManager omemoManager of the decrypting device.
      * @param from          OmemoDevice that sent the message
      * @param message       Encrypted OmemoMessageElement
      * @param information   OmemoMessageInformation object which will contain metadata about the encryption
@@ -832,6 +915,22 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return OmemoSession.decryptMessageElement(message, transportedKey);
     }
 
+    /**
+     * Decrypt a messageKey that was transported in an OmemoElement.
+     *
+     * @param omemoManager  omemoManager of the receiving device.
+     * @param sender        omemoDevice of the sender.
+     * @param omemoMessage  omemoElement containing the key.
+     * @param messageInfo   omemoMessageInformation that will contain metadata about the encryption.
+     * @return a CipherAndAuthTag pair
+     * @throws CryptoFailedException
+     * @throws NoRawSessionException
+     * @throws InterruptedException
+     * @throws CorruptedOmemoKeyException
+     * @throws XMPPException.XMPPErrorException
+     * @throws SmackException.NotConnectedException
+     * @throws SmackException.NoResponseException
+     */
     private CipherAndAuthTag decryptTransportedOmemoKey(OmemoManager omemoManager, OmemoDevice  sender,
                                                         OmemoElement omemoMessage,
                                                         OmemoMessageInformation messageInfo)
@@ -857,6 +956,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Encrypt the message and return it as an OmemoMessageElement.
      *
+     * @param omemoManager omemoManager of the encrypting device.
      * @param recipients List of devices that will be able to decipher the message.
      * @param message   Clear text message
      *
@@ -906,7 +1006,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Prepares a keyTransportElement with a random aes key and iv.
      *
-     * @param recipients recipients
+     * @param omemoManager omemoManager of the sending device.
+     * @param recipients recipients of the omemoKeyTransportElement
      * @return KeyTransportElement
      * @throws CryptoFailedException
      * @throws UndecidedOmemoIdentityException
@@ -936,6 +1037,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Prepare a KeyTransportElement with aesKey and iv.
      *
+     * @param omemoManager  OmemoManager of the sending device.
      * @param aesKey        AES key
      * @param iv            initialization vector
      * @param recipients    recipients
@@ -967,6 +1069,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Return a new RatchetUpdateMessage.
+     *
+     * @param omemoManager  omemoManager of the sending device.
      * @param recipient     recipient
      * @param preKeyMessage if true, a new session will be built for this message (useful to repair broken sessions)
      *                      otherwise the message will be encrypted using the existing session.
@@ -991,6 +1095,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Send an OmemoRatchetUpdateMessage to recipient. If preKeyMessage is true, the message will be encrypted using a
      * freshly built session. This can be used to repair broken sessions.
+     *
+     * @param omemoManager      omemoManager of the sending device.
      * @param recipient         recipient
      * @param preKeyMessage     shall this be a preKeyMessage?
      * @throws UndecidedOmemoIdentityException
@@ -1012,6 +1118,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Listen for incoming messages and carbons, decrypt them and pass the cleartext messages to the registered
      * OmemoMessageListeners.
+     *
+     * @param omemoManager omemoManager we want to register with
      */
     private void registerOmemoMessageStanzaListeners(OmemoManager omemoManager) {
         omemoManager.getConnection().addAsyncStanzaListener(new OmemoStanzaListener(omemoManager, this), omemoStanzaFilter);
@@ -1021,7 +1129,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     }
 
     /**
-     * StanzaFilter that filters messages containing a OMEMO message element.
+     * StanzaFilter that filters messages containing a OMEMO element.
      */
     private final StanzaFilter omemoStanzaFilter = new StanzaFilter() {
         @Override
@@ -1035,6 +1143,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * try to decrypt a message that has been decrypted earlier in time, the decryption will fail. You should handle
      * message history locally when using OMEMO, since you cannot rely on MAM.
      *
+     * @param omemoManager omemoManager of the decrypting device.
      * @param mamQueryResult mamQueryResult that shall be decrypted.
      * @return list of decrypted messages.
      * @throws InterruptedException
@@ -1067,6 +1176,8 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Return the barejid of the user that sent the message inside the MUC. If the message wasn't sent in a MUC,
      * return null;
+     *
+     * @param omemoManager omemoManager
      * @param stanza message
      * @return BareJid of the sender.
      */
@@ -1084,6 +1195,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return new OmemoDevice(sender, omemoElement.getHeader().getSid());
     }
 
+    /**
+     * Return true, if the user knows a multiUserChat with a jid matching the sender of the stanza.
+     * @param omemoManager  omemoManager of the user
+     * @param stanza        stanza in question
+     * @return              true if MUC message, otherwise false.
+     */
     private boolean isMucMessage(OmemoManager omemoManager, Stanza stanza) {
         BareJid sender = stanza.getFrom().asBareJid();
         MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(omemoManager.getConnection());
@@ -1091,9 +1208,13 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return mucm.getJoinedRooms().contains(sender.asEntityBareJidIfPossible());
     }
 
+    /**
+     * StanzaListener that listens for incoming omemoElements that are NOT send via carbons.
+     */
     private class OmemoStanzaListener implements StanzaListener {
-        private OmemoManager omemoManager;
-        private OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> service;
+        private final OmemoManager omemoManager;
+        private final OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
+                service;
 
         OmemoStanzaListener(OmemoManager omemoManager,
                             OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> service) {
@@ -1166,6 +1287,9 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         }
     }
 
+    /**
+     * StanzaListener that listens for incoming OmemoElements that ARE sent in carbons.
+     */
     private class OmemoCarbonCopyListener implements CarbonCopyReceivedListener {
 
         private final OmemoManager omemoManager;

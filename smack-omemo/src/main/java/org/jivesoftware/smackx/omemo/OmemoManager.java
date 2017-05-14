@@ -100,7 +100,7 @@ public final class OmemoManager extends Manager {
     }
 
     /**
-     * Get an instance of the OmemoManager for the given connection.
+     * Get an instance of the OmemoManager for the given connection and deviceId.
      *
      * @param connection Connection
      * @param deviceId deviceId of the Manager. If the deviceId is null, a random id will be generated.
@@ -125,6 +125,14 @@ public final class OmemoManager extends Manager {
         return manager;
     }
 
+    /**
+     * Get an instance of the OmemoManager for the given connection.
+     * This method creates the OmemoManager for the stored defaultDeviceId of the connections user.
+     * If there is no such id is stored, it uses a fresh deviceId and sets that as defaultDeviceId instead.
+     *
+     * @param connection connection
+     * @return OmemoManager
+     */
     public synchronized static OmemoManager getInstanceFor(XMPPConnection connection) {
         BareJid user;
         if(connection.getUser() != null) {
@@ -148,6 +156,12 @@ public final class OmemoManager extends Manager {
         return getInstanceFor(connection, defaulDeviceId);
     }
 
+    /**
+     * Returns a list of all OmemoManagers registered on a connection, that have deviceIds that appear in the argument deviceIds.
+     * @param connection
+     * @param deviceIds
+     * @return
+     */
     public synchronized static List<OmemoManager> getExistingManagersFor(XMPPConnection connection, List<Integer> deviceIds) {
         WeakHashMap<Integer, OmemoManager> managersOfConnection = INSTANCES.get(connection);
         ArrayList<OmemoManager> managers = new ArrayList<>();
@@ -166,6 +180,17 @@ public final class OmemoManager extends Manager {
         return managers;
     }
 
+    /**
+     * Initializes the OmemoManager. This method is called automatically once the client logs into the server successfully.
+     *
+     * @throws CorruptedOmemoKeyException
+     * @throws InterruptedException
+     * @throws SmackException.NoResponseException
+     * @throws SmackException.NotConnectedException
+     * @throws XMPPException.XMPPErrorException
+     * @throws SmackException.NotLoggedInException
+     * @throws PubSubException.NotALeafNodeException
+     */
     public void initialize() throws CorruptedOmemoKeyException, InterruptedException, SmackException.NoResponseException,
             SmackException.NotConnectedException, XMPPException.XMPPErrorException, SmackException.NotLoggedInException,
             PubSubException.NotALeafNodeException {
@@ -195,6 +220,7 @@ public final class OmemoManager extends Manager {
      * Clear all other devices except this one from our device list and republish the list.
      *
      * @throws InterruptedException
+     * @throws SmackException
      * @throws XMPPException.XMPPErrorException
      * @throws CorruptedOmemoKeyException
      */
@@ -501,12 +527,12 @@ public final class OmemoManager extends Manager {
 
             @Override
             public void authenticated(XMPPConnection connection, boolean resumed) {
-                LOGGER.log(Level.INFO, "authenticated: "+resumed);
+                LOGGER.log(Level.INFO, "authenticated. Resumed: "+resumed);
                 if(resumed) {
                     return;
                 }
                 try {
-                    getOmemoService().initialize(OmemoManager.this);
+                    initialize();
                 } catch (InterruptedException | CorruptedOmemoKeyException | PubSubException.NotALeafNodeException | SmackException.NotLoggedInException | SmackException.NoResponseException | SmackException.NotConnectedException | XMPPException.XMPPErrorException e) {
                     LOGGER.log(Level.SEVERE, "connectionListener.authenticated() failed to initialize OmemoManager: "+e.getMessage());
                 }

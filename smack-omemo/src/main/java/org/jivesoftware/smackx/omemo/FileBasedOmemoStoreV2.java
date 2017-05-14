@@ -45,7 +45,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         extends OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> {
 
     private static final Logger LOGGER = Logger.getLogger(FileBasedOmemoStoreV2.class.getSimpleName());
-    protected FileHierarchy hierarchy;
+    private final FileHierarchy hierarchy;
 
     public FileBasedOmemoStoreV2() {
         this(OmemoConfiguration.getInstance().getFileBasedOmemoStoreDefaultPath());
@@ -511,7 +511,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         deleteRecursively(deviceDirectory);
     }
 
-    protected void writeInt(File target, int i) throws IOException {
+    private void writeInt(File target, int i) throws IOException {
         if(target == null) {
             throw new IOException("Could not write integer to null-path.");
         }
@@ -523,7 +523,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         out.close();
     }
 
-    protected int readInt(File target) throws IOException {
+    private int readInt(File target) throws IOException {
         if(target == null) {
             throw new IOException("Could not read integer from null-path.");
         }
@@ -534,7 +534,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         return i;
     }
 
-    protected void writeLong(File target, long i) throws IOException {
+    private void writeLong(File target, long i) throws IOException {
         if(target == null) {
             throw new IOException("Could not write long to null-path.");
         }
@@ -546,7 +546,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         out.close();
     }
 
-    protected long readLong(File target) throws IOException {
+    private long readLong(File target) throws IOException {
         if(target == null) {
             throw new IOException("Could not read long from null-path.");
         }
@@ -557,7 +557,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         return i;
     }
 
-    protected void writeBytes(File target, byte[] bytes) throws IOException {
+    private void writeBytes(File target, byte[] bytes) throws IOException {
         if(target == null) {
             throw new IOException("Could not write bytes to null-path.");
         }
@@ -569,7 +569,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         out.close();
     }
 
-    protected byte[] readBytes(File target) throws IOException {
+    private byte[] readBytes(File target) throws IOException {
         if(target == null) {
             throw new IOException("Could not read bytes from null-path.");
         }
@@ -582,7 +582,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         return bytes;
     }
 
-    protected void writeIntegers(File target, Set<Integer> integers) throws IOException {
+    private void writeIntegers(File target, Set<Integer> integers) throws IOException {
         if(target == null) {
             throw new IOException("Could not write integers to null-path.");
         }
@@ -594,7 +594,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         out.close();
     }
 
-    protected Set<Integer> readIntegers(File target) throws IOException {
+    private Set<Integer> readIntegers(File target) throws IOException {
         if(target == null) {
             throw new IOException("Could not write integers to null-path.");
         }
@@ -613,7 +613,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         return integers;
     }
 
-    public void deleteRecursively(File root) {
+    private void deleteRecursively(File root) {
         if(root == null) {
             return;
         }
@@ -624,7 +624,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
 
         if(root.isDirectory()) {
             String[] content = root.list();
-            for(String s : content) {
+            for(String s : (content != null ? content : new String[0])) {
                 File child = new File(root, s);
                 deleteRecursively(child);
             }
@@ -667,109 +667,109 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
      */
     public static class FileHierarchy {
 
-        public static final String STORE = "OMEMO_Store";
-        public static final String CONTACTS = "contacts";
-        public static final String DEFAULT_DEVICE_ID = "defaultDeviceId";
-        public static final String IDENTITY_KEY = "identityKey";
-        public static final String IDENTITY_KEY_PAIR = "identityKeyPair";
-        public static final String PRE_KEYS = "preKeys";
-        public static final String LAST_MESSAGE_RECEVIED_DATE = "lastMessageReceivedDate";
-        public static final String LAST_PRE_KEY_ID = "lastPreKeyId";
-        public static final String SIGNED_PRE_KEYS = "signedPreKeys";
-        public static final String CURRENT_SIGNED_PRE_KEY_ID = "currentSignedPreKeyId";
-        public static final String LAST_SIGNED_PRE_KEY_RENEWAL = "lastSignedPreKeyRenewal";
-        public static final String SESSION = "session";
-        public static final String DEVICE_LIST_ACTIVE = "activeDevices";
-        public static final String DEVICE_LIST_INAVTIVE = "inactiveDevices";
-        public static final String TRUST = "trust";
+        static final String STORE = "OMEMO_Store";
+        static final String CONTACTS = "contacts";
+        static final String DEFAULT_DEVICE_ID = "defaultDeviceId";
+        static final String IDENTITY_KEY = "identityKey";
+        static final String IDENTITY_KEY_PAIR = "identityKeyPair";
+        static final String PRE_KEYS = "preKeys";
+        static final String LAST_MESSAGE_RECEVIED_DATE = "lastMessageReceivedDate";
+        static final String LAST_PRE_KEY_ID = "lastPreKeyId";
+        static final String SIGNED_PRE_KEYS = "signedPreKeys";
+        static final String CURRENT_SIGNED_PRE_KEY_ID = "currentSignedPreKeyId";
+        static final String LAST_SIGNED_PRE_KEY_RENEWAL = "lastSignedPreKeyRenewal";
+        static final String SESSION = "session";
+        static final String DEVICE_LIST_ACTIVE = "activeDevices";
+        static final String DEVICE_LIST_INAVTIVE = "inactiveDevices";
+        static final String TRUST = "trust";
 
-        protected File basePath;
+        File basePath;
 
-        public FileHierarchy(File basePath) {
+        FileHierarchy(File basePath) {
             this.basePath = basePath;
             basePath.mkdirs();
         }
 
-        public File getStoreDirectory() {
+        File getStoreDirectory() {
             return createDirectory(basePath, STORE);
         }
 
-        public File getUserDirectory(BareJid bareJid) {
+        File getUserDirectory(BareJid bareJid) {
             return createDirectory(getStoreDirectory(), bareJid.toString());
         }
 
-        public File getUserDeviceDirectory(OmemoManager omemoManager) {
+        File getUserDeviceDirectory(OmemoManager omemoManager) {
             return createDirectory(getUserDirectory(omemoManager.getOwnJid()),
                     Integer.toString(omemoManager.getDeviceId()));
         }
 
-        public File getContactsDir(OmemoManager omemoManager) {
+        File getContactsDir(OmemoManager omemoManager) {
             return createDirectory(getUserDeviceDirectory(omemoManager), CONTACTS);
         }
 
-        public File getContactsDir(OmemoManager omemoManager, BareJid contact) {
+        File getContactsDir(OmemoManager omemoManager, BareJid contact) {
             return createDirectory(getContactsDir(omemoManager), contact.toString());
         }
 
-        public File getContactsDir(OmemoManager omemoManager, OmemoDevice omemoDevice) {
+        File getContactsDir(OmemoManager omemoManager, OmemoDevice omemoDevice) {
             return createDirectory(getContactsDir(omemoManager, omemoDevice.getJid()),
                     Integer.toString(omemoDevice.getDeviceId()));
         }
 
-        public File getIdentityKeyPairPath(OmemoManager omemoManager) {
+        File getIdentityKeyPairPath(OmemoManager omemoManager) {
             return new File(getUserDeviceDirectory(omemoManager), IDENTITY_KEY_PAIR);
         }
 
-        public File getPreKeysDirectory(OmemoManager omemoManager) {
+        File getPreKeysDirectory(OmemoManager omemoManager) {
             return createDirectory(getUserDeviceDirectory(omemoManager), PRE_KEYS);
         }
 
-        public File getPreKeyPath(OmemoManager omemoManager, int preKeyId) {
+        File getPreKeyPath(OmemoManager omemoManager, int preKeyId) {
             return new File(getPreKeysDirectory(omemoManager), Integer.toString(preKeyId));
         }
 
-        public File getLastMessageReceivedDatePath(OmemoManager omemoManager, OmemoDevice device) {
+        File getLastMessageReceivedDatePath(OmemoManager omemoManager, OmemoDevice device) {
             return new File(getContactsDir(omemoManager, device), LAST_MESSAGE_RECEVIED_DATE);
         }
 
-        public File getLastPreKeyIdPath(OmemoManager omemoManager) {
+        File getLastPreKeyIdPath(OmemoManager omemoManager) {
             return new File(getUserDeviceDirectory(omemoManager), LAST_PRE_KEY_ID);
         }
 
-        public File getSignedPreKeysDirectory(OmemoManager omemoManager) {
+        File getSignedPreKeysDirectory(OmemoManager omemoManager) {
             return createDirectory(getUserDeviceDirectory(omemoManager), SIGNED_PRE_KEYS);
         }
 
-        public File getCurrentSignedPreKeyIdPath(OmemoManager omemoManager) {
+        File getCurrentSignedPreKeyIdPath(OmemoManager omemoManager) {
             return new File(getUserDeviceDirectory(omemoManager), CURRENT_SIGNED_PRE_KEY_ID);
         }
 
-        public File getLastSignedPreKeyRenewal(OmemoManager omemoManager) {
+        File getLastSignedPreKeyRenewal(OmemoManager omemoManager) {
             return new File(getUserDeviceDirectory(omemoManager), LAST_SIGNED_PRE_KEY_RENEWAL);
         }
 
-        public File getDefaultDeviceIdPath(BareJid bareJid) {
+        File getDefaultDeviceIdPath(BareJid bareJid) {
             return new File(getUserDirectory(bareJid), DEFAULT_DEVICE_ID);
         }
 
-        public File getContactsIdentityKeyPath(OmemoManager omemoManager, OmemoDevice omemoDevice) {
+        File getContactsIdentityKeyPath(OmemoManager omemoManager, OmemoDevice omemoDevice) {
             return new File(getContactsDir(omemoManager, omemoDevice), IDENTITY_KEY);
 
         }
 
-        public File getContactsSessionPath(OmemoManager omemoManager, OmemoDevice omemoDevice) {
+        File getContactsSessionPath(OmemoManager omemoManager, OmemoDevice omemoDevice) {
             return new File(getContactsDir(omemoManager, omemoDevice), SESSION);
         }
 
-        public File getContactsActiveDevicesPath(OmemoManager omemoManager, BareJid contact) {
+        File getContactsActiveDevicesPath(OmemoManager omemoManager, BareJid contact) {
             return new File(getContactsDir(omemoManager, contact), DEVICE_LIST_ACTIVE);
         }
 
-        public File getContactsInactiveDevicesPath(OmemoManager omemoManager, BareJid contact) {
+        File getContactsInactiveDevicesPath(OmemoManager omemoManager, BareJid contact) {
             return new File(getContactsDir(omemoManager, contact), DEVICE_LIST_INAVTIVE);
         }
 
-        public File getContactsTrustPath(OmemoManager omemoManager, OmemoDevice omemoDevice) {
+        File getContactsTrustPath(OmemoManager omemoManager, OmemoDevice omemoDevice) {
             return new File(getContactsDir(omemoManager, omemoDevice), TRUST);
 
         }

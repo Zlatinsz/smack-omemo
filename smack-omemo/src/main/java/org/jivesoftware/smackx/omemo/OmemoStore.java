@@ -67,6 +67,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Return true if this is a fresh installation.
      *
+     * @param omemoManager omemoManager of our device.
      * @return true or false.
      */
     public abstract boolean isFreshInstallation(OmemoManager omemoManager);
@@ -74,7 +75,8 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Check, if our freshly generated deviceId is available (unique) in our deviceList.
      *
-     * @param id our deviceId
+     * @param omemoManager  omemoManager of our device.
+     * @param id            our deviceId.
      * @return true if list did not contain our id, else false
      */
     boolean isAvailableDeviceId(OmemoManager omemoManager, int id) {
@@ -94,6 +96,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Generate a new Identity (deviceId, identityKeys, preKeys...).
      *
+     * @param omemoManager omemoManager of our device we want to regenerate.
      * @throws CorruptedOmemoKeyException in case something goes wrong
      */
     void regenerate(OmemoManager omemoManager) throws CorruptedOmemoKeyException {
@@ -110,6 +113,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Merge the received OmemoDeviceListElement with the one we already have. If we had none, the received one is saved.
      *
+     * @param omemoManager omemoManager of our device.
      * @param contact Contact we received the list from.
      * @param list    List we received.
      */
@@ -130,6 +134,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Renew our singed preKey. This should be done once every 7-14 days.
      * The old signed PreKey should be kept for around a month or so (look it up in the XEP).
      *
+     * @param omemoManager omemoManager of our device.
      * @throws CorruptedOmemoKeyException when our identityKey is invalid
      */
     void changeSignedPreKey(OmemoManager omemoManager) throws CorruptedOmemoKeyException {
@@ -150,6 +155,8 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
     /**
      * Remove the oldest signedPreKey until there are only MAX_NUMBER_OF_STORED_SIGNED_PREKEYS left.
+     *
+     * @param omemoManager omemoManager of our device.
      */
     private void removeOldSignedPreKeys(OmemoManager omemoManager) {
         if(OmemoConfiguration.getInstance().getMaxNumberOfStoredSignedPreKeys() <= 0) {
@@ -173,6 +180,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * If we used up n preKeys since we last published our bundle, generate n new preKeys and add them to the bundle.
      * We should always publish TARGET_PRE_KEY_COUNT keys.
      *
+     * @param omemoManager omemoManager of our device.
      * @return OmemoBundleElement
      * @throws CorruptedOmemoKeyException when a key could not be loaded
      */
@@ -205,6 +213,8 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
     /**
      * Preload all OMEMO sessions for our devices and our contacts.
+     *
+     * @param omemoManager omemoManager of our device.
      */
     void initializeOmemoSessions(OmemoManager omemoManager) {
         BareJid ownJid = omemoManager.getConnection().getUser().asBareJid();
@@ -228,7 +238,8 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
     /**
      * Forget all omemoSessions of the omemoManager from cache.
-     * @param omemoManager omemoManager
+     *
+     * @param omemoManager omemoManager we want to forget sessions from.
      */
     void forgetOmemoSessions(OmemoManager omemoManager) {
         omemoSessions.remove(omemoManager);
@@ -237,6 +248,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Create a new concrete OmemoSession with a contact.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device      device to establish the session with
      * @param identityKey identityKey of the device
      * @return concrete OmemoSession
@@ -249,6 +261,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Return the OmemoSession for the OmemoDevice.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device OmemoDevice
      * @return OmemoSession
      */
@@ -298,6 +311,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Create OmemoSession objects for all T_Sess objects of the contact.
      * The T_Sess objects will be wrapped inside a OmemoSession for every device of the contact.
      *
+     * @param omemoManager omemoManager of our device.
      * @param contact     BareJid of the contact
      * @param rawSessions HashMap of Integers (deviceIds) and T_Sess sessions.
      * @return HashMap of OmemoContacts and OmemoSessions
@@ -331,6 +345,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Return the id of the last generated preKey.
      * This is used to generate new preKeys without preKeyId collisions.
      *
+     * @param omemoManager omemoManager of our device.
      * @return id of the last preKey
      */
     public abstract int loadLastPreKeyId(OmemoManager omemoManager);
@@ -338,6 +353,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Store the id of the last preKey we generated.
      *
+     * @param omemoManager omemoManager of our device.
      * @param currentPreKeyId the id of the last generated PreKey
      */
     public abstract void storeLastPreKeyId(OmemoManager omemoManager, int currentPreKeyId);
@@ -354,6 +370,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Load our identityKeyPair from storage.
      *
+     * @param omemoManager omemoManager of our device.
      * @return identityKeyPair
      * @throws CorruptedOmemoKeyException Thrown, if the stored key is damaged (*hands up* not my fault!)
      */
@@ -363,6 +380,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Store our identityKeyPair in storage. It would be a cool feature, if the key could be stored in a encrypted
      * database or something similar.
      *
+     * @param omemoManager omemoManager of our device.
      * @param identityKeyPair identityKeyPair
      */
     public abstract void storeOmemoIdentityKeyPair(OmemoManager omemoManager, T_IdKeyPair identityKeyPair);
@@ -370,6 +388,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Load the public identityKey of the device.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device device
      * @return identityKey
      * @throws CorruptedOmemoKeyException when the key in question is corrupted and cant be deserialized.
@@ -379,6 +398,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Store the public identityKey of the device.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device device
      * @param key    identityKey
      */
@@ -391,6 +411,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * identityKey. Either you let the user decide whether you trust a key every time you see a new key, or you
      * implement something like 'blind trust' (see https://gultsch.de/trust.html).
      *
+     * @param omemoManager omemoManager of our device.
      * @param device      Owner of the key
      * @param identityKey identityKey
      * @return true, if the user trusts the key and wants to send messages to it, otherwise false
@@ -400,6 +421,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Did the user yet made a decision about whether to trust or distrust this device?
      *
+     * @param omemoManager omemoManager of our device.
      * @param device      device
      * @param identityKey IdentityKey
      * @return true, if the user either trusted or distrusted the device. Return false, if the user did not yet decide.
@@ -409,6 +431,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Trust an OmemoIdentity. This involves marking the key as trusted.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device      device
      * @param identityKey identityKey
      */
@@ -417,6 +440,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Distrust an OmemoIdentity. This involved marking the key as distrusted.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device      device
      * @param identityKey identityKey
      */
@@ -425,6 +449,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Set the date in millis of the last message that was received from device 'from' to 'date'.
      *
+     * @param omemoManager omemoManager of our device.
      * @param from device in question
      * @param date date of the last received message
      */
@@ -433,6 +458,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Set the date in millis of the last message that was received from device 'from' to now.
      *
+     * @param omemoManager omemoManager of our device.
      * @param from device in question
      */
     public void setDateOfLastReceivedMessage(OmemoManager omemoManager, OmemoDevice from) {
@@ -442,6 +468,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Return the date in millis of the last message that was received from device 'from'.
      *
+     * @param omemoManager omemoManager of our device.
      * @param from device in question
      * @return date if existent as long, otherwise -1
      */
@@ -450,16 +477,24 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Set the date in millis of the last time the signed preKey was renewed.
      *
+     * @param omemoManager omemoManager of our device.
      * @param date date
      */
     public abstract void setDateOfLastSignedPreKeyRenewal(OmemoManager omemoManager, Date date);
 
+    /**
+     * Store the date of the last preKey renewal in the omemoStore.
+     *
+     * @param omemoManager omemoManager of our device.
+     */
     public void setDateOfLastSignedPreKeyRenewal(OmemoManager omemoManager) {
         setDateOfLastSignedPreKeyRenewal(omemoManager, new Date());
     }
 
     /**
      * Get the date in millis of the last time the signed preKey was renewed.
+     *
+     * @param omemoManager omemoManager of our device.
      * @return date if existent, otherwise null
      */
     public abstract Date getDateOfLastSignedPreKeyRenewal(OmemoManager omemoManager);
@@ -479,6 +514,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Load the preKey with id 'preKeyId' from storage.
      *
+     * @param omemoManager omemoManager of our device.
      * @param preKeyId id of the key to be loaded
      * @return loaded preKey
      */
@@ -487,6 +523,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Store a PreKey in storage.
      *
+     * @param omemoManager omemoManager of our device.
      * @param preKeyId id of the key
      * @param preKey   key
      */
@@ -495,6 +532,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Store a whole bunch of preKeys.
      *
+     * @param omemoManager omemoManager of our device.
      * @param preKeyHashMap HashMap of preKeys
      */
     public void storeOmemoPreKeys(OmemoManager omemoManager, HashMap<Integer, T_PreKey> preKeyHashMap) {
@@ -507,6 +545,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * remove a preKey from storage. This is called, when a contact used one of our preKeys to establish a session
      * with us.
      *
+     * @param omemoManager omemoManager of our device.
      * @param preKeyId id of the used key that will be deleted
      */
     public abstract void removeOmemoPreKey(OmemoManager omemoManager, int preKeyId);
@@ -515,6 +554,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Return the id of the currently used signed preKey.
      * This is used to avoid collisions when generating a new signedPreKey.
      *
+     * @param omemoManager omemoManager of our device.
      * @return id
      */
     public abstract int loadCurrentSignedPreKeyId(OmemoManager omemoManager);
@@ -522,6 +562,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Store the id of the currently used signedPreKey.
      *
+     * @param omemoManager omemoManager of our device.
      * @param currentSignedPreKeyId if of the signedPreKey that is currently in use
      */
     public abstract void storeCurrentSignedPreKeyId(OmemoManager omemoManager, int currentSignedPreKeyId);
@@ -529,6 +570,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Return all our current OmemoPreKeys.
      *
+     * @param omemoManager omemoManager of our device.
      * @return Map containing our preKeys
      */
     public abstract HashMap<Integer, T_PreKey> loadOmemoPreKeys(OmemoManager omemoManager);
@@ -536,6 +578,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Return the signedPreKey with the id 'singedPreKeyId'.
      *
+     * @param omemoManager omemoManager of our device.
      * @param signedPreKeyId id of the key
      * @return key
      */
@@ -544,6 +587,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Load all our signed PreKeys.
      *
+     * @param omemoManager omemoManager of our device.
      * @return HashMap of our singedPreKeys
      */
     public abstract HashMap<Integer, T_SigPreKey> loadOmemoSignedPreKeys(OmemoManager omemoManager);
@@ -563,6 +607,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Store a signedPreKey in storage.
      *
+     * @param omemoManager omemoManager of our device.
      * @param signedPreKeyId id of the signedPreKey
      * @param signedPreKey   the key itself
      */
@@ -571,6 +616,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Remove a signedPreKey from storage.
      *
+     * @param omemoManager omemoManager of our device.
      * @param signedPreKeyId id of the key that will be removed
      */
     public abstract void removeOmemoSignedPreKey(OmemoManager omemoManager, int signedPreKeyId);
@@ -578,6 +624,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Load the crypto-lib specific session object of the device from storage.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device device whose session we want to load
      * @return crypto related session
      */
@@ -586,6 +633,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Load all crypto-lib specific session objects of contact 'contact'.
      *
+     * @param omemoManager omemoManager of our device.
      * @param contact BareJid of the contact we want to get all sessions from
      * @return HashMap of deviceId and sessions of the contact
      */
@@ -594,6 +642,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Store a crypto-lib specific session to storage.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device  OmemoDevice whose session we want to store
      * @param session session
      */
@@ -602,6 +651,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Remove a crypto-lib specific session from storage.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device device whose session we want to delete
      */
     public abstract void removeRawSession(OmemoManager omemoManager, OmemoDevice device);
@@ -609,6 +659,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Remove all crypto-lib specific session of a contact.
      *
+     * @param omemoManager omemoManager of our device.
      * @param contact BareJid of the contact
      */
     public abstract void removeAllRawSessionsOf(OmemoManager omemoManager, BareJid contact);
@@ -617,6 +668,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Return true, if we have a session with the device, otherwise false.
      * Hint for Signal: Do not try 'return getSession() != null' since this will create a new session.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device device
      * @return true if we have session, otherwise false
      */
@@ -625,6 +677,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Load a list of deviceIds from contact 'contact' from the local cache.
      *
+     * @param omemoManager omemoManager of our device.
      * @param contact contact we want to get the deviceList of
      * @return CachedDeviceList of the contact
      */
@@ -634,6 +687,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * Store the DeviceList of the contact in local storage.
      * See this as a cache.
      *
+     * @param omemoManager omemoManager of our device.
      * @param contact    Contact
      * @param deviceList list of the contacts devices' ids.
      */
@@ -641,6 +695,8 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
     /**
      * Delete this device's IdentityKey, PreKeys, SignedPreKeys and Sessions.
+     *
+     * @param omemoManager omemoManager of our device.
      */
     public abstract void purgeOwnDeviceKeys(OmemoManager omemoManager);
 
@@ -654,6 +710,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Return our identityKeys fingerprint.
      *
+     * @param omemoManager omemoManager of our device.
      * @return fingerprint of our identityKeyPair
      */
     public String getFingerprint(OmemoManager omemoManager) {
@@ -687,7 +744,9 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Return the fingerprint of the given devices announced identityKey.
      *
+     * @param omemoManager omemoManager of our device.
      * @param device device
+     * @throws CannotEstablishOmemoSessionException if we cannot establish a session
      * @return fingerprint of the identityKey
      */
     public String getFingerprint(OmemoManager omemoManager, OmemoDevice device) throws CannotEstablishOmemoSessionException {

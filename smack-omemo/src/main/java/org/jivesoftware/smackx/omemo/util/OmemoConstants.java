@@ -20,7 +20,7 @@ package org.jivesoftware.smackx.omemo.util;
  * Some constants related to OMEMO.
  * @author Paul Schaub
  */
-public class OmemoConstants {
+public final class OmemoConstants {
 
     //Constants
     /**
@@ -55,7 +55,7 @@ public class OmemoConstants {
     /**
      * Information about the keys used for message encryption.
      */
-    public static class Crypto {
+    public static final class Crypto {
         public static final String KEYTYPE = "AES";
         public static final String CIPHERMODE = "AES/GCM/NoPadding";
         public static final String PROVIDER = "BC";

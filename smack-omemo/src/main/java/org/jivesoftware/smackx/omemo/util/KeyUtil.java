@@ -355,8 +355,9 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     /**
      * Create a new crypto-specific Session object.
      *
-     * @param omemoStore    omemoStoreConnector
-     * @param from the device we want to create the session with.
+     * @param omemoManager  omemoManager of our device.
+     * @param omemoStore    omemoStore where we can save the session, get keys from etc.
+     * @param from          the device we want to create the session with.
      * @return a new session
      */
     public abstract OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
@@ -366,10 +367,10 @@ public abstract class KeyUtil<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Ses
     /**
      * Create a new concrete OmemoSession with a contact.
      *
-     * @param omemoManager omemomanager
-     * @param omemoStore       omemoStore
-     * @param device      device to establish the session with
-     * @param identityKey identityKey of the device
+     * @param omemoManager  omemoManager of our device.
+     * @param omemoStore    omemoStore
+     * @param device        device to establish the session with
+     * @param identityKey   identityKey of the device
      * @return concrete OmemoSession
      */
     public abstract OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>

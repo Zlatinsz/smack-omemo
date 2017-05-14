@@ -75,7 +75,9 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
     /**
      * Create a OmemoMessageBuilder.
-     * @param omemoStore        OmemoStore
+     *
+     * @param omemoManager      OmemoManager of our device.
+     * @param omemoStore        OmemoStore.
      * @param aesKey            AES key that will be transported to the recipient. This is used eg. to encrypt the body.
      * @param iv                IV
      * @throws NoSuchPaddingException
@@ -87,13 +89,13 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws NoSuchProviderException
      * @throws InvalidAlgorithmParameterException
      */
-    public OmemoMessageBuilder(OmemoManager manager,
+    public OmemoMessageBuilder(OmemoManager omemoManager,
             OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
                                byte[] aesKey, byte[] iv)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
             UnsupportedEncodingException, NoSuchProviderException, InvalidAlgorithmParameterException {
         this.omemoStore = omemoStore;
-        this.omemoManager = manager;
+        this.omemoManager = omemoManager;
         this.messageKey = aesKey;
         this.initializationVector = iv;
     }
@@ -101,7 +103,8 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     /**
      * Create a new OmemoMessageBuilder with random IV and AES key.
      *
-     * @param omemoStore    omemoStoreConnector
+     * @param omemoManager  omemoManager of our device.
+     * @param omemoStore    omemoStore.
      * @param message       Messages body.
      * @throws NoSuchPaddingException
      * @throws BadPaddingException
@@ -112,11 +115,11 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws NoSuchProviderException
      * @throws InvalidAlgorithmParameterException
      */
-    public OmemoMessageBuilder(OmemoManager manager,
+    public OmemoMessageBuilder(OmemoManager omemoManager,
                                OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore, String message)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
             UnsupportedEncodingException, NoSuchProviderException, InvalidAlgorithmParameterException {
-        this.omemoManager = manager;
+        this.omemoManager = omemoManager;
         this.omemoStore = omemoStore;
         this.setMessage(message);
     }

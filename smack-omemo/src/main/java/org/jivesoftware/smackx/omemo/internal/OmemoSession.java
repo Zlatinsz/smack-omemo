@@ -68,6 +68,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Constructor used when we establish the session.
      *
+     * @param omemoManager OmemoManager of our device
      * @param omemoStore   OmemoStore where we want to store the session and get key information from
      * @param remoteDevice the OmemoDevice we want to establish the session with
      * @param identityKey  identityKey of the recipient
@@ -82,6 +83,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
     /**
      * Another constructor used when they establish the session with us.
      *
+     * @param omemoManager OmemoManager of our device
      * @param omemoStore   OmemoStore we want to store the session and their key in
      * @param remoteDevice identityKey of the partner
      */
@@ -95,6 +97,7 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
     /**
      * Try to decrypt the transported message key using the double ratchet session.
+     *
      * @param element omemoElement
      * @param keyId our keyId
      * @return tuple of cipher generated from the unpacked message key and the authtag
@@ -155,11 +158,24 @@ public abstract class OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
         return new CipherAndAuthTag(transportedCipher, authTag);
     }
 
+    /**
+     * Use the symmetric key in cipherAndAuthTag to decrypt the payload of the omemoMessage.
+     * The decrypted payload will be the body of the returned Message.
+     *
+     * @param element omemoElement containing a payload.
+     * @param cipherAndAuthTag cipher and authentication tag.
+     * @return Message containing the decrypted payload in its body.
+     * @throws CryptoFailedException
+     */
     public static Message decryptMessageElement(OmemoElement element, CipherAndAuthTag cipherAndAuthTag) throws CryptoFailedException {
         if(!element.isMessageElement()) {
             throw new IllegalArgumentException("decryptMessageElement cannot decrypt OmemoElement which is no MessageElement!");
         }
 
+        if(cipherAndAuthTag.getAuthTag() == null || cipherAndAuthTag.getAuthTag().length != 16) {
+            throw new CryptoFailedException("AuthenticationTag is null or has wrong length: "
+                    +(cipherAndAuthTag.getAuthTag() == null ? "null" : cipherAndAuthTag.getAuthTag().length));
+        }
         byte[] encryptedBody = new byte[element.getPayload().length + 16];
         byte[] payload = element.getPayload();
         System.arraycopy(payload, 0, encryptedBody, 0, payload.length);
