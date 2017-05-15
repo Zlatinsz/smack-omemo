@@ -50,6 +50,7 @@ import org.jivesoftware.smackx.pubsub.packet.PubSub;
 import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.DomainBareJid;
 import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.EntityFullJid;
 import org.jxmpp.jid.FullJid;
 import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.stringprep.XmppStringprepException;
@@ -157,30 +158,6 @@ public final class OmemoManager extends Manager {
     }
 
     /**
-     * Returns a list of all OmemoManagers registered on a connection, that have deviceIds that appear in the argument deviceIds.
-     * @param connection
-     * @param deviceIds
-     * @return
-     */
-    public synchronized static List<OmemoManager> getExistingManagersFor(XMPPConnection connection, List<Integer> deviceIds) {
-        WeakHashMap<Integer, OmemoManager> managersOfConnection = INSTANCES.get(connection);
-        ArrayList<OmemoManager> managers = new ArrayList<>();
-
-        if(managersOfConnection == null) {
-            return managers;
-        }
-
-        for(int deviceId : deviceIds) {
-            OmemoManager m = managersOfConnection.get(deviceId);
-            if(m != null) {
-                managers.add(m);
-            }
-        }
-
-        return managers;
-    }
-
-    /**
      * Initializes the OmemoManager. This method is called automatically once the client logs into the server successfully.
      *
      * @throws CorruptedOmemoKeyException
@@ -195,52 +172,6 @@ public final class OmemoManager extends Manager {
             SmackException.NotConnectedException, XMPPException.XMPPErrorException, SmackException.NotLoggedInException,
             PubSubException.NotALeafNodeException {
         getOmemoService().initialize(this);
-    }
-
-    /**
-     * Get our connection.
-     *
-     * @return the connection of this manager
-     */
-    XMPPConnection getConnection() {
-        return connection();
-    }
-
-    /**
-     * Return the OMEMO service object.
-     *
-     * @return omemoService
-     */
-    public OmemoService<?,?,?,?,?,?,?,?,?> getOmemoService() {
-        throwIfNoServiceSet();
-        return service;
-    }
-
-    /**
-     * Clear all other devices except this one from our device list and republish the list.
-     *
-     * @throws InterruptedException
-     * @throws SmackException
-     * @throws XMPPException.XMPPErrorException
-     * @throws CorruptedOmemoKeyException
-     */
-    public void purgeDevices() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
-        getOmemoService().publishDeviceIdIfNeeded(this,true);
-        getOmemoService().publishBundle(this);
-    }
-
-    /**
-     * Generate fresh identity keys and bundle and publish it to the server.
-     * @throws SmackException
-     * @throws InterruptedException
-     * @throws XMPPException.XMPPErrorException
-     * @throws CorruptedOmemoKeyException
-     */
-    public void regenerate() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
-        //create a new identity and publish new keys to the server
-        getOmemoService().regenerate(this, null);
-        getOmemoService().publishDeviceIdIfNeeded(this,false);
-        getOmemoService().publishBundle(this);
     }
 
     /**
@@ -276,41 +207,6 @@ public final class OmemoManager extends Manager {
     }
 
     /**
-     * Send a ratchet update message. This can be used to advance the ratchet of a session in order to maintain forward
-     * secrecy.
-     *
-     * @param recipient recipient
-     * @throws UndecidedOmemoIdentityException      When the trust of session with the recipient is not decided yet
-     * @throws CorruptedOmemoKeyException           When the used identityKeys are corrupted
-     * @throws CryptoFailedException                When something fails with the crypto
-     * @throws CannotEstablishOmemoSessionException When we can't establish a session with the recipient
-     */
-    public void sendRatchetUpdateMessage(OmemoDevice recipient)
-            throws CorruptedOmemoKeyException, UndecidedOmemoIdentityException, CryptoFailedException,
-            CannotEstablishOmemoSessionException {
-        getOmemoService().sendOmemoRatchetUpdateMessage(this, recipient, false);
-    }
-
-    /**
-     * Create a new KeyTransportElement. This message will contain the AES-Key and IV that can be used eg. for encrypted
-     * Jingle file transfer.
-     *
-     * @param aesKey    AES key to transport
-     * @param iv        Initialization vector
-     * @param to        list of recipient devices
-     * @return          KeyTransportMessage
-     * @throws UndecidedOmemoIdentityException      When the trust of session with the recipient is not decided yet
-     * @throws CorruptedOmemoKeyException           When the used identityKeys are corrupted
-     * @throws CryptoFailedException                When something fails with the crypto
-     * @throws CannotEstablishOmemoSessionException When we can't establish a session with the recipient
-     */
-    public OmemoVAxolotlElement createKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice ... to)
-            throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException,
-            CannotEstablishOmemoSessionException {
-        return getOmemoService().prepareOmemoKeyTransportElement(this, aesKey, iv, to);
-    }
-
-    /**
      * Decrypt an OMEMO message. This method comes handy when dealing with messages that were not automatically
      * decrypted by smack-omemo, eg. MAM query messages.
      * @param sender sender of the message
@@ -343,6 +239,68 @@ public final class OmemoManager extends Manager {
         List<ClearTextMessage> l = new ArrayList<>();
         l.addAll(getOmemoService().decryptMamQueryResult(this, mamQueryResult));
         return l;
+    }
+
+    /**
+     * Clear all other devices except this one from our device list and republish the list.
+     *
+     * @throws InterruptedException
+     * @throws SmackException
+     * @throws XMPPException.XMPPErrorException
+     * @throws CorruptedOmemoKeyException
+     */
+    public void purgeDevices() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
+        getOmemoService().publishDeviceIdIfNeeded(this,true);
+        getOmemoService().publishBundle(this);
+    }
+
+    /**
+     * Generate fresh identity keys and bundle and publish it to the server.
+     * @throws SmackException
+     * @throws InterruptedException
+     * @throws XMPPException.XMPPErrorException
+     * @throws CorruptedOmemoKeyException
+     */
+    public void regenerate() throws SmackException, InterruptedException, XMPPException.XMPPErrorException, CorruptedOmemoKeyException {
+        //create a new identity and publish new keys to the server
+        getOmemoService().regenerate(this, null);
+        getOmemoService().publishDeviceIdIfNeeded(this,false);
+        getOmemoService().publishBundle(this);
+    }
+
+    /**
+     * Send a ratchet update message. This can be used to advance the ratchet of a session in order to maintain forward
+     * secrecy.
+     *
+     * @param recipient recipient
+     * @throws UndecidedOmemoIdentityException      When the trust of session with the recipient is not decided yet
+     * @throws CorruptedOmemoKeyException           When the used identityKeys are corrupted
+     * @throws CryptoFailedException                When something fails with the crypto
+     * @throws CannotEstablishOmemoSessionException When we can't establish a session with the recipient
+     */
+    public void sendRatchetUpdateMessage(OmemoDevice recipient)
+            throws CorruptedOmemoKeyException, UndecidedOmemoIdentityException, CryptoFailedException,
+            CannotEstablishOmemoSessionException {
+        getOmemoService().sendOmemoRatchetUpdateMessage(this, recipient, false);
+    }
+
+    /**
+     * Create a new KeyTransportElement. This message will contain the AES-Key and IV that can be used eg. for encrypted
+     * Jingle file transfer.
+     *
+     * @param aesKey    AES key to transport
+     * @param iv        Initialization vector
+     * @param to        list of recipient devices
+     * @return          KeyTransportMessage
+     * @throws UndecidedOmemoIdentityException      When the trust of session with the recipient is not decided yet
+     * @throws CorruptedOmemoKeyException           When the used identityKeys are corrupted
+     * @throws CryptoFailedException                When something fails with the crypto
+     * @throws CannotEstablishOmemoSessionException When we can't establish a session with the recipient
+     */
+    public OmemoVAxolotlElement createKeyTransportElement(byte[] aesKey, byte[] iv, OmemoDevice ... to)
+            throws UndecidedOmemoIdentityException, CorruptedOmemoKeyException, CryptoFailedException,
+            CannotEstablishOmemoSessionException {
+        return getOmemoService().prepareOmemoKeyTransportElement(this, aesKey, iv, to);
     }
 
     /**
@@ -589,7 +547,9 @@ public final class OmemoManager extends Manager {
     }
 
     BareJid getOwnJid() {
-        return connection().getUser().asBareJid();
+        EntityFullJid fullJid = connection().getUser();
+        if(fullJid == null) return null;
+        return fullJid.asBareJid();
     }
 
     public int getDeviceId() {
@@ -653,4 +613,24 @@ public final class OmemoManager extends Manager {
                     transportingMessage, wrappingMessage, messageInformation);
         }
     }
+
+    /**
+     * Get our connection.
+     *
+     * @return the connection of this manager
+     */
+    XMPPConnection getConnection() {
+        return connection();
+    }
+
+    /**
+     * Return the OMEMO service object.
+     *
+     * @return omemoService
+     */
+    public OmemoService<?,?,?,?,?,?,?,?,?> getOmemoService() {
+        throwIfNoServiceSet();
+        return service;
+    }
+
 }
