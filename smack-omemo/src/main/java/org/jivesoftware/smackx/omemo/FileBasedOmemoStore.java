@@ -229,7 +229,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void trustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+    public void trustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, String fingerprint) {
         File dir = getContactDevicePath(omemoManager, device);
         if(dir == null) {
             return;
@@ -239,7 +239,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         byte[] a;
 
         try {
-            a = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
+            a = fingerprint.getBytes(StringUtils.UTF8);
         } catch (UnsupportedEncodingException e) {
             LOGGER.log(Level.SEVERE, "trustOmemoIdentity failed due to unsupported encoding:"+e.getMessage());
             return;
@@ -252,7 +252,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
     }
 
     @Override
-    public void distrustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+    public void distrustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, String fingerprint) {
         File dir = getContactDevicePath(omemoManager, device);
         if (dir == null) {
             return;
@@ -262,7 +262,7 @@ public abstract class FileBasedOmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigP
         byte[] a;
 
         try {
-            a = keyUtil().getFingerprint(identityKey).getBytes(StringUtils.UTF8);
+            a = fingerprint.getBytes(StringUtils.UTF8);
         } catch (UnsupportedEncodingException e) {
             LOGGER.log(Level.SEVERE, "distrustOmemoIdentity failed due to unsupported encoding: "+e.getMessage());
             return;

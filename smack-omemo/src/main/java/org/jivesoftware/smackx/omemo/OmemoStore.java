@@ -440,7 +440,11 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param device      device
      * @param identityKey identityKey
      */
-    public abstract void trustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey);
+    public void trustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+        trustOmemoIdentity(omemoManager, device, keyUtil().getFingerprint(identityKey));
+    }
+
+    public abstract void trustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, String identityKeyFingerprint);
 
     /**
      * Distrust an OmemoIdentity. This involved marking the key as distrusted.
@@ -449,7 +453,11 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @param device      device
      * @param identityKey identityKey
      */
-    public abstract void distrustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey);
+    public void distrustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+        distrustOmemoIdentity(omemoManager, device, keyUtil().getFingerprint(identityKey));
+    }
+
+    public abstract void distrustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, String fingerprint);
 
     /**
      * Set the date in millis of the last message that was received from device 'from' to 'date'.

@@ -183,20 +183,20 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
     }
 
     @Override
-    public void trustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+    public void trustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, String fingerprint) {
         File trustPath = hierarchy.getContactsTrustPath(omemoManager, device);
         try {
-            writeBytes(trustPath, ("1 "+keyUtil().getFingerprint(identityKey)).getBytes(StringUtils.UTF8));
+            writeBytes(trustPath, ("1 "+fingerprint).getBytes(StringUtils.UTF8));
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Could not trust "+device+": "+e.getMessage());
         }
     }
 
     @Override
-    public void distrustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, T_IdKey identityKey) {
+    public void distrustOmemoIdentity(OmemoManager omemoManager, OmemoDevice device, String fingerprint) {
         File trustPath = hierarchy.getContactsTrustPath(omemoManager, device);
         try {
-            writeBytes(trustPath, ("2 "+keyUtil().getFingerprint(identityKey)).getBytes(StringUtils.UTF8));
+            writeBytes(trustPath, ("2 "+fingerprint).getBytes(StringUtils.UTF8));
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Could not distrust "+device+": "+e.getMessage());
         }
