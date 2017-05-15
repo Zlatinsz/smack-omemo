@@ -42,6 +42,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 
@@ -73,13 +74,11 @@ public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
     /**
      * Tests, if the initialization is done properly.
      */
-    //@SmackIntegrationTest
+    @SmackIntegrationTest
     public  void initializationTest() throws XMPPException.XMPPErrorException, PubSubException.NotALeafNodeException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, SmackException.NotLoggedInException, CorruptedOmemoKeyException {
-        //Make sure we start fresh
-        cleanUpStore();
-
         OmemoManager omemoManager = OmemoManager.getInstanceFor(conThree, 666);
         OmemoStore<?,?,?,?,?,?,?,?,?> omemoStore = omemoManager.getOmemoService().getOmemoStoreBackend();
+        omemoStore.purgeOwnDeviceKeys(omemoManager);
 
         //test keys.
         omemoManager.initialize();
@@ -90,7 +89,7 @@ public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
 
         //Is deviceId published?
         assertTrue("Published deviceList must contain our deviceId.",
-                omemoManager.getOmemoService().fetchDeviceList(omemoManager, conThree.getUser().asBareJid())
+                omemoManager.getOmemoService().fetchDeviceList(omemoManager, omemoManager.getOwnJid())
                 .getDeviceIds().contains(omemoManager.getDeviceId()));
 
         //Did we publish our bundle?
@@ -100,12 +99,18 @@ public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
                 omemoManager.getOmemoService().fetchBundle(omemoManager, omemoManager.getOwnDevice()));
 
         //clean up
-        cleanUpStore();
+        cleanUpStore(omemoManager);
         cleanUpPubSub(omemoManager);
     }
 
     /**
-     * This test sends an encrypted message from alice to bob.
+     * This Test tests sending and receiving messages.
+     * Alice and Bob create fresh devices, then they add another to their rosters.
+     * Next they build sessions with one another and Alice sends a message to Bob.
+     * After receiving and successfully decrypting the message, its tested, if Bob
+     * publishes a new Bundle. After that Bob replies to the message and its tested,
+     * whether Alice can decrypt the message and if she does NOT publish a new Bundle.
+     *
      * @throws CorruptedOmemoKeyException
      * @throws InterruptedException
      * @throws SmackException.NoResponseException
@@ -121,9 +126,10 @@ public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
     @SmackIntegrationTest
     public void messageSendingTest() throws CorruptedOmemoKeyException, InterruptedException, SmackException.NoResponseException, SmackException.NotConnectedException, XMPPException.XMPPErrorException, SmackException.NotLoggedInException, PubSubException.NotALeafNodeException, CannotEstablishOmemoSessionException, UndecidedOmemoIdentityException, NoSuchAlgorithmException, CryptoFailedException {
         int aliceId = 123, bobsId = 345;
-        final String secretMessage = "This is Alice! Can you here me Bob?";
-        final boolean[] success = new boolean[1];    //be pessimistic
-        final int maxWaitingSecs = 60;
+        final String alicesSecret = "Hey Bob! I love you!";
+        final String bobsSecret = "I love you too, Alice."; //aww
+        final boolean[] success = new boolean[2];    //be pessimistic
+        final int maxWaitingSecs = 600;
         int secsWaited = 0;
 
         cleanUpStore();
@@ -141,8 +147,8 @@ public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
         bob.addOmemoMessageListener(new OmemoMessageListener() {
             @Override
             public void onOmemoMessageReceived(String decryptedBody, Message encryptedMessage, Message wrappingMessage, OmemoMessageInformation omemoInformation) {
-                LOGGER.log(Level.INFO,"Received message: "+decryptedBody);
-                assertEquals(decryptedBody.trim(), secretMessage.trim());
+                LOGGER.log(Level.INFO,"Bob received message: "+decryptedBody);
+                assertEquals(decryptedBody.trim(), alicesSecret.trim());
                 success[0] = true;
             }
 
@@ -150,6 +156,26 @@ public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
             public void onOmemoKeyTransportReceived(CipherAndAuthTag cipherAndAuthTag, Message message, Message wrappingMessage, OmemoMessageInformation omemoInformation) {
             }
         });
+
+        alice.addOmemoMessageListener(new OmemoMessageListener() {
+            @Override
+            public void onOmemoMessageReceived(String decryptedBody, Message encryptedMessage, Message wrappingMessage, OmemoMessageInformation omemoInformation) {
+                LOGGER.log(Level.INFO, "Alice received message: "+decryptedBody);
+                assertEquals(decryptedBody.trim(), bobsSecret.trim());
+                success[1] = true;
+            }
+
+            @Override
+            public void onOmemoKeyTransportReceived(CipherAndAuthTag cipherAndAuthTag, Message message, Message wrappingMessage, OmemoMessageInformation omemoInformation) {
+
+            }
+        });
+
+        //Check bundles
+        OmemoBundleElement aliceBundle = OmemoService.getInstance().fetchBundle(bob, alice.getOwnDevice());
+        assertNotNull("Bobs bundle must not be null.", aliceBundle);
+        OmemoBundleElement bobsBundle = OmemoService.getInstance().fetchBundle(alice, bob.getOwnDevice());
+        assertNotNull("Bobs bundle must not be null.", bobsBundle);
 
         //Subscribe to one another
         Roster aliceRoster = Roster.getInstanceFor(conOne);
@@ -183,30 +209,54 @@ public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
         omemoStore.trustOmemoIdentity(bob, alice.getOwnDevice(),
                 omemoStore.getFingerprint(bob, alice.getOwnDevice()));
 
-        //Prepare Message
-        Message message = new Message(bob.getOwnJid(), secretMessage);
-        Message encryptedMessage = alice.encrypt(bob.getOwnJid(), message);
-
-        //Send message
+        //Prepare Alice message for Bob
+        Message messageA = new Message(bob.getOwnJid(), alicesSecret);
+        Message encryptedA = alice.encrypt(bob.getOwnJid(), messageA);
         ChatManager.getInstanceFor(alice.getConnection()).chatWith(bob.getOwnJid().asEntityBareJidIfPossible())
-                .send(encryptedMessage);
+                .send(encryptedA);
 
+        //Wait for message
         while (!success[0] && secsWaited < maxWaitingSecs) {
             secsWaited++;
-            Thread.sleep(1000);
+            Thread.sleep(100);
         }
+
+        //Check if Bob published a new Bundle
+        assertFalse("Bob must have published another bundle at this point, since we used a PreKeyMessage.",
+                bobsBundle.equals(OmemoService.getInstance().fetchBundle(alice, bob.getOwnDevice())));
+
+        //Prepare Bobs response
+        Message messageB = new Message(alice.getOwnJid(), bobsSecret);
+        Message encryptedB = bob.encrypt(alice.getOwnJid(), messageB);
+        ChatManager.getInstanceFor(bob.getConnection()).chatWith(alice.getOwnJid().asEntityBareJidIfPossible())
+                .send(encryptedB);
+
+        //Wait for response
+        secsWaited = 0;
+        while (!success[1] && secsWaited < maxWaitingSecs) {
+            secsWaited++;
+            Thread.sleep(100);
+        }
+
+        assertEquals("Alice must not have published a new bundle, since we built the session using Bobs bundle.",
+                aliceBundle, OmemoService.getInstance().fetchBundle(bob, alice.getOwnDevice()));
 
         //Clean up
         cleanUpPubSub(alice);
         cleanUpPubSub(bob);
 
-        cleanUpStore();
+        cleanUpStore(alice);
+        cleanUpStore(bob);
 
         assertTrue("Message should have arrived", success[0]);
     }
 
     private void cleanUpStore() {
         FileBasedOmemoStoreV2.deleteRecursively(storePath);
+    }
+
+    private void cleanUpStore(OmemoManager omemoManager) {
+        OmemoService.getInstance().getOmemoStoreBackend().purgeOwnDeviceKeys(omemoManager);
     }
 
     private void cleanUpPubSub(OmemoManager omemoManager) {
