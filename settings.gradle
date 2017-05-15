@@ -25,4 +25,5 @@ include 'smack-core',
 		'smack-integration-test',
 		'smack-omemo',
 		'smack-omemo-signal',
+		'smack-omemo-signal-integration-test',
 		'smack-repl'

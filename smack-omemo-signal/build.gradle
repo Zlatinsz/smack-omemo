@@ -12,23 +12,3 @@ dependencies {
 	compile project(":smack-omemo")
 	compile 'org.whispersystems:signal-protocol-java:2.4.0'
 }
-
-checkstyle {
-	configProperties.checkstyleLicenseHeader = "smack-omemo-signal-gplv3-license-header"
-}
-
-uploadArchives {
-	repositories {
-		mavenDeployer {
-			pom.project {
-				licenses {
-					license {
-						name 'GNU General Public License, version 3 or any later version'
-						url 'https://www.gnu.org/licenses/gpl.txt'
-						distribution 'repo'
-					}
-				}
-			}
-		}
-	}
-}
