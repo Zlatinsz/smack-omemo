@@ -380,8 +380,8 @@ public final class OmemoManager extends Manager {
      * @throws InterruptedException
      * @throws SmackException.NoResponseException
      */
-    public boolean serverSupportsOmemo(DomainBareJid server) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
-        return ServiceDiscoveryManager.getInstanceFor(connection()).discoverInfo(server).containsFeature(PubSub.NAMESPACE);
+    public static boolean serverSupportsOmemo(XMPPConnection connection, DomainBareJid server) throws XMPPException.XMPPErrorException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
+        return ServiceDiscoveryManager.getInstanceFor(connection).discoverInfo(server).containsFeature(PubSub.NAMESPACE);
     }
 
     /**

@@ -478,6 +478,11 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
 
         } catch (XMPPException.XMPPErrorException e) {
 
+            if(e.getXMPPError() == null) {
+                LOGGER.log(Level.WARNING, "This is a bug. Will be fixed soon.");
+                return true;
+            }
+
             if(e.getXMPPError().getCondition() == XMPPError.Condition.item_not_found) {
                 LOGGER.log(Level.WARNING, "Could not refresh own deviceList, because the node did not exist: "+e.getMessage());
                 return true;

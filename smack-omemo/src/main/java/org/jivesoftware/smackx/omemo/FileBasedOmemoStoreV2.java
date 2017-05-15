@@ -516,7 +516,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             throw new IOException("Could not write integer to null-path.");
         }
 
-        hierarchy.createFile(target);
+        FileHierarchy.createFile(target);
 
         DataOutputStream out = new DataOutputStream(new FileOutputStream(target));
         out.writeInt(i);
@@ -539,7 +539,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             throw new IOException("Could not write long to null-path.");
         }
 
-        hierarchy.createFile(target);
+        FileHierarchy.createFile(target);
 
         DataOutputStream out = new DataOutputStream(new FileOutputStream(target));
         out.writeLong(i);
@@ -562,7 +562,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
             throw new IOException("Could not write bytes to null-path.");
         }
         //Create file
-        hierarchy.createFile(target);
+        FileHierarchy.createFile(target);
 
         DataOutputStream out = new DataOutputStream(new FileOutputStream(target));
         out.write(bytes);
@@ -613,7 +613,7 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
         return integers;
     }
 
-    private void deleteRecursively(File root) {
+    public static void deleteRecursively(File root) {
         if(root == null) {
             return;
         }
@@ -629,6 +629,8 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
                 deleteRecursively(child);
             }
         }
+
+        root.delete();
     }
 
     /**
@@ -774,25 +776,25 @@ public abstract class FileBasedOmemoStoreV2<T_IdKeyPair, T_IdKey, T_PreKey, T_Si
 
         }
 
-        private File createDirectory(File f) {
+        private static File createDirectory(File f) {
             if(!f.exists()) {
                 f.mkdirs();
             }
             return f;
         }
 
-        private File createFile(File f) throws IOException {
+        private static File createFile(File f) throws IOException {
             f.getParentFile().mkdirs();
             f.createNewFile();
             return f;
 
         }
 
-        private File createFile(File dir, String filename) throws IOException {
+        private static File createFile(File dir, String filename) throws IOException {
             return createFile(new File(dir, filename));
         }
 
-        private File createDirectory(File dir, String subdir) {
+        private static File createDirectory(File dir, String subdir) {
             File f = new File(dir, subdir);
             return createDirectory(f);
         }
