@@ -22,21 +22,24 @@ import org.igniterealtime.smack.inttest.SmackIntegrationTestEnvironment;
 import org.igniterealtime.smack.inttest.TestNotPossibleException;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smackx.omemo.elements.OmemoBundleElement;
 import org.jivesoftware.smackx.omemo.exceptions.CorruptedOmemoKeyException;
+import org.jivesoftware.smackx.omemo.util.OmemoConstants;
 import org.jivesoftware.smackx.pubsub.PubSubException;
-import org.jxmpp.jid.BareJid;
+import org.jivesoftware.smackx.pubsub.PubSubManager;
 
 import java.io.File;
 import java.util.logging.Level;
 
+import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
-import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertTrue;
 
+@SuppressWarnings("unused")
 public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
 
-    private static File storePath = new File("int_test_omemo_store");
-    private static int aliceId = 123456789;
-    private static int bobId = 987654321;
+    private static final File storePath = new File("int_test_omemo_store");
+    private static final int deviceId = 123456789;
 
     public OmemoIntegrationTest(SmackIntegrationTestEnvironment environment) throws TestNotPossibleException {
         super(environment);
@@ -58,31 +61,51 @@ public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
         }
     }
 
-
     /**
-     * Test if keys are generated properly.
+     * Tests, if the initialization is done properly.
      */
     @SmackIntegrationTest
-    public void keyMaterialGenerationTest() {
-        BareJid alice = conOne.getUser().asBareJid();
-        OmemoManager omemoManager = OmemoManager.getInstanceFor(conOne, aliceId);
+    public void initializationTest() throws XMPPException.XMPPErrorException, PubSubException.NotALeafNodeException, SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException, SmackException.NotLoggedInException, CorruptedOmemoKeyException {
+        //Make sure we start fresh
+        FileBasedOmemoStoreV2.deleteRecursively(storePath);
+
+        OmemoManager omemoManager = OmemoManager.getInstanceFor(conOne, deviceId);
         OmemoStore<?,?,?,?,?,?,?,?,?> omemoStore = omemoManager.getOmemoService().getOmemoStoreBackend();
 
-        try {
-            assertNull("IdentityKey must be null before initialization.", omemoStore.loadOmemoIdentityKeyPair(omemoManager));
-        } catch (CorruptedOmemoKeyException e) {
-            LOGGER.log(Level.SEVERE, "Error in test: "+e.getMessage());
-        }
+        //test keys.
+        omemoManager.initialize();
+        assertNotNull("IdentityKey must not be null after initialization.", omemoStore.loadOmemoIdentityKeyPair(omemoManager));
+        assertTrue("We must have "+OmemoConstants.TARGET_PRE_KEY_COUNT+" preKeys.",
+                omemoStore.loadOmemoPreKeys(omemoManager).size() == OmemoConstants.TARGET_PRE_KEY_COUNT);
+        assertNotNull("Our signedPreKey must not be null.", omemoStore.loadCurrentSignedPreKeyId(omemoManager));
 
-        try {
-            omemoManager.initialize();
-            assertNotNull("IdentityKey must not be null after initialization.", omemoStore.loadOmemoIdentityKeyPair(omemoManager));
-        } catch (CorruptedOmemoKeyException | PubSubException.NotALeafNodeException | SmackException.NotLoggedInException | XMPPException.XMPPErrorException | SmackException.NotConnectedException | SmackException.NoResponseException | InterruptedException e) {
-            LOGGER.log(Level.SEVERE, "Error in test: "+e.getMessage());
-        }
+        //Is deviceId published?
+        assertTrue("Published deviceList must contain our deviceId.",
+                omemoManager.getOmemoService().fetchDeviceList(omemoManager, conOne.getUser().asBareJid())
+                .getDeviceIds().contains(deviceId));
+
+        //Did we publish our bundle?
+        OmemoBundleElement ourBundle = omemoStore.packOmemoBundle(omemoManager);
+        assertNotNull("Our bundle must not be null.",ourBundle);
+        assertEquals("Our bundle must be published.", ourBundle,
+                omemoManager.getOmemoService().fetchBundle(omemoManager, omemoManager.getOwnDevice()));
+
+        //clean up
+        cleanUpStore();
+        cleanUpPubSub(omemoManager);
     }
 
-    public void cleanUpStore() {
+    private void cleanUpStore() {
         FileBasedOmemoStoreV2.deleteRecursively(storePath);
+    }
+
+    private void cleanUpPubSub(OmemoManager omemoManager) {
+        PubSubManager pm = PubSubManager.getInstance(omemoManager.getConnection(),omemoManager.getOwnJid());
+        try {
+            pm.deleteNode(OmemoConstants.PEP_NODE_BUNDLE_FROM_DEVICE_ID(deviceId));
+            pm.deleteNode(OmemoConstants.PEP_NODE_DEVICE_LIST);
+        } catch (SmackException.NoResponseException | InterruptedException | SmackException.NotConnectedException | XMPPException.XMPPErrorException e) {
+            LOGGER.log(Level.WARNING, "Exception while deleting used OMEMO PubSub node: "+e.getMessage());
+        }
     }
 }

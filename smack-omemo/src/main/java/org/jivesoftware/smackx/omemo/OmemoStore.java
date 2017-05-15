@@ -100,7 +100,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws CorruptedOmemoKeyException in case something goes wrong
      */
     void regenerate(OmemoManager omemoManager) throws CorruptedOmemoKeyException {
-        LOGGER.log(Level.INFO, "Regenerating...");
+        LOGGER.log(Level.INFO, "Regenerating with deviceId "+omemoManager.getDeviceId()+"...");
         int nextPreKeyId = 1;
         storeOmemoIdentityKeyPair(omemoManager, generateOmemoIdentityKeyPair());
         storeOmemoPreKeys(omemoManager, generateOmemoPreKeys(nextPreKeyId, TARGET_PRE_KEY_COUNT));

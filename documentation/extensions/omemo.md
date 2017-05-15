@@ -198,4 +198,11 @@ Features
 * automatic renewal of signed preKeys
 * multiple devices per connection possible
 
-Copyright (C) Jive Software 2002-2008
+Integration Tests
+-----------------
+smack-omemo comes with a set of integration tests. Lets say you want to run the integration test suite for smack-omemo-signal.
+You can do so by using the following gradle task:
+
+```
+gradle omemoSignalIntTest
+```

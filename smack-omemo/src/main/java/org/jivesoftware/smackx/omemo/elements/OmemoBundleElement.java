@@ -34,4 +34,17 @@ public abstract class OmemoBundleElement implements ExtensionElement {
     public static final String PRE_KEYS = "prekeys";
     public static final String PRE_KEY_PUB = "preKeyPublic";
     public static final String PRE_KEY_ID = "preKeyId";
+
+    @Override
+    public boolean equals(Object other) {
+        if(!(other instanceof OmemoBundleElement)) {
+            return false;
+        }
+        return hashCode() == other.hashCode();
+    }
+
+    @Override
+    public int hashCode() {
+        return this.toXML().hashCode();
+    }
 }
