@@ -90,7 +90,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws InvalidAlgorithmParameterException
      */
     public OmemoMessageBuilder(OmemoManager omemoManager,
-            OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
+                               OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> omemoStore,
                                byte[] aesKey, byte[] iv)
             throws NoSuchPaddingException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
             UnsupportedEncodingException, NoSuchProviderException, InvalidAlgorithmParameterException {
@@ -139,6 +139,10 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @throws IllegalBlockSizeException            when cipher.doFinal gets wrong Block size.
      */
     private void setMessage(String message) throws NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException, InvalidKeyException, UnsupportedEncodingException, BadPaddingException, IllegalBlockSizeException {
+        if(message == null) {
+            return;
+        }
+
         //Encrypt message body
         SecretKey secretKey = new SecretKeySpec(messageKey, KEYTYPE);
         IvParameterSpec ivSpec = new IvParameterSpec(initializationVector);
@@ -148,23 +152,21 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         byte[] body;
         byte[] ciphertext;
 
-        if(message != null) {
-            body = (message.getBytes(StringUtils.UTF8));
-            ciphertext = cipher.doFinal(body);
+        body = (message.getBytes(StringUtils.UTF8));
+        ciphertext = cipher.doFinal(body);
 
-            if (OmemoConfiguration.getInstance().getHardenMessageEncryption()) {
-                byte[] clearKeyWithAuthTag = new byte[messageKey.length + 16];
-                byte[] cipherTextWithoutAuthTag = new byte[ciphertext.length - 16];
+        if (OmemoConfiguration.getInstance().getHardenMessageEncryption()) {
+            byte[] clearKeyWithAuthTag = new byte[messageKey.length + 16];
+            byte[] cipherTextWithoutAuthTag = new byte[ciphertext.length - 16];
 
-                System.arraycopy(messageKey, 0, clearKeyWithAuthTag, 0, 16);
-                System.arraycopy(ciphertext, 0, cipherTextWithoutAuthTag, 0, cipherTextWithoutAuthTag.length);
-                System.arraycopy(ciphertext, ciphertext.length - 16, clearKeyWithAuthTag, 16, 16);
+            System.arraycopy(messageKey, 0, clearKeyWithAuthTag, 0, 16);
+            System.arraycopy(ciphertext, 0, cipherTextWithoutAuthTag, 0, cipherTextWithoutAuthTag.length);
+            System.arraycopy(ciphertext, ciphertext.length - 16, clearKeyWithAuthTag, 16, 16);
 
-                ciphertextMessage = cipherTextWithoutAuthTag;
-                messageKey = clearKeyWithAuthTag;
-            } else {
-                ciphertextMessage = ciphertext;
-            }
+            ciphertextMessage = cipherTextWithoutAuthTag;
+            messageKey = clearKeyWithAuthTag;
+        } else {
+            ciphertextMessage = ciphertext;
         }
     }
 
@@ -195,7 +197,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
             CryptoFailedException, UndecidedOmemoIdentityException, CorruptedOmemoKeyException {
         //For each recipient device: Encrypt message key with session key
         if (!omemoStore.containsRawSession(omemoManager, device)) {
-            omemoManager.getOmemoService().buildSessionFromOmemoBundle(omemoManager, device);
+            omemoManager.getOmemoService().buildSessionFromOmemoBundle(omemoManager, device, true);
         }
 
         OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph> session =
@@ -213,7 +215,7 @@ public class OmemoMessageBuilder<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
                 keys.add(new OmemoVAxolotlElement.OmemoHeader.Key(encryptedKey.getCiphertext(), device.getDeviceId(), encryptedKey.isPreKeyMessage()));
             }
         } else {
-            throw new CannotEstablishOmemoSessionException("Can't find or establish session with " + device);
+            throw new CannotEstablishOmemoSessionException("Can't find or establish session with " + device+". This should not happen.");
         }
     }
 

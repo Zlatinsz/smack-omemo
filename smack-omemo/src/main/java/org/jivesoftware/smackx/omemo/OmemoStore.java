@@ -212,27 +212,29 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     }
 
     /**
-     * Preload all OMEMO sessions for our devices and our contacts.
+     * Preload all OMEMO sessions for our devices and our contacts from existing raw sessions.
      *
      * @param omemoManager omemoManager of our device.
      */
     void initializeOmemoSessions(OmemoManager omemoManager) {
-        BareJid ownJid = omemoManager.getConnection().getUser().asBareJid();
-        HashMap<Integer, T_Sess> ourDevices = loadAllRawSessionsOf(omemoManager, ownJid);
-        ourDevices.remove(omemoManager.getDeviceId());
 
+        //Get HashMap of our omemoSessions
         HashMap<OmemoDevice, OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
-                mySessions = omemoSessions.get(omemoManager);
-
-        if(mySessions == null) {
-            mySessions = new HashMap<>();
-            omemoSessions.put(omemoManager, mySessions);
+                sessions = omemoSessions.get(omemoManager);
+        if(sessions == null) {
+            sessions = new HashMap<>();
+            omemoSessions.put(omemoManager, sessions);
         }
 
-        mySessions.putAll(buildOmemoSessionsFor(omemoManager, ownJid, ourDevices));
+        //Sessions with our own devices
+        HashMap<Integer, T_Sess> ourRawSessions = loadAllRawSessionsOf(omemoManager, omemoManager.getOwnJid());
+        ourRawSessions.remove(omemoManager.getDeviceId()); //Just to make sure we have no session with ourselves...
+        sessions.putAll(createOmemoSessionsFromRawSessions(omemoManager, omemoManager.getOwnJid(), ourRawSessions));
+
+        //Sessions with contacts
         for (RosterEntry rosterEntry : Roster.getInstanceFor(omemoManager.getConnection()).getEntries()) {
             HashMap<Integer, T_Sess> contactDevices = loadAllRawSessionsOf(omemoManager, rosterEntry.getJid().asBareJid());
-            mySessions.putAll(buildOmemoSessionsFor(omemoManager, rosterEntry.getJid().asBareJid(), contactDevices));
+            sessions.putAll(createOmemoSessionsFromRawSessions(omemoManager, rosterEntry.getJid().asBareJid(), contactDevices));
         }
     }
 
@@ -259,7 +261,8 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
     }
 
     /**
-     * Return the OmemoSession for the OmemoDevice.
+     * Return the OmemoSession for the OmemoDevice. If there is no OmemoSession for the device yet,
+     * build one from local raw session material.
      *
      * @param omemoManager omemoManager of our device.
      * @param device OmemoDevice
@@ -267,6 +270,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      */
     public OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
     getOmemoSessionOf(OmemoManager omemoManager, OmemoDevice device) {
+
         HashMap<OmemoDevice, OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
                 sessions = omemoSessions.get(omemoManager);
 
@@ -277,6 +281,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
 
         OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>
                 session = sessions.get(device);
+        //No OmemoSession found
         if (session == null) {
             T_IdKey identityKey = null;
             try {
@@ -317,19 +322,19 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
      * @return HashMap of OmemoContacts and OmemoSessions
      */
     private HashMap<OmemoDevice, OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
-    buildOmemoSessionsFor(OmemoManager omemoManager, BareJid contact, HashMap<Integer, T_Sess> rawSessions) {
+    createOmemoSessionsFromRawSessions(OmemoManager omemoManager, BareJid contact, HashMap<Integer, T_Sess> rawSessions) {
 
         HashMap<OmemoDevice, OmemoSession<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_Sess, T_Addr, T_ECPub, T_Bundle, T_Ciph>>
                 sessions = new HashMap<>();
 
-        for (Map.Entry<Integer, T_Sess> e : rawSessions.entrySet()) {
-            OmemoDevice omemoDevice = new OmemoDevice(contact, e.getKey());
+        for (Map.Entry<Integer, T_Sess> sessionEntry : rawSessions.entrySet()) {
+            OmemoDevice omemoDevice = new OmemoDevice(contact, sessionEntry.getKey());
             try {
                 T_IdKey identityKey = loadOmemoIdentityKey(omemoManager, omemoDevice);
                 if(identityKey != null) {
                     sessions.put(omemoDevice, createOmemoSession(omemoManager, omemoDevice, identityKey));
                 } else {
-                    LOGGER.log(Level.WARNING, "IdentityKey of "+omemoDevice+" is null");
+                    LOGGER.log(Level.WARNING, "IdentityKey of "+omemoDevice+" is null. Is this even possible at this point?");
                 }
             } catch (CorruptedOmemoKeyException e1) {
                 LOGGER.log(Level.WARNING, "buildOmemoSessionFor could not create a session for "+omemoDevice+
@@ -755,7 +760,7 @@ public abstract class OmemoStore<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, T_
         try {
             idKey = loadOmemoIdentityKey(omemoManager, device);
             if(idKey == null) {
-                OmemoService.getInstance().buildSessionFromOmemoBundle(omemoManager, device);
+                OmemoService.getInstance().buildSessionFromOmemoBundle(omemoManager, device, true);
             }
             idKey = loadOmemoIdentityKey(omemoManager, device);
         } catch (CorruptedOmemoKeyException e) {

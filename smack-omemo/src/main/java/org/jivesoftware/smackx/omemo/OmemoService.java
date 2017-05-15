@@ -595,31 +595,29 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @param omemoManager omemoManager
      * @param jid the BareJid of the contact
      */
-    private void buildSessionsFromOmemoBundles(OmemoManager omemoManager, BareJid jid) {
+    void buildOrCreateOmemoSessionsFromBundles(OmemoManager omemoManager, BareJid jid) {
         CachedDeviceList devices = getOmemoStoreBackend().loadCachedDeviceList(omemoManager, jid);
         if (devices == null || devices.getAllDevices().isEmpty()) {
             try {
-                getOmemoStoreBackend().mergeCachedDeviceList(omemoManager, jid, fetchDeviceList(omemoManager, jid));
+                getOmemoStoreBackend().mergeCachedDeviceList(omemoManager, jid,
+                        fetchDeviceList(omemoManager, jid));
             } catch (XMPPException.XMPPErrorException | SmackException.NotConnectedException | InterruptedException | SmackException.NoResponseException | PubSubException.NotALeafNodeException e) {
                 LOGGER.log(Level.WARNING, e.getMessage());
             }
-        }
-
-        devices = getOmemoStoreBackend().loadCachedDeviceList(omemoManager, jid);
-        if (devices == null) {
-            return;
+            devices = getOmemoStoreBackend().loadCachedDeviceList(omemoManager, jid);
         }
 
         for (int id : devices.getActiveDevices()) {
 
             OmemoDevice device = new OmemoDevice(jid, id);
-            if (getOmemoStoreBackend().getOmemoSessionOf(omemoManager, device) != null) {
+            if (getOmemoStoreBackend().containsRawSession(omemoManager, device)) {
+                //We have a session already.
                 continue;
             }
 
             //Build missing session
             try {
-                buildSessionFromOmemoBundle(omemoManager, device);
+                buildSessionFromOmemoBundle(omemoManager, device, false);
             } catch (CannotEstablishOmemoSessionException | CorruptedOmemoKeyException e) {
                 LOGGER.log(Level.WARNING, e.getMessage());
                 //Skip
@@ -635,10 +633,16 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      * @throws CannotEstablishOmemoSessionException when no session could be established
      * @throws CorruptedOmemoKeyException when the bundle contained an invalid OMEMO identityKey
      */
-    public void buildSessionFromOmemoBundle(OmemoManager omemoManager, OmemoDevice device) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
+    public void buildSessionFromOmemoBundle(OmemoManager omemoManager, OmemoDevice device, boolean fresh) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
 
         if (device.equals(omemoManager.getOwnDevice())) {
             LOGGER.log(Level.WARNING, "Do not build a session with yourself!");
+            return;
+        }
+
+        //Do not build sessions with devices we already know...
+        if(!fresh && getOmemoStoreBackend().containsRawSession(omemoManager, device)) {
+            getOmemoStoreBackend().getOmemoSessionOf(omemoManager, device); //Make sure its loaded though
             return;
         }
 
@@ -651,10 +655,12 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
             throw new CannotEstablishOmemoSessionException("Can't build Session for " + device);
         }
 
-        HashMap<Integer, T_Bundle> bundles;
-        bundles = getOmemoStoreBackend().keyUtil().BUNDLE.bundles(bundle, device);
+        HashMap<Integer, T_Bundle> bundles = getOmemoStoreBackend().keyUtil().BUNDLE.bundles(bundle, device);
+
+        //Select random Bundle
         int randomIndex = new Random().nextInt(bundles.size());
         T_Bundle randomPreKeyBundle = new ArrayList<>(bundles.values()).get(randomIndex);
+        //Build raw session
         processBundle(omemoManager, randomPreKeyBundle, device);
     }
 
@@ -846,7 +852,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
                 //Skip our jid
                 continue;
             }
-            buildSessionsFromOmemoBundles(omemoManager, recipient);
+            buildOrCreateOmemoSessionsFromBundles(omemoManager, recipient);
             CachedDeviceList theirDevices = getOmemoStoreBackend().loadCachedDeviceList(omemoManager, recipient);
             for (int id : theirDevices.getActiveDevices()) {
                 OmemoDevice recipientDevice = new OmemoDevice(recipient, id);
@@ -1082,7 +1088,7 @@ public abstract class OmemoService<T_IdKeyPair, T_IdKey, T_PreKey, T_SigPreKey, 
      */
     protected Message getOmemoRatchetUpdateMessage(OmemoManager omemoManager, OmemoDevice recipient, boolean preKeyMessage) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException, CryptoFailedException, UndecidedOmemoIdentityException {
         if(preKeyMessage) {
-            buildSessionFromOmemoBundle(omemoManager, recipient);
+            buildSessionFromOmemoBundle(omemoManager, recipient, true);
         }
 
         OmemoVAxolotlElement keyTransportElement = prepareOmemoKeyTransportElement(omemoManager, recipient);

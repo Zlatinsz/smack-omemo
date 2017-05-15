@@ -472,10 +472,23 @@ public final class OmemoManager extends Manager {
         omemoMucMessageListeners.remove(listener);
     }
 
-    public void buildSessionWith(OmemoDevice device) throws CannotEstablishOmemoSessionException, CorruptedOmemoKeyException {
-        getOmemoService().buildSessionFromOmemoBundle(this, device);
+    /**
+     * Build OMEMO sessions with devices of contact.
+     *
+     * @param contact contact we want to build session with.
+     */
+    public void buildSessionsWith(BareJid contact) {
+        getOmemoService().buildOrCreateOmemoSessionsFromBundles(this, contact);
     }
 
+    /**
+     * Request a deviceList update from contact contact.
+     *
+     * @param contact contact we want to obtain the deviceList from.
+     * @throws SmackException.NotConnectedException
+     * @throws InterruptedException
+     * @throws SmackException.NoResponseException
+     */
     public void requestDeviceListUpdateFor(BareJid contact) throws SmackException.NotConnectedException, InterruptedException, SmackException.NoResponseException {
         getOmemoService().refreshDeviceList(this, contact);
     }
