@@ -60,7 +60,6 @@ allprojects {
 			':smack-resolver-dnsjava',
 			':smack-resolver-javax',
 			':smack-resolver-minidns',
-			':smack-omemo',
 			':smack-omemo-signal',
 			':smack-omemo-signal-integration-test',
 		].collect{ project(it) }
