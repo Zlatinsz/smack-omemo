@@ -62,6 +62,7 @@ allprojects {
 			':smack-resolver-minidns',
 			':smack-omemo',
 			':smack-omemo-signal',
+			':smack-omemo-signal-integration-test',
 		].collect{ project(it) }
 		projectsWithUnitTests = subprojects - projectsWithoutUnitTests
 		androidProjects = [
