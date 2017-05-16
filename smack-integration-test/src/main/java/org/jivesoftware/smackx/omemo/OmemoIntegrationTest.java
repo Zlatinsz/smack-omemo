@@ -21,7 +21,10 @@ import org.igniterealtime.smack.inttest.SmackIntegrationTest;
 import org.igniterealtime.smack.inttest.SmackIntegrationTestEnvironment;
 import org.igniterealtime.smack.inttest.TestNotPossibleException;
 import org.jivesoftware.smack.SmackException;
+import org.jivesoftware.smack.SmackException.NoResponseException;
+import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.XMPPException.XMPPErrorException;
 import org.jivesoftware.smack.chat2.ChatManager;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.roster.Roster;
@@ -46,12 +49,11 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 
-@SuppressWarnings("unused")
 public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
 
     private static final File storePath = new File("int_test_omemo_store");
 
-    public OmemoIntegrationTest(SmackIntegrationTestEnvironment environment) throws TestNotPossibleException {
+    public OmemoIntegrationTest(SmackIntegrationTestEnvironment environment) throws TestNotPossibleException, XMPPErrorException, NotConnectedException, NoResponseException, InterruptedException {
         super(environment);
         if (!OmemoService.isServiceRegistered()) {
             throw new TestNotPossibleException("No OmemoService registered");
@@ -59,15 +61,9 @@ public class OmemoIntegrationTest extends AbstractSmackIntegrationTest {
         cleanUpStore();
         OmemoConfiguration.getInstance().setFileBasedOmemoStoreDefaultPath(storePath);
 
-        //Test for server support
-        try {
-            if(!OmemoManager.serverSupportsOmemo(connection, connection.getXMPPServiceDomain())) {
-                throw new TestNotPossibleException("Server does not support OMEMO");
-            } else {
-                LOGGER.log(Level.INFO, "Server supports OMEMO :)");
-            }
-        } catch (XMPPException.XMPPErrorException | SmackException.NoResponseException | InterruptedException | SmackException.NotConnectedException e) {
-            throw new TestNotPossibleException("Cannot determine, whether server supports OMEMO: "+e.getMessage());
+        // Test for server support
+        if (!OmemoManager.serverSupportsOmemo(connection, connection.getXMPPServiceDomain())) {
+            throw new TestNotPossibleException("Server does not support OMEMO");
         }
     }
 
